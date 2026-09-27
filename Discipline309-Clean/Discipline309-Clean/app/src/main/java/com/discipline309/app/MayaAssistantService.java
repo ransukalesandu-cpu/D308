@@ -95,6 +95,16 @@ public class MayaAssistantService extends Service {
             mediaKey(q.contains("pause")||q.contains("නවත්ත"));
         }else if(q.contains("notification")||q.contains("whatsapp")||q.contains("නොටිෆිකේෂන්")){
             readLatestNotification();
+        }else if(q.contains("mission")||q.contains("මගේ mission")||q.contains("mission එක")){
+            speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"mission"));
+        }else if(q.contains("xp")||q.contains("level")||q.contains("මගේ ලෙවල්")){
+            speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"xp"));
+        }else if(q.contains("streak")||q.contains("මගේ streak")){
+            speak("ඔන්න 🔥 "+MayaContextProvider.quickStatus(this,"streak"));
+        }else if(q.contains("day")||q.contains("දවස කීයද")||q.contains("කීවෙනි දවස")){
+            speak("හරි 📅 "+MayaContextProvider.quickStatus(this,"day"));
+        }else if(q.contains("progress")||q.contains("කොහොමද යන්නේ")){
+            speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"progress"));
         }else if(q.contains("hello")||q.contains("hi")||q.contains("හෙලෝ")){
             speak(modeReply("හෙලෝ! මං Maya. කියන්න. 😄","හෙලෝ 😄 Maya online! කියන්නකෝ ✨","හෙලෝ! මං මෙතන. හෙමින් කියන්න. 💛"));
         }else if(q.contains("motivat")||q.contains("වැඩ")||q.contains("බැහැ")){
@@ -107,7 +117,6 @@ public class MayaAssistantService extends Service {
     private void askAI(String userText){
         String memoryText=memory==null?"":memory.all();
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
-        SharedPreferences d=getSharedPreferences("discipline",MODE_PRIVATE);
         String personality;
         if(p.getBoolean("mode_auto",false)){
             int hour=java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
@@ -116,12 +125,10 @@ public class MayaAssistantService extends Service {
         else if(p.getBoolean("mode_cute",false)) personality="cute";
         else if(p.getBoolean("mode_funny",true)) personality="funny";
         else personality="normal";
-        int completed=0;
-        for(String k:d.getAll().keySet()) if(k.startsWith("done_") && d.getBoolean(k,false)) completed++;
-        int today=0;
-        String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.US).format(new java.util.Date());
-        for(int i=0;i<20;i++) if(d.getBoolean("task_"+i+"_"+todayKey,false)) today++;
-        String context="Saved memory: "+memoryText+" | Discipline context: today has "+today+" completed tasks; "+completed+" completed days are recorded. Use this only when relevant.";
+
+        String live=MayaContextProvider.build(this);
+        String context="Saved memory: "+memoryText+" | "+live+
+                " Current app state is authoritative for discipline data. Use it naturally and don't invent values.";
         MayaAI.ask(this,userText,context,personality,reply->handler.post(()->speak(reply)));
     }
 
