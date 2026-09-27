@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     private int totalTasks(){return DEFAULT_TASKS.length+customCount();}
     private boolean checked(int i,String d){return prefs.getBoolean("task_"+i+"_"+d,false);}
     private void setChecked(int i,String d,boolean v){prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}
+    private boolean allowed(String permission){return !SupabaseAccountManager.loggedIn(this)||SupabaseAccountManager.can(this,permission);}
     private int countFor(String d){int n=0;for(int i=0;i<totalTasks();i++)if(checked(i,d))n++;return n;}
     private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
     private int xp(){return completedDays()*100+totalCompletedTasks()*20+prefs.getInt("xp_bonus",0);}
@@ -185,12 +186,13 @@ public class MainActivity extends Activity {
         showMilestoneCard();
     }
     private void addTaskRow(int i,String d){
-        LinearLayout row=card();row.setPadding(dp(10),dp(8),dp(10),dp(8));CheckBox cb=new CheckBox(this);cb.setText(taskName(i));cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(checked(i,d));cb.setOnCheckedChangeListener((v,c)->setChecked(i,d,c));row.addView(cb);content.addView(row);
+        LinearLayout row=card();row.setPadding(dp(10),dp(8),dp(10),dp(8));CheckBox cb=new CheckBox(this);cb.setText(taskName(i));cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(checked(i,d));cb.setEnabled(allowed("can_edit_habits"));cb.setOnCheckedChangeListener((v,c)->{if(allowed("can_edit_habits"))setChecked(i,d,c);else v.setChecked(!c);});row.addView(cb);content.addView(row);
     }
     public void editTodayMissionFromMaya(String requested){
         final EditText e=new EditText(this);
         e.setHint("e.g. Study for 30 minutes");
         e.setSingleLine(false);
+        if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}
         String current=prefs.getString("mission_"+key(),"");
         if(requested!=null&&!requested.trim().isEmpty()) e.setText(requested.trim()); else if(!current.isEmpty()) e.setText(current);
         new AlertDialog.Builder(this).setTitle("🎯 Edit Today's Mission").setMessage("Maya can change today's mission. The new mission will be saved for today.").setView(e)
@@ -198,6 +200,7 @@ public class MainActivity extends Activity {
                 .setNegativeButton("CANCEL",null).show();
     }
     public void resetTodayMissionFromMaya(){
+        if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}
         String k="mission_"+key();
         prefs.edit().remove(k).remove(k+"_done").apply();
         toast("Today's mission reset 🎯");showHome();
@@ -228,13 +231,13 @@ public class MainActivity extends Activity {
             final int idx=i;Button manage=button("⚙  "+taskName(i)+"  •  Edit / Delete");manage.setOnLongClickListener(v->{editHabitDialog(idx);return true;});content.addView(manage);
         }
     }
-    private void addHabitDialog(){
+    private void addHabitDialog(){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}
         EditText e=new EditText(this);e.setHint("e.g. Read 20 minutes");new AlertDialog.Builder(this).setTitle("Add custom habit").setView(e).setPositiveButton("ADD",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){int n=customCount();prefs.edit().putInt("custom_count",n+1).putString("habit_"+(DEFAULT_TASKS.length+n),s).apply();showHabits();}}).setNegativeButton("CANCEL",null).show();
     }
-    private void editHabitDialog(int idx){
+    private void editHabitDialog(int idx){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}
         EditText e=new EditText(this);e.setText(taskName(idx));new AlertDialog.Builder(this).setTitle("Edit habit").setView(e).setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty())prefs.edit().putString("habit_"+idx,s).apply();showHabits();}).setNeutralButton("DELETE",(d,w)->deleteHabit(idx)).setNegativeButton("CANCEL",null).show();
     }
-    private void deleteHabit(int idx){
+    private void deleteHabit(int idx){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}
         int last=DEFAULT_TASKS.length+customCount()-1;if(idx!=last){String name=prefs.getString("habit_"+last,"Habit");prefs.edit().putString("habit_"+idx,name).remove("habit_"+last).putInt("custom_count",customCount()-1).apply();}else prefs.edit().remove("habit_"+idx).putInt("custom_count",Math.max(0,customCount()-1)).apply();showHabits();
     }
     private void showAchievements(){
