@@ -92,6 +92,8 @@ public final class MayaContextProvider {
                 "; focusGoal=\""+safe(focusGoal)+"\""+
                 "; shortPlanDetails=\""+safe(shortPlan.toString())+"\""+
                 "; journalToday=\""+safe(journal)+"\".";
+    }
+
     public static String quickStatus(Context context,String type){
         String full=build(context);
         if("mission".equals(type)) return extract(full,"todayMission=")+"; completed="+extract(full,"missionCompleted=");
