@@ -82,6 +82,11 @@ public class MayaMemory {
         return out.toString();
     }
 
+    private static final class ScoredMemory {
+        final String fact; final int score; final long createdAt;
+        ScoredMemory(String fact, int score, long createdAt) { this.fact=fact; this.score=score; this.createdAt=createdAt; }
+    }
+
     private void migrateLegacyIfNeeded() {
         if (dao.count() > 0) return;
         String raw = prefs.getString(KEY, "[]");
