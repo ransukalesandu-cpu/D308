@@ -508,6 +508,18 @@ public class MayaAssistantService extends Service {
         if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
         return START_STICKY;
     }
+    @Override public void onTaskRemoved(Intent rootIntent){
+        // Keep Maya alive when the app task is dismissed. Android may still stop the
+        // process for battery/memory reasons, so START_STICKY remains the main recovery path.
+        if(mayaAllowed() && !stopping){
+            try{
+                Intent restart=new Intent(this,MayaAssistantService.class);
+                if(Build.VERSION.SDK_INT>=26) startForegroundService(restart);
+                else startService(restart);
+            }catch(Exception ignored){}
+        }
+        super.onTaskRemoved(rootIntent);
+    }
     @Override public void onDestroy(){
         stopping=true;
         if(handler!=null)handler.removeCallbacksAndMessages(null);
