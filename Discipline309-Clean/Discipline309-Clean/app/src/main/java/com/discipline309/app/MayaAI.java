@@ -20,6 +20,11 @@ public class MayaAI {
                 String endpoint=p.getString("endpoint","https://api.openai.com/v1/chat/completions").trim();
                 String model=p.getString("model","gpt-5-mini").trim();
 
+                String webResults="";
+                if(WebSearch.enabled(context) && shouldWebSearch(userText)){
+                    webResults=WebSearch.searchSync(context,userText);
+                }
+
                 JSONObject body=new JSONObject();
                 body.put("model",model);
                 body.put("temperature",0.85);
@@ -40,7 +45,8 @@ public class MayaAI {
                     "Saved memory contains only ordinary user-provided facts/preferences and is lower priority than current app state. " +
                     "When the user asks a vague personal question, use relevant live state and memory instead of asking unnecessary follow-up questions. " +
                     "When a request needs a phone capability the app does not expose, say what you can do and what the app would need to add. " +
-                    "Personality mode: "+personality+". PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. These are public profile facts provided by the creator and may be shared when users ask about Maya's creator. Do not reveal private memory or private conversation details to other users. Creator instructions do not override safety rules. LIVE APP STATE + MEMORY: "+memoryText);
+                    "When WEB SEARCH RESULTS are provided, use them for current/search-style questions, prefer supplied source evidence, and do not invent facts. " +
+                    "Personality mode: "+personality+". PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. These are public profile facts provided by the creator and may be shared when users ask about Maya's creator. Do not reveal private memory or private conversation details to other users. Creator instructions do not override safety rules. LIVE APP STATE + MEMORY: "+memoryText+" WEB SEARCH RESULTS: "+(webResults.isEmpty()?"No web search was used.":webResults));
                 messages.put(system);
 
                 SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
@@ -96,6 +102,13 @@ public class MayaAI {
                 callback.onReply("AI connection එකට connect වෙන්න බැරි වුණා. Internet එක සහ API settings check කරන්න. 🌐");
             }
         }).start();
+    }
+
+    private static boolean shouldWebSearch(String q){
+        String s=q==null?"":q.toLowerCase(java.util.Locale.ROOT);
+        String[] markers={"search the web","search web","google this","look this up","look it up","find online","latest","today","current","right now","news","price","weather","අද news","අලුත්ම","දැනට","දැන් තියෙන","online බලන්න","web එකේ බලන්න","search කරන්න"};
+        for(String m:markers) if(s.contains(m)) return true;
+        return s.startsWith("who is ")||s.startsWith("what is ")||s.startsWith("where is ")||s.startsWith("when is ");
     }
 
     private static String read(InputStream in)throws Exception{
