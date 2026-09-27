@@ -106,7 +106,7 @@ public class MainActivity extends Activity {
         Calendar c=startDate();Calendar now=Calendar.getInstance();int index=0;
         while(index<309){
             LinearLayout week=card();week.setOrientation(LinearLayout.HORIZONTAL);
-            for(int j=0;j<7&&index<309;j++,index++){String k=key(c);TextView cell=label((index+1)+"",11,TEXT);cell.setGravity(Gravity.CENTER);cell.setBackground(shape(prefs.getBoolean("done_"+k,false)?ACCENT:(c.before(now)?0xFF343B4A:0xFF202633),10));week.addView(cell,new LinearLayout.LayoutParams(0,dp(34),1));c.add(Calendar.DAY_OF_YEAR,1);}
+            for(int j=0;j<7&&index<309;j++,index++){String k=key(c);int done=countFor(k);int bg=prefs.getBoolean("done_"+k,false)?ACCENT:(done>0?0xFF8A7A32:(c.before(now)?0xFF343B4A:0xFF202633));TextView cell=label((index+1)+"",11,TEXT);cell.setGravity(Gravity.CENTER);cell.setBackground(shape(bg,10));week.addView(cell,new LinearLayout.LayoutParams(0,dp(34),1));c.add(Calendar.DAY_OF_YEAR,1);}
             content.addView(week);
         }
         content.addView(label("Green = complete • Gold = partial • Grey = upcoming/missed.",12,MUTED));
