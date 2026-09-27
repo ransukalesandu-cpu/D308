@@ -222,6 +222,21 @@ public class MainActivity extends Activity {
         EditText input=new EditText(this);input.setHint("Ask Maya in Sinhala, Singlish or English...");input.setMinLines(2);
         new AlertDialog.Builder(this).setTitle("💬 Maya").setMessage("Ask anything about your routine, discipline or today.").setView(input).setPositiveButton("SEND",(d,w)->askMaya(input.getText().toString())).setNegativeButton("CLOSE",null).show();
     }
+    public String mayaQuickStatus(String type){
+        String k=key();
+        String mission=prefs.getString("mission_"+k,"");
+        if(mission.isEmpty()){
+            String[] missions={"Complete every planned task today","Finish one focused study session","Do your routine before entertainment","Write a 3-line evening reflection","Complete today without skipping a habit"};
+            mission=missions[Math.abs(k.hashCode())%missions.length];
+        }
+        if(type.equals("mission")) return "Today's mission: "+mission+(prefs.getBoolean("mission_"+k+"_done",false)?" — completed! 🎯":" — not completed yet.");
+        if(type.equals("xp")) return "You have "+xp()+" XP, Level "+level()+". "+(500-(xp()%500))+" XP until the next level.";
+        if(type.equals("streak")) return "Current streak: "+currentStreak()+" days. Best streak: "+bestStreak()+" days.";
+        if(type.equals("day")) return "You're on Day "+dayNumber()+" of 309. "+Math.max(0,309-dayNumber())+" days remaining.";
+        if(type.equals("progress")) return "Today: "+countFor(k)+"/"+totalTasks()+" tasks completed. Current streak: "+currentStreak()+" days. XP: "+xp()+".";
+        return "Day "+dayNumber()+"/309 • "+countFor(k)+"/"+totalTasks()+" tasks • "+currentStreak()+" day streak • "+xp()+" XP.";
+    }
+
     public String buildMayaContext(){
         String missionKey="mission_"+key();
         String mission=prefs.getString(missionKey,"");
