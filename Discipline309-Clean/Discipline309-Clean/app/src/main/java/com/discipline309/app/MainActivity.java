@@ -115,6 +115,22 @@ public class MainActivity extends Activity {
     private void addTaskRow(int i,String d){
         LinearLayout row=card();row.setPadding(dp(10),dp(8),dp(10),dp(8));CheckBox cb=new CheckBox(this);cb.setText(taskName(i));cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(checked(i,d));cb.setOnCheckedChangeListener((v,c)->setChecked(i,d,c));row.addView(cb);content.addView(row);
     }
+    public void editTodayMissionFromMaya(String requested){
+        final EditText e=new EditText(this);
+        e.setHint("e.g. Study for 30 minutes");
+        e.setSingleLine(false);
+        String current=prefs.getString("mission_"+key(),"");
+        if(requested!=null&&!requested.trim().isEmpty()) e.setText(requested.trim()); else if(!current.isEmpty()) e.setText(current);
+        new AlertDialog.Builder(this).setTitle("🎯 Edit Today's Mission").setMessage("Maya can change today's mission. The new mission will be saved for today.").setView(e)
+                .setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){prefs.edit().putString("mission_"+key(),s).apply();toast("Today's mission updated by Maya 🎯");showHome();}})
+                .setNegativeButton("CANCEL",null).show();
+    }
+    public void resetTodayMissionFromMaya(){
+        String k="mission_"+key();
+        prefs.edit().remove(k).remove(k+"_done").apply();
+        toast("Today's mission reset 🎯");showHome();
+    }
+
     private void showMilestoneCard(){
         int days=completedDays();String next=days<7?"7 days":days<30?"30 days":days<50?"50 days":days<100?"100 days":days<150?"150 days":days<200?"200 days":days<309?"309 days":"ALL 309 DAYS";
         LinearLayout m=card();m.addView(label("NEXT MILESTONE",11,MUTED));m.addView(label("🏆 "+next,20,TEXT));content.addView(m);
