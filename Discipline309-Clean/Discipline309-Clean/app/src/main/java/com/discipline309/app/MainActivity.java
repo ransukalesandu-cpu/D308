@@ -46,7 +46,8 @@ public class MainActivity extends Activity {
     private void setChecked(int i,String d,boolean v){prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}
     private int countFor(String d){int n=0;for(int i=0;i<totalTasks();i++)if(checked(i,d))n++;return n;}
     private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
-    private int xp(){return completedDays()*100+totalCompletedTasks()*20+prefs.getInt("xp_bonus",0);}\n    private void awardXp(int amount,String reason){if(amount<=0)return;prefs.edit().putInt("xp_bonus",prefs.getInt("xp_bonus",0)+amount).apply();toast(reason+"  +"+amount+" XP");}
+    private int xp(){return completedDays()*100+totalCompletedTasks()*20+prefs.getInt("xp_bonus",0);}
+    private void awardXp(int amount,String reason){if(amount<=0)return;prefs.edit().putInt("xp_bonus",prefs.getInt("xp_bonus",0)+amount).apply();toast(reason+"  +"+amount+" XP");}
     private int totalCompletedTasks(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){n+=countFor(key(c));c.add(Calendar.DAY_OF_YEAR,1);}return n;}
     private int level(){return xp()/500+1;}
     private int currentStreak(){int n=0;Calendar c=Calendar.getInstance();if(!prefs.getBoolean("done_"+key(c),false))c.add(Calendar.DAY_OF_YEAR,-1);while(!c.before(startDate())&&prefs.getBoolean("done_"+key(c),false)){n++;c.add(Calendar.DAY_OF_YEAR,-1);}return n;}
@@ -67,7 +68,12 @@ public class MainActivity extends Activity {
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);
         ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(14),dp(18),dp(12));sc.addView(content);root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(2),dp(4),dp(2),dp(4));nav.setBackgroundColor(0xFF11151E);
-        String[] names={"⌂\nHome","▣\nJourney","✓\nHabits","◫\nStats","⚙\nSettings"};
+        String[] names={"⌂
+Home","▣
+Journey","✓
+Habits","◫
+Stats","⚙
+Settings"};
         for(int i=0;i<5;i++){final int n=i;Button b=button(names[i]);b.setTextSize(11);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showJourney();else if(n==2)showHabits();else if(n==3)showStats();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}
         root.addView(nav);setContentView(root);
     }
@@ -183,7 +189,8 @@ public class MainActivity extends Activity {
         LinearLayout summary=card();summary.addView(label("LEVEL "+level(),11,MUTED));summary.addView(label(completed+" completed days",23,TEXT));summary.addView(label("🔥 "+currentStreak()+" current  •  🏆 "+best+" best streak",14,MUTED));summary.addView(label("⚡ "+xp()+" total XP  •  "+totalCompletedTasks()+" completed tasks",14,MUTED));content.addView(summary);
         LinearLayout week=card();week.addView(label("LAST 7 DAYS",11,MUTED));for(int i=6;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);int n=countFor(key(c));int pct=total==0?0:Math.round(n*100f/total);week.addView(label(new SimpleDateFormat("EEE",Locale.US).format(c.getTime())+"   "+n+"/"+total+"   "+pct+"%",13,TEXT));}content.addView(week);
         LinearLayout cal=card();cal.addView(label("LAST 30 DAYS",11,MUTED));for(int i=29;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);String k=key(c);TextView r=label(new SimpleDateFormat("dd MMM",Locale.US).format(c.getTime())+"   "+(prefs.getBoolean("done_"+k,false)?"✓ COMPLETE":countFor(k)>0?"• PARTIAL":"— MISSED"),13,TEXT);cal.addView(r);}content.addView(cal);
-        Button achievements=button("🏆  View Achievements");achievements.setOnClickListener(v->showAchievements());content.addView(achievements);\n                Button chat=button("💬  Chat with Maya");chat.setOnClickListener(v->chatDialog());content.addView(chat);Button journal=button("📝  Daily Journal & Reflection");journal.setOnClickListener(v->journalDialog());content.addView(journal);
+        Button achievements=button("🏆  View Achievements");achievements.setOnClickListener(v->showAchievements());content.addView(achievements);
+                Button chat=button("💬  Chat with Maya");chat.setOnClickListener(v->chatDialog());content.addView(chat);Button journal=button("📝  Daily Journal & Reflection");journal.setOnClickListener(v->journalDialog());content.addView(journal);
         LinearLayout badges=card();badges.addView(label("ACHIEVEMENTS",11,MUTED));int[] ms={1,7,30,50,100,150,200,309};for(int m:ms)if(completed>=m)badges.addView(label("🏆 "+m+" day milestone unlocked",14,TEXT));else badges.addView(label("🔒 "+m+" day milestone",14,MUTED));content.addView(badges);
     }
     private void journalDialog(){
