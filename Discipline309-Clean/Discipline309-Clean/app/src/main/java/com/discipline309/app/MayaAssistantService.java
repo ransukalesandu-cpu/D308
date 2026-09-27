@@ -143,6 +143,36 @@ public class MayaAssistantService extends Service {
             mediaKey(q.contains("pause")||q.contains("නවත්ත"));
         }else if(q.contains("notification")||q.contains("whatsapp")||q.contains("නොටිෆිකේෂන්")){
             readLatestNotification();
+        }else if(q.contains("battery")||q.contains("බැටරි")||q.contains("charge")){
+            batteryStatus();
+        }else if(q.contains("wifi")||q.contains("wi-fi")||q.contains("වයිෆයි")){
+            openSystemSettings(Settings.ACTION_WIFI_SETTINGS,"Wi-Fi settings");
+        }else if(q.contains("bluetooth")||q.contains("බ්ලූටූත්")){
+            openSystemSettings(Settings.ACTION_BLUETOOTH_SETTINGS,"Bluetooth settings");
+        }else if(q.contains("airplane")||q.contains("flight mode")||q.contains("airplane mode")){
+            openSystemSettings(Settings.ACTION_AIRPLANE_MODE_SETTINGS,"Airplane mode settings");
+        }else if(q.contains("location")||q.contains("gps")||q.contains("ලොකේෂන්")){
+            openSystemSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS,"Location settings");
+        }else if(q.contains("brightness")||q.contains("screen light")||q.contains("දීප්තිය")){
+            setBrightness(q);
+        }else if(q.contains("screen timeout")||q.contains("screen sleep")||q.contains("display timeout")){
+            setScreenTimeout(q);
+        }else if(q.contains("alarm")||q.contains("ඇලර්ම්")){
+            openAlarm();
+        }else if(q.contains("timer")||q.contains("ටයිමර්")){
+            openTimer(q);
+        }else if(q.contains("nfc")){
+            openSystemSettings(Settings.ACTION_NFC_SETTINGS,"NFC settings");
+        }else if(q.contains("data usage")||q.contains("mobile data")||q.contains("internet settings")){
+            openSystemSettings(Settings.ACTION_DATA_USAGE_SETTINGS,"Data usage settings");
+        }else if(q.contains("display settings")||q.contains("screen settings")){
+            openSystemSettings(Settings.ACTION_DISPLAY_SETTINGS,"Display settings");
+        }else if(q.contains("app settings")||q.contains("application settings")){
+            openSystemSettings(Settings.ACTION_APPLICATION_SETTINGS,"App settings");
+        }else if(q.contains("notification settings")){
+            openSystemSettings(Settings.ACTION_NOTIFICATION_SETTINGS,"Notification settings");
+        }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")){
+            deviceInfo();
         }else if(q.contains("mission")||q.contains("මගේ mission")||q.contains("mission එක")){
             speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"mission"));
         }else if(q.contains("xp")||q.contains("level")||q.contains("මගේ ලෙවල්")){
@@ -340,6 +370,85 @@ public class MayaAssistantService extends Service {
         String text=getSharedPreferences("maya_notifications",MODE_PRIVATE).getString("latest","");
         if(text.isEmpty()) speak("අලුත් notification එකක් මට read කරන්න ලැබිලා නැහැ.");
         else speak(text);
+    }
+
+    private void openSystemSettings(String action,String label){
+        try{
+            Intent i=new Intent(action);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak(label+" open කළා. ⚙️");
+        }catch(Exception e){speak(label+" open කරන්න බැරි වුණා.");}
+    }
+
+    private void batteryStatus(){
+        try{
+            BatteryManager bm=(BatteryManager)getSystemService(BATTERY_SERVICE);
+            int level=bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+            IntentFilter f=new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent b=registerReceiver(null,f);
+            boolean charging=false;
+            if(b!=null){int status=b.getIntExtra(BatteryManager.EXTRA_STATUS,-1); charging=status==BatteryManager.BATTERY_STATUS_CHARGING||status==BatteryManager.BATTERY_STATUS_FULL;}
+            speak("Battery එක "+level+"%. "+(charging?"දැනට charge වෙනවා. 🔋":"දැනට charge වෙන්නේ නැහැ. 🔋"));
+        }catch(Exception e){speak("Battery status එක ගන්න බැරි වුණා.");}
+    }
+
+    private void setBrightness(String q){
+        if(!Settings.System.canWrite(this)){
+            speak("Screen brightness control කරන්න WRITE SETTINGS permission එක allow කරන්න.");
+            try{Intent i=new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,Uri.parse("package:"+getPackageName()));i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(i);}catch(Exception ignored){}
+            return;
+        }
+        try{
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d{1,3})").matcher(q);
+            if(m.find()){
+                int pct=Math.max(1,Math.min(100,Integer.parseInt(m.group(1))));
+                int value=Math.round(255f*pct/100f);
+                Settings.System.putInt(getContentResolver(),Settings.System.SCREEN_BRIGHTNESS,value);
+                speak("Brightness "+pct+"% කළා. ☀️");
+            }else openSystemSettings(Settings.ACTION_DISPLAY_SETTINGS,"Display settings");
+        }catch(Exception e){speak("Brightness change කරන්න බැරි වුණා.");}
+    }
+
+    private void setScreenTimeout(String q){
+        if(!Settings.System.canWrite(this)){
+            speak("Screen timeout change කරන්න WRITE SETTINGS permission එක allow කරන්න.");
+            try{Intent i=new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,Uri.parse("package:"+getPackageName()));i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(i);}catch(Exception ignored){}
+            return;
+        }
+        try{
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d+)").matcher(q);
+            if(m.find()){
+                int minutes=Math.max(1,Math.min(60,Integer.parseInt(m.group(1))));
+                Settings.System.putInt(getContentResolver(),Settings.System.SCREEN_OFF_TIMEOUT,minutes*60*1000);
+                speak("Screen timeout "+minutes+" minutes කළා. 💤");
+            }else openSystemSettings(Settings.ACTION_DISPLAY_SETTINGS,"Display settings");
+        }catch(Exception e){speak("Screen timeout change කරන්න බැරි වුණා.");}
+    }
+
+    private void openAlarm(){
+        try{
+            Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_ALARM);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak("Alarm screen එක open කළා. ⏰");
+        }catch(Exception e){speak("Alarm app එක open කරන්න බැරි වුණා.");}
+    }
+
+    private void openTimer(String q){
+        try{
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d+)").matcher(q);
+            Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
+            if(m.find()) i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,Integer.parseInt(m.group(1))*60)));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak(m.find()?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
+        }catch(Exception e){speak("Timer app එක open කරන්න බැරි වුණා.");}
+    }
+
+    private void deviceInfo(){
+        String model=Build.MANUFACTURER+" "+Build.MODEL;
+        speak("Phone එක "+model+". Android "+Build.VERSION.RELEASE+". API "+Build.VERSION.SDK_INT+".");
     }
 
     private void speak(String s){if(tts!=null&&ready){SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);if(!p.getBoolean("auto_speak",true))return;float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;tts.setSpeechRate(rate);tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"maya_"+System.currentTimeMillis());}}
