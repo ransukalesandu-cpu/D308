@@ -2,6 +2,8 @@ package com.discipline309.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKey;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.*;
@@ -20,7 +22,38 @@ public final class SupabaseAccountManager {
     private static final ExecutorService IO=Executors.newCachedThreadPool();
     public interface Callback { void done(boolean ok,String message); }
 
-    private static SharedPreferences p(Context c){return c.getSharedPreferences(PREF,Context.MODE_PRIVATE);}
+    private static SharedPreferences p(Context c){
+        try{
+            MasterKey masterKey=new MasterKey.Builder(c)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build();
+            SharedPreferences secure=EncryptedSharedPreferences.create(
+                    c,PREF,masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
+            migrateLegacySession(c,secure);
+            return secure;
+        }catch(Exception e){
+            throw new IllegalStateException("Secure account storage unavailable",e);
+        }
+    }
+
+    private static void migrateLegacySession(Context c,SharedPreferences secure){
+        if(secure.getBoolean("_migration_done",false)) return;
+        SharedPreferences legacy=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+        SharedPreferences.Editor out=secure.edit();
+        Map<String,?> all=legacy.getAll();
+        for(Map.Entry<String,?> entry:all.entrySet()){
+            String k=entry.getKey(); Object v=entry.getValue();
+            if(v instanceof String) out.putString(k,(String)v);
+            else if(v instanceof Boolean) out.putBoolean(k,(Boolean)v);
+            else if(v instanceof Long) out.putLong(k,(Long)v);
+            else if(v instanceof Integer) out.putInt(k,(Integer)v);
+            else if(v instanceof Float) out.putFloat(k,(Float)v);
+        }
+        out.putBoolean("_migration_done",true).apply();
+        legacy.edit().clear().apply();
+    }
     public static boolean loggedIn(Context c){return !p(c).getString("access_token","").isEmpty()&&!p(c).getString("user_id","").isEmpty();}
     public static String userId(Context c){return p(c).getString("user_id","");}
     public static String displayName(Context c){return p(c).getString("display_name","");}
