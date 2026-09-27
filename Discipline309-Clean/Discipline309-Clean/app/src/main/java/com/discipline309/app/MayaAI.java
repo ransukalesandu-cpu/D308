@@ -13,6 +13,7 @@ public class MayaAI {
 
     public static void ask(Context context, String userText, String memoryText, String personality, Callback callback){
         new Thread(() -> {
+            if(callback==null) return;
             try{
                 SharedPreferences p=MayaSecureStorage.maya(context);
                 String key=p.getString("api_key","").trim();
@@ -82,7 +83,9 @@ public class MayaAI {
                 InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
                 String response=read(stream);
                 if(code<200||code>=300){
-                    callback.onReply("AI response එක ගන්න බැරි වුණා. API key/model එක Settings වල check කරන්න.");
+                    String fallback=MayaOfflineNLP.answer(context,userText);
+                    callback.onReply(fallback!=null?fallback:"Maya AI service එකට දැන් connect වෙන්න බැහැ. 🌐 Settings වල API configuration එක check කරන්න.");
+                    c.disconnect();
                     return;
                 }
                 JSONObject json=new JSONObject(response);
@@ -92,7 +95,8 @@ public class MayaAI {
                     JSONObject message=choices.getJSONObject(0).optJSONObject("message");
                     if(message!=null) reply=message.optString("content","").trim();
                 }
-                String finalReply=reply.isEmpty()?"Mayaට ඒකට reply එකක් හදාගන්න බැරි වුණා 😅":reply;
+                String finalReply=reply.isEmpty()?MayaOfflineNLP.answer(context,userText):reply;
+                if(finalReply==null||finalReply.trim().isEmpty()) finalReply="Mayaට දැන් full AI reply එක හදාගන්න බැහැ 😅. Basic offline commands තවමත් වැඩ කරනවා.";
                 try{
                     JSONArray updated=new JSONArray(history.getString("recent","[]"));
                     JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText);updated.put(hu);
@@ -107,7 +111,8 @@ public class MayaAI {
                 callback.onReply(finalReply);
                 c.disconnect();
             }catch(Exception e){
-                callback.onReply("AI connection එකට connect වෙන්න බැරි වුණා. Internet එක සහ API settings check කරන්න. 🌐");
+                String fallback=MayaOfflineNLP.answer(context,userText);
+                callback.onReply(fallback!=null?fallback:"Mayaට දැන් AI service එකට connect වෙන්න බැහැ. 🌐 Internet එක හෝ API settings check කරන්න.");
             }
         }).start();
     }
