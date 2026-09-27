@@ -61,12 +61,12 @@ public class MayaAssistantService extends Service {
         try{
             wakeWordAdapter=new OpenWakeWordAdapter(
                 this,
-                () -> { handler.post(this::onMayaWakeWord); },
-                error -> handler.post(() -> {
+                () -> { handler.post(this::onMayaWakeWord); return kotlin.Unit.INSTANCE; },
+                error -> { handler.post(() -> {
                     realWakeWordActive=false;
                     // Keep Maya usable if the bundled ONNX engine cannot initialize.
                     listen();
-                })
+                }); return kotlin.Unit.INSTANCE; }
             );
             wakeWordAdapter.start();
         }catch(Exception e){
