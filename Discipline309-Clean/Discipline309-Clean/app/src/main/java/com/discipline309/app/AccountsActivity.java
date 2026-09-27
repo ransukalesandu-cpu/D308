@@ -108,7 +108,7 @@ public class AccountsActivity extends Activity {
     }
     private void addPermissionSwitch(LinearLayout card,JSONObject x,String key,String title){
         JSONObject perms=x.optJSONObject("permissions");
-        boolean checked=perms!=null&&perms.optBoolean(key,false);
+        boolean checked=perms!=null&&perms.optBoolean(key, "can_edit_habits".equals(key));
         Switch sw=new Switch(this);sw.setText(title);sw.setTextColor(TEXT);sw.setChecked(checked);
         sw.setOnCheckedChangeListener((b,v)->SupabaseAccountManager.setPermission(this,x.optString("id"),key,v,(ok,msg)->runOnUiThread(()->{
             if(!ok){sw.setChecked(!v);toast(msg);}else toast(title+": "+(v?"ON":"OFF"));}
