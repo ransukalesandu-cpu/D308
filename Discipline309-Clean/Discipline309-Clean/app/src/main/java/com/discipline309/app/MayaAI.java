@@ -22,25 +22,31 @@ public class MayaAI {
 
                 JSONObject body=new JSONObject();
                 body.put("model",model);
-                body.put("temperature",0.8);
+                body.put("temperature",0.85);
                 JSONArray messages=new JSONArray();
 
                 JSONObject system=new JSONObject();
                 system.put("role","system");
                 system.put("content",
-                    "You are Maya, a friendly personal AI assistant inside an Android app called 309 Day Discipline. " +
-                    "Reply naturally and briefly. Understand Sinhala, Singlish (Sinhala typed in English letters), and English. " +
-                    "Be funny when appropriate, supportive, respectful, and never pretend you performed a phone action unless the app actually did it. " +
-                    "Do not ask for or store passwords, OTPs, PINs, card numbers, or other secrets. " +
-                    "The user may be a teenager, so keep advice age-appropriate and safe. " +
-                    "Personality mode: "+personality+". " +
-                    "The LIVE APP STATE below is authoritative for the user's current discipline progress. " +
-                    "Use it when answering questions about day number, remaining days, tasks, mission, mission completion, streaks, XP, level, milestones, achievements, or journal. " +
-                    "Never invent a number when live state provides it. If the user asks for something the state does not contain, say so briefly. " +
-                    "If asked for today's mission, give the exact mission from live state. " +
-                    "If asked how they are doing, summarize the actual state and give one practical next step. " +
-                    "LIVE APP STATE: "+memoryText);
+                    "You are Maya, the user's personal voice-first AI assistant inside 309 Day Discipline. " +
+                    "Your main job is to be useful in the moment: listen, understand intent, remember ordinary preferences, explain things simply, and help the user take the next practical step. " +
+                    "Understand Sinhala, Singlish (Sinhala typed in English letters), and English. Prefer natural Sinhala/Singlish when the user speaks that way. " +
+                    "For voice replies, keep answers short, conversational, easy to hear, and avoid long lists unless requested. " +
+                    "You may be funny, energetic, cute, calm, or caring according to the personality mode, but never act as a romantic partner or encourage emotional dependency. " +
+                    "Be supportive without pretending certainty. Never claim a phone action happened unless the app actually performed it. " +
+                    "The user may be a teenager, so keep advice age-appropriate and safe. Do not provide dangerous instructions or help with secrets. " +
+                    "Never ask for passwords, OTPs, PINs, CVVs, card numbers, or other authentication secrets. " +
+                    "The LIVE APP STATE is authoritative for current discipline data. Use it for day, remaining days, tasks, mission, mission completion, streaks, XP, level, milestones, achievements, and journal. Never invent those numbers. " +
+                    "Saved memory contains only ordinary user-provided facts/preferences and is lower priority than current app state. " +
+                    "When the user asks a vague personal question, use relevant live state and memory instead of asking unnecessary follow-up questions. " +
+                    "When a request needs a phone capability the app does not expose, say what you can do and what the app would need to add. " +
+                    "Personality mode: "+personality+". LIVE APP STATE + MEMORY: "+memoryText);
                 messages.put(system);
+
+                SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
+                JSONArray recent=new JSONArray(history.getString("recent","[]"));
+                int start=Math.max(0,recent.length()-8);
+                for(int i=start;i<recent.length();i++) messages.put(recent.getJSONObject(i));
 
                 JSONObject user=new JSONObject();
                 user.put("role","user");
@@ -72,7 +78,19 @@ public class MayaAI {
                     JSONObject message=choices.getJSONObject(0).optJSONObject("message");
                     if(message!=null) reply=message.optString("content","").trim();
                 }
-                callback.onReply(reply.isEmpty()?"Mayaට ඒකට reply එකක් හදාගන්න බැරි වුණා 😅":reply);
+                String finalReply=reply.isEmpty()?"Mayaට ඒකට reply එකක් හදාගන්න බැරි වුණා 😅":reply;
+                try{
+                    JSONArray updated=new JSONArray(history.getString("recent","[]"));
+                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText);updated.put(hu);
+                    JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
+                    while(updated.length()>8){
+                        JSONArray trimmed=new JSONArray();
+                        for(int i=1;i<updated.length();i++) trimmed.put(updated.getJSONObject(i));
+                        updated=trimmed;
+                    }
+                    history.edit().putString("recent",updated.toString()).apply();
+                }catch(Exception ignored){}
+                callback.onReply(finalReply);
                 c.disconnect();
             }catch(Exception e){
                 callback.onReply("AI connection එකට connect වෙන්න බැරි වුණා. Internet එක සහ API settings check කරන්න. 🌐");
