@@ -17,12 +17,17 @@ public final class MayaToolRouter {
         if (MayaAI.shouldWebSearchForTool(q)) return Tool.WEB_SEARCH;
 
         if (containsAny(q, "mission", "xp", "streak", "progress", "level", "day", "task",
-                "achievement", "journal", "309", "mission එක", "මගේ xp", "මගේ streak")) {
+                "achievement", "journal", "309", "mission එක", "මගේ xp", "මගේ streak",
+                "plan", "short plan", "focus goal", "focus", "daily plan", "today plan",
+                "මගේ plan", "ප්ලෑන්", "කාර්ය", "වැඩ ලිස්ට්", "අද වැඩ", "දවසේ වැඩ")) {
             return Tool.APP_STATE;
         }
 
-        if (containsAny(q, "torch", "flashlight", "volume", "music", "play music", "pause music",
-                "call ", "dnd", "do not disturb", "notification", "whatsapp", "open settings")) {
+        if (containsAny(q, "torch", "flashlight", "flash", "ටෝච්", "volume", "sound", "ශබ්ද",
+                "music", "play music", "pause music", "සින්දු", "call ", "call my", "කෝල්",
+                "dnd", "do not disturb", "notification", "whatsapp", "wifi", "wi-fi", "වයිෆයි",
+                "bluetooth", "බ්ලූටූත්", "brightness", "screen light", "alarm", "timer", "ටൈമർ",
+                "settings", "open settings", "සെറ്റിംഗ്സ്")) {
             return Tool.PHONE_CONTROL;
         }
         return Tool.CHAT;
