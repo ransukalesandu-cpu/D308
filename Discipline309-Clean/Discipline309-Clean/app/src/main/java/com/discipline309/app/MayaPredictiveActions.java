@@ -24,7 +24,8 @@ public final class MayaPredictiveActions {
                 else if(nextTask.isEmpty()) nextTask=p.getString("plan_"+key+"_"+i+"_name","next task");
             }
             String focus=p.getString("plan_"+key+"_goal","").trim();
-            // Time-aware coaching with light personality variation, while keeping the advice task-focused.\n            int vibe=Math.abs((day*31+hour)%4);
+            // Time-aware coaching with light personality variation, while keeping the advice task-focused.
+            int vibe=Math.abs((day*31+hour)%4);
             if(planCount>0 && planDone<planCount && !nextTask.isEmpty()){
                 if(hour>=18) return vibe==0 ? "දවස ඉවර වෙන්න කලින් Short Plan එකේ "+nextTask+" එක knock කරමුද? 😄📋" : vibe==1 ? "අදට තව එකක් තියෙනවා 😅 "+nextTask+" කරලා close කරමු. 📋" : "Short Plan එකේ next move: "+nextTask+". දැන් කරමු. 🔥";
                 if(hour<12) return vibe==0 ? "Good morning 😄 අද පළවෙනි target එක "+nextTask+" කරමු. 🎯" : vibe==1 ? "Morning! ☀️ අද boss move එක "+nextTask+" 😄🎯" : "අද උදේ first win එක "+nextTask+". පටන් ගමු. ⚡";
