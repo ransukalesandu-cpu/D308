@@ -9,6 +9,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.*;
 import android.provider.Settings;
 import android.view.*;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.widget.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -24,11 +26,13 @@ public class MainActivity extends Activity {
     private LinearLayout content;
     private TextView homeStats, homeStreak;
     private VoiceAssistant voiceAssistant;
+    private ToneGenerator tone;
+    private void uiSound(int type){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,70);tone.startTone(type,90);}catch(Exception ignored){}}
     private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView label(String s,float size,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
     private GradientDrawable shape(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
     private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(16),dp(14),dp(16),dp(14));c.setBackground(shape(SURFACE,18));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));c.setLayoutParams(p);return c;}
-    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));return b;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setOnClickListener(v->uiSound(ToneGenerator.TONE_PROP_ACK));return b;}
     private String key(){return new SimpleDateFormat("yyyyMMdd",Locale.US).format(new Date());}
     private String key(Calendar c){return new SimpleDateFormat("yyyyMMdd",Locale.US).format(c.getTime());}
 
@@ -61,10 +65,10 @@ public class MainActivity extends Activity {
         LinearLayout st=card();st.addView(label("CURRENT STREAK",11,MUTED));homeStreak=label("",22,TEXT);homeStreak.setTypeface(null,1);st.addView(homeStreak);content.addView(st);
         TextView sec=label("TODAY'S PLAN",19,TEXT);sec.setTypeface(null,1);sec.setPadding(4,dp(16),4,dp(4));content.addView(sec);
         for(int i=0;i<TASKS.length;i++){final int idx=i;LinearLayout row=card();CheckBox cb=new CheckBox(this);cb.setText(TASKS[i]);cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(prefs.getBoolean("t"+i+key(),false));cb.setOnCheckedChangeListener((v,c)->{prefs.edit().putBoolean("t"+idx+key(),c).apply();refreshHome();});row.addView(cb);content.addView(row);}
-        Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);
+        Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->{uiSound(ToneGenerator.TONE_PROP_BEEP2);completeDay();});content.addView(complete);
         LinearLayout actions=card();actions.addView(label("QUICK ACTIONS",11,MUTED));
         Button r=button("⏰  Manage reminders");r.setOnClickListener(v->showReminders());actions.addView(r);
-        Button a=button("🎙️  Talk to Maya");a.setOnClickListener(v->voiceAssistant.start());actions.addView(a);
+        Button a=button("🎙️  Talk to Maya");a.setOnClickListener(v->{uiSound(ToneGenerator.TONE_PROP_ACK);voiceAssistant.start();});actions.addView(a);
         Button chat=button("💬  Text Assistant");chat.setOnClickListener(v->chatDialog());actions.addView(chat);content.addView(actions);refreshHome();
     }
 
@@ -123,6 +127,6 @@ public class MainActivity extends Activity {
     private void chatDialog(){EditText input=new EditText(this);input.setHint("Ask in Sinhala or English...");new AlertDialog.Builder(this).setTitle("💬 Discipline Assistant").setMessage("I'm here to help you start your next step.").setView(input).setPositiveButton("SEND",(d,w)->toast(localReply(input.getText().toString()))).setNegativeButton("CLOSE",null).show();}
     private String localReply(String q){q=q.toLowerCase(Locale.ROOT);if(q.contains("sleep")||q.contains("නින්ද"))return"Put the phone away and get ready for sleep. 🌙";if(q.contains("can't")||q.contains("බැහැ"))return"Start with one small task. 🔥";return"Start with one small step now. You've got this. 🔥";}
     private void settingsDialog(){new AlertDialog.Builder(this).setTitle("Settings").setMessage("Open Settings from the bottom navigation to manage voice, notifications and progress.").setPositiveButton("OK",null).show();}
-    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
-    @Override protected void onDestroy(){if(voiceAssistant!=null)voiceAssistant.destroy();super.onDestroy();}
+    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();uiSound(ToneGenerator.TONE_PROP_BEEP);}
+    @Override protected void onDestroy(){if(voiceAssistant!=null)voiceAssistant.destroy();if(tone!=null)tone.release();super.onDestroy();}
 }
