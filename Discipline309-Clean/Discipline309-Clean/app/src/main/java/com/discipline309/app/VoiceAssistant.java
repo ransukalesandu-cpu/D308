@@ -105,7 +105,11 @@ public class VoiceAssistant {
         } else if (question.contains("thank") || question.contains("ස්තුති")) {
             reply = cute ? "Anytimeee 😄✨ දැන් අපේ next little step එකට යමු!" : "Anytime! දැන් වැඩේ continue කරමු. 😄🔥";
         } else {
-            reply = sweet ? "හරි 💛 මං අහගෙන ඉන්නේ. තව ටිකක් පැහැදිලිව කියන්න." : funny ? "මගේ AI brain එකට පොඩි clue එකක් දෙන්න 😂 තව ටිකක් පැහැදිලිව කියන්න." : "හරි, මං අහගෙන ඉන්නේ. තව ටිකක් පැහැදිලිව කියන්න. 😄";
+            final String userQuestion = question;
+            String memory = activity.getSharedPreferences("maya_memory", 0).getString("items", "[]");
+            String personality = sweet ? "sweet/caring" : cute ? "cute" : funny ? "funny" : "normal";
+            MayaAI.ask(activity, userQuestion, "Saved memory: " + memory, personality, this::speak);
+            return;
         }
         speak(reply);
     }
