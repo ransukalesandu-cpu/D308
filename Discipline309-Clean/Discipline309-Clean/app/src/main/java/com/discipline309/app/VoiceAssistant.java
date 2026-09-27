@@ -96,7 +96,22 @@ public class VoiceAssistant {
         boolean funny=activity.getSharedPreferences("settings",0).getBoolean("mode_funny",true);
         boolean cute=activity.getSharedPreferences("settings",0).getBoolean("mode_cute",false);
         boolean sweet=activity.getSharedPreferences("settings",0).getBoolean("mode_sweet",false);
-        if (question.isEmpty()) {
+        if (question.contains("reset mission") || question.contains("mission reset") || question.contains("mission eka reset") || question.contains("mission eka ain")) {
+            if (activity instanceof MainActivity) {
+                ((MainActivity) activity).resetTodayMissionFromMaya();
+                speak("හරි 😄 අද mission එක reset කළා.");
+            }
+            return;
+        } else if (question.contains("change mission") || question.contains("edit mission") || question.contains("mission change") || question.contains("mission eka wenas") || question.contains("mission eka venas") || question.contains("mission eka edit") || question.contains("mission eka hadanna")) {
+            String requested = question;
+            String[] markers={"change mission to","edit mission to","mission change to","mission eka wenas karanna","mission eka venas karanna","mission eka edit karanna","mission eka hadanna"};
+            for(String marker:markers){int at=requested.indexOf(marker);if(at>=0){requested=requested.substring(at+marker.length()).trim();break;}}
+            if (activity instanceof MainActivity) {
+                ((MainActivity) activity).editTodayMissionFromMaya(requested);
+                speak(requested.isEmpty()?"හරි 😄 mission එක edit කරන්න box එක open කළා.":"හරි 😄 අද mission එක වෙනස් කරන්න box එක open කළා.");
+            }
+            return;
+        } else if (question.isEmpty()) {
             reply = sweet ? "ඔව්, මං මෙතන. හෙමින් කියන්න, මං අහගෙන ඉන්නවා. 💛" : cute ? "ඔව්ව් 😄✨ Maya මෙතන! කියන්නකෝ." : "ඔව්, මං මෙතන. කියන්න, මොකද වෙන්නේ? 😄";
         } else if (question.contains("hello") || question.contains("hi") || question.contains("හෙලෝ")) {
             reply = funny ? "හෙලෝ! Maya online 😄 අද වැඩේ පටන් ගමුද, නැත්නම් excuses factory එක open කරමුද? 😂🔥" : cute ? "හෙලෝ! 🌸 Maya මෙතන. අදත් පොඩි step එකකින් පටන් ගමුද? ✨" : "හෙලෝ! මං Maya. අද වැඩේ පටන් ගමුද? 🔥";
