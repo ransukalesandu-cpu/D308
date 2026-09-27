@@ -161,12 +161,10 @@ public class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Add daily reminder").setView(l).setPositiveButton("SAVE",(d,w)->{schedule(name.getText().toString(),p.getHour(),p.getMinute());showReminders();toast("Reminder saved");}).setNegativeButton("CANCEL",null).show();
     }
     private void schedule(String name,int h,int m){
-        int id=(name+h+m).hashCode();Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,h);c.set(Calendar.MINUTE,m);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);if(c.getTimeInMillis()<=System.currentTimeMillis())c.add(Calendar.DAY_OF_YEAR,1);
+        int id=(name+"|"+h+"|"+m).hashCode();Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,h);c.set(Calendar.MINUTE,m);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);if(c.getTimeInMillis()<=System.currentTimeMillis())c.add(Calendar.DAY_OF_YEAR,1);
         scheduleStatic(this,name,h,m,id,c.getTimeInMillis());prefs.edit().putString("alarm"+id,name+"|"+h+"|"+m).apply();
     }
-    public static void scheduleAll(Context context){
-        SharedPreferences p=context.getSharedPreferences(PREFS,MODE_PRIVATE);for(String k:p.getAll().keySet())if(k.startsWith("alarm")){String v=p.getString(k,null);if(v==null)continue;String[] a=v.split("\\|",-1);if(a.length==3)try{scheduleStatic(context,a[0],Integer.parseInt(a[1]),Integer.parseInt(a[2]),k.substring(5).hashCode(),-1);}catch(Exception ignored){}}
-    }
+    public static void scheduleAll(Context context){SharedPreferences p=context.getSharedPreferences(PREFS,MODE_PRIVATE);for(String k:p.getAll().keySet())if(k.startsWith("alarm")){String v=p.getString(k,null);if(v==null)continue;String[] a=v.split("\\|",-1);if(a.length==3)try{int id=Integer.parseInt(k.substring(5));scheduleStatic(context,a[0],Integer.parseInt(a[1]),Integer.parseInt(a[2]),id,-1);}catch(Exception ignored){}}}
     private static void scheduleStatic(Context c,String name,int h,int m,int id,long requested){
         Calendar x=Calendar.getInstance();if(requested>0)x.setTimeInMillis(requested);else{x.set(Calendar.HOUR_OF_DAY,h);x.set(Calendar.MINUTE,m);x.set(Calendar.SECOND,0);x.set(Calendar.MILLISECOND,0);if(x.getTimeInMillis()<=System.currentTimeMillis())x.add(Calendar.DAY_OF_YEAR,1);}
         AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am==null)return;if(Build.VERSION.SDK_INT>=31&&!am.canScheduleExactAlarms())return;
