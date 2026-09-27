@@ -222,8 +222,31 @@ public class MainActivity extends Activity {
         EditText input=new EditText(this);input.setHint("Ask Maya in Sinhala, Singlish or English...");input.setMinLines(2);
         new AlertDialog.Builder(this).setTitle("💬 Maya").setMessage("Ask anything about your routine, discipline or today.").setView(input).setPositiveButton("SEND",(d,w)->askMaya(input.getText().toString())).setNegativeButton("CLOSE",null).show();
     }
+    private String buildMayaContext(){
+        String missionKey="mission_"+key();
+        String mission=prefs.getString(missionKey,"");
+        if(mission.isEmpty()){
+            String[] missions={"Complete every planned task today","Finish one focused study session","Do your routine before entertainment","Write a 3-line evening reflection","Complete today without skipping a habit"};
+            mission=missions[Math.abs(key().hashCode())%missions.length];
+        }
+        int currentXp=xp(), currentLevel=level(), toNext=500-(currentXp%500);
+        int completedAchievements=0;
+        int[] milestones={1,3,7,14,30,50,100,150,200,309};
+        for(int m:milestones)if(completedDays()>=m)completedAchievements++;
+        int missionAchievements=0;
+        for(String k:prefs.getAll().keySet())if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&prefs.getBoolean(k,false))missionAchievements++;
+        return "309 DAY DISCIPLINE LIVE APP STATE: "+
+                "day="+dayNumber()+"/309; daysRemaining="+Math.max(0,309-dayNumber())+
+                "; todayTasks="+countFor(key())+"/"+totalTasks()+
+                "; todayMission=\""+mission+"\"; missionCompleted="+prefs.getBoolean(missionKey+"_done",false)+
+                "; currentStreak="+currentStreak()+"; bestStreak="+bestStreak()+
+                "; completedDays="+completedDays()+"; totalCompletedTasks="+totalCompletedTasks()+
+                "; XP="+currentXp+"; level="+currentLevel+"; XPToNextLevel="+toNext+
+                "; dayMilestonesUnlocked="+completedAchievements+"/10; rewardedMissions="+missionAchievements+
+                "; journalToday=\""+prefs.getString("journal_"+key(),"none")+"\".";
+    }
     private void askMaya(String q){
-        String context="Today: "+countFor(key())+"/"+totalTasks()+" tasks. Day "+dayNumber()+"/309. Current streak "+currentStreak()+". Best streak "+bestStreak()+". XP "+xp()+". Journal: "+prefs.getString("journal_"+key(),"none");
+        String context=buildMayaContext();
         MayaAI.ask(this,q,context,"auto",reply->runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Maya 🧠").setMessage(reply).setPositiveButton("OK",null).show()));
     }
     private void openSettings(){try{startActivity(new Intent(this,SettingsActivity.class));}catch(Exception e){new AlertDialog.Builder(this).setTitle("Settings").setMessage("Open Settings from the app menu.").setPositiveButton("OK",null).show();}}
