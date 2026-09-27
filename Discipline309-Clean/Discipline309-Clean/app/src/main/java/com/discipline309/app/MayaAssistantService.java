@@ -13,6 +13,7 @@ import android.view.KeyCharacterMap;
 import android.os.*;
 import android.provider.ContactsContract;
 import android.provider.Settings;
+import android.provider.CalendarContract;
 import android.speech.*;
 import android.speech.tts.TextToSpeech;
 import java.util.*;
@@ -171,6 +172,10 @@ public class MayaAssistantService extends Service {
             openSystemSettings(Settings.ACTION_APPLICATION_SETTINGS,"App settings");
         }else if(q.contains("notification settings")){
             openSystemSettings(Settings.ACTION_NOTIFICATION_SETTINGS,"Notification settings");
+        }else if(q.contains("calendar")||q.contains("schedule")||q.contains("කැලැන්ඩර්")||q.contains("event")){
+            calendarEvent(q);
+        }else if(q.contains("remind")||q.contains("reminder")||q.contains("මතක් කරන්න")){
+            reminder(q);
         }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")){
             deviceInfo();
         }else if(q.contains("mission")||q.contains("මගේ mission")||q.contains("mission එක")){
@@ -444,6 +449,37 @@ public class MayaAssistantService extends Service {
             startActivity(i);
             speak(m.find()?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
         }catch(Exception e){speak("Timer app එක open කරන්න බැරි වුණා.");}
+    }
+
+    private void calendarEvent(String q){
+        try{
+            Intent i=new Intent(Intent.ACTION_INSERT);
+            i.setData(CalendarContract.Events.CONTENT_URI);
+            i.putExtra(CalendarContract.Events.TITLE, extractEventTitle(q));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak("Calendar event එක add කරන්න screen එක open කළා. 📅");
+        }catch(Exception e){speak("Calendar එක open කරන්න බැරි වුණා.");}
+    }
+
+    private String extractEventTitle(String q){
+        String s=q.replace("add calendar event","").replace("calendar event","")
+            .replace("add event","").replace("schedule","").replace("event","").trim();
+        return s.isEmpty()?"Maya event":s;
+    }
+
+    private void reminder(String q){
+        try{
+            String text=q.replace("remind me","").replace("set reminder","")
+                .replace("reminder","").replace("මතක් කරන්න","").trim();
+            Intent i=new Intent(Intent.ACTION_INSERT);
+            i.setData(CalendarContract.Events.CONTENT_URI);
+            i.putExtra(CalendarContract.Events.TITLE,text.isEmpty()?"Maya reminder":text);
+            i.putExtra(CalendarContract.Events.DESCRIPTION,"Created by Maya");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak("Reminder එක save කරන්න calendar screen එක open කළා. 🔔");
+        }catch(Exception e){speak("Reminder එක create කරන්න බැරි වුණා.");}
     }
 
     private void deviceInfo(){
