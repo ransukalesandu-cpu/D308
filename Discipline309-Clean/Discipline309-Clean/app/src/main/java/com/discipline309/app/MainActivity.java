@@ -3,6 +3,8 @@ package com.discipline309.app;
 import android.Manifest;
 import android.app.*;
 import android.content.*;
+import android.net.Uri;
+import android.graphics.Bitmap;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.os.*;
@@ -24,6 +26,8 @@ public class MainActivity extends Activity {
     private LinearLayout content;
     private VoiceAssistant voiceAssistant;
     private ToneGenerator tone;
+    private static final int PICK_MAYA_IMAGE=901;
+    private static final int CAPTURE_MAYA_IMAGE=902;
 
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private void sound(int t){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,65);tone.startTone(t,80);}catch(Exception ignored){}}
@@ -79,6 +83,35 @@ public class MainActivity extends Activity {
     }
     private TextView title(String s){TextView t=label(s,19,TEXT);t.setTypeface(null,1);t.setPadding(dp(4),dp(14),dp(4),dp(5));return t;}
     private void addBar(LinearLayout box,int value,int max){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(Math.max(1,max));p.setProgress(Math.max(0,Math.min(max,value)));p.setProgressDrawable(getDrawable(android.R.drawable.progress_horizontal));box.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
+    private void openMayaGallery(){
+        Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT); i.setType("image/*"); i.addCategory(Intent.CATEGORY_OPENABLE); startActivityForResult(i,PICK_MAYA_IMAGE);
+    }
+    private void openMayaCamera(){
+        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){ requestPermissions(new String[]{Manifest.permission.CAMERA},33); return; }
+        try{ Intent i=new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE); startActivityForResult(i,CAPTURE_MAYA_IMAGE); }catch(Exception e){ toast("Camera open කරන්න බැරි වුණා."); }
+    }
+    private void analyzeMayaImage(Uri uri){
+        if(uri==null)return;
+        final EditText q=new EditText(this); q.setHint("Ask Maya about this image (optional)");
+        new AlertDialog.Builder(this).setTitle("🖼️ Ask Maya about image").setView(q).setPositiveButton("ANALYZE",(d,w)->{
+            String question=q.getText().toString().trim(); toast("Maya image එක බලනවා… 🧠");
+            MayaVision.analyze(this,uri,question,reply->runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Maya 🧠").setMessage(reply).setPositiveButton("OK",null).show()));
+        }).setNegativeButton("CANCEL",null).show();
+    }
+    private void analyzeMayaBitmap(Bitmap bitmap){
+        try{
+            java.io.File file=new java.io.File(getCacheDir(),"maya_camera.jpg");
+            java.io.FileOutputStream out=new java.io.FileOutputStream(file); bitmap.compress(Bitmap.CompressFormat.JPEG,85,out); out.close();
+            analyzeMayaImage(Uri.fromFile(file));
+        }catch(Exception e){toast("Camera image process කරන්න බැරි වුණා.");}
+    }
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        if(resultCode!=RESULT_OK || data==null)return;
+        if(requestCode==PICK_MAYA_IMAGE) analyzeMayaImage(data.getData());
+        else if(requestCode==CAPTURE_MAYA_IMAGE){ Bitmap b=data.getParcelableExtra("data"); if(b!=null)analyzeMayaBitmap(b); }
+    }
+
     private void showHome(){
         header("309 DAY DISCIPLINE","Build discipline. One day at a time. 🔥");
         int day=dayNumber(),done=countFor(key()),total=totalTasks(),pct=total==0?0:Math.round(done*100f/total);
@@ -108,6 +141,8 @@ public class MainActivity extends Activity {
         Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);
         LinearLayout quick=card();quick.addView(label("MAYA + QUICK ACTIONS",11,MUTED));
         Button maya=button("🎙️  Talk to Maya");maya.setOnClickListener(v->voiceAssistant.start());quick.addView(maya);
+        Button image=button("🖼️  Ask Maya about a photo");image.setOnClickListener(v->openMayaGallery());quick.addView(image);
+        Button camera=button("📷  Ask Maya with camera");camera.setOnClickListener(v->openMayaCamera());quick.addView(camera);
         Button journal=button("📝  Write today's journal");journal.setOnClickListener(v->journalDialog());quick.addView(journal);
         Button remind=button("⏰  Manage reminders");remind.setOnClickListener(v->showReminders());quick.addView(remind);
         content.addView(quick);
