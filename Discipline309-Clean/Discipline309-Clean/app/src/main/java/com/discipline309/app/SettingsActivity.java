@@ -39,6 +39,27 @@ public class SettingsActivity extends Activity {
         ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
         root.addView(ai);
 
+        LinearLayout web=card();web.addView(label("🌐 MAYA WEB SEARCH",11,MUTED));
+        web.addView(label("Give Maya real-time web search for current questions, news, and facts. The key is stored only on this phone.",12,MUTED));
+        EditText webKey=new EditText(this);
+        webKey.setHint("Tavily API key");
+        webKey.setText(getSharedPreferences("maya_web",MODE_PRIVATE).getString("api_key",""));
+        webKey.setSingleLine(true);
+        webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        web.addView(webKey);
+        Button saveWeb=new Button(this);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
+        saveWeb.setOnClickListener(v->{getSharedPreferences("maya_web",MODE_PRIVATE).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();});
+        web.addView(saveWeb);
+        Button testWeb=new Button(this);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
+        testWeb.setOnClickListener(v->{
+            if(!WebSearch.enabled(this)){Toast.makeText(this,"Add a Tavily API key first.",Toast.LENGTH_SHORT).show();return;}
+            Toast.makeText(this,"Searching the web…",Toast.LENGTH_SHORT).show();
+            WebSearch.search(this,"latest technology news",(result)->runOnUiThread(()->Toast.makeText(this,result.isEmpty()?"Web search failed. Check the key/network.":"Web search is working 🌐",Toast.LENGTH_SHORT).show()));
+        });
+        web.addView(testWeb);
+        web.addView(label("Maya searches the web only for current/search-style questions, then uses the results to answer. Never put the API key in GitHub.",11,MUTED));
+        root.addView(web);
+
         LinearLayout customize=card();customize.addView(label("🎨 CUSTOMIZE EXPERIENCE",11,MUTED));
         customize.addView(label("Choose one of 3 complete UI styles. The app restarts its screen when you return.",12,MUTED));
         RadioGroup themes=new RadioGroup(this); themes.setOrientation(RadioGroup.VERTICAL);
