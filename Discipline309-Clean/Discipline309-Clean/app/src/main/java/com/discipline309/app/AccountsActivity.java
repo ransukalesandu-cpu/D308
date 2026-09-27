@@ -14,7 +14,7 @@ public class AccountsActivity extends Activity {
     private LinearLayout root;
     private LinearLayout subList;
     private final Handler refreshHandler=new Handler(Looper.getMainLooper());
-    private final Runnable refreshRunnable=()->{ if(SupabaseAccountManager.loggedIn(this) && "primary".equals(SupabaseAccountManager.role(this))){ refreshLinked(); refreshHandler.postDelayed(refreshRunnable,5000); } };
+    private final Runnable refreshRunnable=new Runnable(){ @Override public void run(){ if(SupabaseAccountManager.loggedIn(AccountsActivity.this) && "primary".equals(SupabaseAccountManager.role(AccountsActivity.this))){ refreshLinked(); refreshHandler.postDelayed(this,5000); } } };
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(5),dp(4),dp(5));return v;}
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(SURFACE);g.setCornerRadius(dp(18));g.setStroke(dp(1),0xFF173D78);l.setBackground(g);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
