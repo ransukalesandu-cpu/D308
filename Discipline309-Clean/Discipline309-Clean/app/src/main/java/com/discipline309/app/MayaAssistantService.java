@@ -67,10 +67,18 @@ public class MayaAssistantService extends Service {
     private void scheduleProactiveCheckIn(){
         if(stopping || handler==null) return;
         handler.removeCallbacksAndMessages(PROACTIVE_TOKEN);
-        handler.postDelayed(PROACTIVE_TOKEN, () -> {
+        handler.postDelayed(() -> {
             if(!stopping && mayaAllowed() && ready && getSharedPreferences("settings",MODE_PRIVATE).getBoolean("auto_speak",true)){
                 if(!listening && !ttsSpeaking){
-                    speak(MayaPredictiveActions.nextSuggestion(this));
+                    String suggestion=MayaPredictiveActions.nextSuggestion(this);
+                    SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
+                    long now=System.currentTimeMillis();
+                    long last=p.getLong("last_spoken_at",0L);
+                    String lastText=p.getString("last_text","");
+                    if(!suggestion.equals(lastText) || now-last>=6L*60L*60L*1000L){
+                        speak(suggestion);
+                        p.edit().putLong("last_spoken_at",now).putString("last_text",suggestion).apply();
+                    }
                 }
             }
             scheduleProactiveCheckIn();
