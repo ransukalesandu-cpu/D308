@@ -71,8 +71,8 @@ public class MayaAI {
 
                 HttpURLConnection c=(HttpURLConnection)new URL(endpoint).openConnection();
                 c.setRequestMethod("POST");
-                c.setConnectTimeout(15000);
-                c.setReadTimeout(30000);
+                c.setConnectTimeout(10000);
+                c.setReadTimeout(20000);
                 c.setDoOutput(true);
                 c.setRequestProperty("Authorization","Bearer "+key);
                 c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
@@ -126,9 +126,13 @@ public class MayaAI {
 
     private static String read(InputStream in)throws Exception{
         if(in==null)return "";
+        final int MAX_BYTES=1024*1024;
         BufferedReader r=new BufferedReader(new InputStreamReader(in,StandardCharsets.UTF_8));
         StringBuilder b=new StringBuilder();String line;
-        while((line=r.readLine())!=null)b.append(line);
+        while((line=r.readLine())!=null){
+            b.append(line);
+            if(b.length()>MAX_BYTES) break;
+        }
         r.close();return b.toString();
     }
 }
