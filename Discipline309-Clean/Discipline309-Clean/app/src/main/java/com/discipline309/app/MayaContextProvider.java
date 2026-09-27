@@ -92,7 +92,7 @@ public final class MayaContextProvider {
         int j=s.indexOf(';',i); if(j<0)j=s.length();
         return s.substring(i,j).trim();
     }
-    private static String safe(String s){return s==null?"":s.replace("\\","/").replace(""","'").replace("\n"," ").replace("\r"," ");}
+    private static String safe(String s){if(s==null)return "";return s.replace("\\","/").replace("\"","'").replace("\n"," ").replace("\r"," ");}
 
     private static int daysFromStart(long startMillis){
         long diff=System.currentTimeMillis()-startMillis;
