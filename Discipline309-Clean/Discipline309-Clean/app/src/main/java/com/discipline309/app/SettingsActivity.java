@@ -4,6 +4,9 @@ import android.app.*;
 import android.content.*;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.view.*;
 import android.widget.*;
@@ -25,6 +28,36 @@ public class SettingsActivity extends Activity {
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=new Button(this);test.setText("🔊  Test AI voice");test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
         LinearLayout coach=card();coach.addView(label("BACKGROUND COACH",11,MUTED));Switch bgCoach=new Switch(this);bgCoach.setText("Funny Sinhala motivation in background");bgCoach.setTextColor(TEXT);bgCoach.setTextSize(15);bgCoach.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));bgCoach.setOnCheckedChangeListener((v,on)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();Intent i=new Intent(this,MotivationService.class);if(on){if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();}else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}});coach.addView(bgCoach);coach.addView(label("Uses your phone's installed Sinhala TTS voice. Android shows a persistent notification while active.",12,MUTED));root.addView(coach);
+
+        LinearLayout maya=card();maya.addView(label("MAYA BACKGROUND ASSISTANT",11,MUTED));
+        Switch bgMaya=new Switch(this);bgMaya.setText("Keep Maya available in background");bgMaya.setTextColor(TEXT);bgMaya.setTextSize(15);
+        bgMaya.setChecked(getSharedPreferences("maya_settings",MODE_PRIVATE).getBoolean("enabled",false));
+        bgMaya.setOnCheckedChangeListener((v,on)->{
+            getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",on).apply();
+            if(on){
+                if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
+                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},3101);
+                    bgMaya.setChecked(false); return;
+                }
+                if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.READ_CONTACTS)!=PackageManager.PERMISSION_GRANTED)
+                    requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},3102);
+                Intent i=new Intent(this,MayaAssistantService.class);
+                if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);
+                Toast.makeText(this,"Maya background assistant ON 🎙️",Toast.LENGTH_SHORT).show();
+            }else{
+                stopService(new Intent(this,MayaAssistantService.class));
+                Toast.makeText(this,"Maya background assistant OFF",Toast.LENGTH_SHORT).show();
+            }
+        });
+        maya.addView(bgMaya);
+        maya.addView(label("Maya uses a visible Android foreground notification while listening. Voice recognition may use mobile data depending on the phone's speech engine.",12,MUTED));
+        Button notifyAccess=new Button(this);notifyAccess.setText("🔔  Allow WhatsApp notification access");notifyAccess.setAllCaps(false);
+        notifyAccess.setOnClickListener(v->{try{startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});
+        maya.addView(notifyAccess);
+        Button dndAccess=new Button(this);dndAccess.setText("🔕  Allow DND control");dndAccess.setAllCaps(false);
+        dndAccess.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});
+        maya.addView(dndAccess);
+        root.addView(maya);
         LinearLayout app=card();app.addView(label("APP",11,MUTED));Switch notifications=new Switch(this);notifications.setText("Notifications");notifications.setTextColor(TEXT);notifications.setTextSize(15);notifications.setChecked(prefs.getBoolean("notifications",true));notifications.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(notifications);
         Button reset=new Button(this);reset.setText("↻  Reset progress");reset.setAllCaps(false);reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Reset progress?").setMessage("This will remove saved discipline progress and alarms.").setNegativeButton("Cancel",null).setPositiveButton("Reset",(d,w)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().clear().apply();Toast.makeText(this,"Progress reset",Toast.LENGTH_SHORT).show();} ).show());app.addView(reset);root.addView(app);
         LinearLayout about=card();about.addView(label("ABOUT 309",11,MUTED));about.addView(label("309 Day Discipline",19,TEXT));about.addView(label("Build discipline. One day at a time.\nVersion 1.1 • Offline-first",13,MUTED));root.addView(about);
