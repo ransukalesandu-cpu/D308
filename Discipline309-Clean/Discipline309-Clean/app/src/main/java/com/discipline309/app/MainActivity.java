@@ -1,320 +1,125 @@
 package com.discipline309.app;
 
 import android.Manifest;
-import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.AlertDialog;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
+import android.app.*;
+import android.content.*;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.provider.Settings;
-import android.view.ViewGroup;
 import android.graphics.drawable.GradientDrawable;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
-import android.widget.TimePicker;
-import android.widget.Toast;
-
+import android.os.*;
+import android.provider.Settings;
+import android.view.*;
+import android.widget.*;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
+import java.util.*;
 
 public class MainActivity extends Activity {
     private static final String PREFS = "discipline";
     private static final String[] TASKS = {
-            "Wake up on time",
-            "Study / learning",
-            "Workout or active recovery",
-            "Eat planned meals",
-            "No-phone block",
-            "Night review + prepare tomorrow"
+            "Wake up on time", "Study / learning", "Workout or active recovery",
+            "Eat planned meals", "No-phone block", "Night review + prepare tomorrow"
     };
+    private static final int BG=0xFF0B0E14, SURFACE=0xFF191D27, TEXT=0xFFF7F8FC, MUTED=0xFFAAB2C3, ACCENT=0xFF63E6BE;
+    private SharedPreferences prefs;
+    private LinearLayout content;
+    private TextView homeStats, homeStreak;
+    private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
+    private TextView label(String s,float size,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
+    private GradientDrawable shape(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
+    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(16),dp(14),dp(16),dp(14));c.setBackground(shape(SURFACE,18));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));c.setLayoutParams(p);return c;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));return b;}
+    private String key(){return new SimpleDateFormat("yyyyMMdd",Locale.US).format(new Date());}
+    private String key(Calendar c){return new SimpleDateFormat("yyyyMMdd",Locale.US).format(c.getTime());}
 
-    private SharedPreferences preferences;
-    private TextView stats;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        preferences = getSharedPreferences(PREFS, MODE_PRIVATE);
-        buildUi();
-
-        if (Build.VERSION.SDK_INT >= 33 &&
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                        != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 7);
-        }
+    @Override protected void onCreate(Bundle b){
+        super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
+        prefs=getSharedPreferences(PREFS,MODE_PRIVATE); buildShell(); showHome();
+        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);
     }
 
-    private TextView text(String value, float size) {
-        TextView view = new TextView(this);
-        view.setText(value);
-        view.setTextColor(Color.WHITE);
-        view.setTextSize(size);
-        view.setPadding(8, 10, 8, 10);
-        return view;
+    private void buildShell(){
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);
+        content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(16),dp(18),dp(10));
+        ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(4),dp(5),dp(4),dp(5));nav.setBackgroundColor(0xFF11151E);
+        String[] names={"⌂\nHome","▥\nProgress","♧\nReminders","⚙\nSettings"};
+        for(int i=0;i<4;i++){final int n=i;Button b=button(names[i]);b.setTextSize(12);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showProgress();else if(n==2)showReminders();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}
+        root.addView(nav);setContentView(root);
     }
 
-    private Button button(String value) {
-        Button button = new Button(this);
-        button.setText(value);
-        return button;
+    private void baseHeader(String title,String sub){
+        content.removeAllViews();
+        TextView t=label(title,26,TEXT);t.setTypeface(null,1);content.addView(t);
+        content.addView(label(sub,13,MUTED));
     }
 
-    private int dp(int v) { return (int)(v * getResources().getDisplayMetrics().density + .5f); }
-
-    private TextView label(String value, float size, int color) {
-        TextView v = new TextView(this);
-        v.setText(value); v.setTextSize(size); v.setTextColor(color);
-        v.setPadding(dp(4), dp(4), dp(4), dp(4)); return v;
+    private void showHome(){
+        baseHeader("309 DAY DISCIPLINE","Build discipline. One day at a time. 🔥");
+        LinearLayout hero=card();hero.addView(label("TARGET",11,MUTED));hero.addView(label("01 AUG 2027",23,TEXT));
+        homeStats=label("",14,0xFFDCE1EA);hero.addView(homeStats);content.addView(hero);
+        LinearLayout st=card();st.addView(label("CURRENT STREAK",11,MUTED));homeStreak=label("",22,TEXT);homeStreak.setTypeface(null,1);st.addView(homeStreak);content.addView(st);
+        TextView sec=label("TODAY'S PLAN",19,TEXT);sec.setTypeface(null,1);sec.setPadding(4,dp(16),4,dp(4));content.addView(sec);
+        for(int i=0;i<TASKS.length;i++){final int idx=i;LinearLayout row=card();CheckBox cb=new CheckBox(this);cb.setText(TASKS[i]);cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(prefs.getBoolean("t"+i+key(),false));cb.setOnCheckedChangeListener((v,c)->{prefs.edit().putBoolean("t"+idx+key(),c).apply();refreshHome();});row.addView(cb);content.addView(row);}
+        Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);
+        LinearLayout actions=card();actions.addView(label("QUICK ACTIONS",11,MUTED));
+        Button r=button("⏰  Manage reminders");r.setOnClickListener(v->showReminders());actions.addView(r);
+        Button a=button("💬  Discipline Assistant");a.setOnClickListener(v->chatDialog());actions.addView(a);content.addView(actions);refreshHome();
     }
 
-    private LinearLayout card() {
-        LinearLayout c = new LinearLayout(this);
-        c.setOrientation(LinearLayout.VERTICAL);
-        c.setPadding(dp(18), dp(14), dp(18), dp(14));
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(Color.rgb(25, 29, 39)); bg.setCornerRadius(dp(18));
-        c.setBackground(bg);
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
-        p.setMargins(0, dp(7), 0, dp(7)); c.setLayoutParams(p);
-        return c;
+    private void refreshHome(){
+        if(homeStats==null)return;int done=countFor(key());int pct=Math.round(done*100f/TASKS.length);long days=Math.max(0,(target().getTimeInMillis()-System.currentTimeMillis())/86400000L);
+        homeStats.setText("Today  "+pct+"%   •   "+done+"/"+TASKS.length+" tasks   •   "+days+" days until target");
+        homeStreak.setText("🔥  "+prefs.getInt("streak",0)+" days   •   🏆 Best "+prefs.getInt("best",0));
     }
 
-    private void buildUi() {
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(18), dp(20), dp(18), dp(28));
-        root.setBackgroundColor(Color.rgb(11, 14, 20));
-        scroll.addView(root); setContentView(scroll);
+    private int countFor(String k){int n=0;for(int i=0;i<TASKS.length;i++)if(prefs.getBoolean("t"+i+k,false))n++;return n;}
+    private Calendar target(){Calendar c=Calendar.getInstance();c.set(2027,Calendar.AUGUST,1,0,0,0);c.set(Calendar.MILLISECOND,0);return c;}
 
-        TextView title = label("309 DAY DISCIPLINE", 27, Color.WHITE);
-        title.setTypeface(null, 1); root.addView(title);
-        root.addView(label("Build discipline. One day at a time.", 14, Color.rgb(170,178,195)));
-
-        LinearLayout hero = card();
-        hero.addView(label("TARGET", 12, Color.rgb(145,155,175)));
-        hero.addView(label("01 AUG 2027", 23, Color.WHITE));
-        stats = label("", 15, Color.rgb(220,225,235));
-        stats.setPadding(4, dp(12), 4, dp(4)); hero.addView(stats);
-        root.addView(hero);
-
-        LinearLayout streak = card();
-        streak.addView(label("🔥  STREAK", 12, Color.rgb(145,155,175)));
-        TextView streakValue = label("", 20, Color.WHITE);
-        streakValue.setTypeface(null,1); streak.setTag(streakValue); streak.addView(streakValue);
-        streak.addView(label("Complete today's plan to keep your streak alive.", 13, Color.rgb(170,178,195)));
-        root.addView(streak);
-
-        TextView section = label("TODAY'S PLAN", 19, Color.WHITE);
-        section.setTypeface(null,1); root.addView(section);
-
-        for (int index = 0; index < TASKS.length; index++) {
-            final int taskIndex = index;
-            LinearLayout row = card();
-            CheckBox cb = new CheckBox(this);
-            cb.setText(TASKS[index]); cb.setTextColor(Color.WHITE); cb.setTextSize(15);
-            cb.setChecked(preferences.getBoolean("t" + index + dateKey(), false));
-            cb.setOnCheckedChangeListener((buttonView, checked) -> {
-                preferences.edit().putBoolean("t" + taskIndex + dateKey(), checked).apply();
-                refreshStats();
-            });
-            row.addView(cb); root.addView(row);
-        }
-
-        Button complete = button("✓  COMPLETE TODAY'S CHALLENGE");
-        complete.setOnClickListener(view -> completeDay()); root.addView(complete);
-
-        LinearLayout actions = card();
-        actions.addView(label("QUICK ACTIONS", 12, Color.rgb(145,155,175)));
-        Button alarms = button("⏰  Alarms & reminders");
-        alarms.setOnClickListener(view -> alarmDialog()); actions.addView(alarms);
-        Button assistant = button("💬  Discipline Assistant");
-        assistant.setOnClickListener(view -> chatDialog()); actions.addView(assistant);
-        Button settings = button("⚙  Settings");
-        settings.setOnClickListener(view -> settingsDialog()); actions.addView(settings);
-        root.addView(actions);
-        refreshStats();
-    }
-    private String dateKey() {
-        return new SimpleDateFormat("yyyyMMdd", Locale.US).format(new Date());
+    private void showProgress(){
+        baseHeader("Progress","See your consistency and recent history.");
+        int today=countFor(key()), total=0, perfect=0;
+        for(int d=0;d<14;d++){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-d);int n=countFor(key(c));total+=n;if(n==TASKS.length)perfect++;}
+        LinearLayout summary=card();summary.addView(label("LAST 14 DAYS",11,MUTED));summary.addView(label(total+" tasks completed",23,TEXT));summary.addView(label(perfect+" complete days",14,MUTED));content.addView(summary);
+        TextView h=label("RECENT ACTIVITY",18,TEXT);h.setTypeface(null,1);content.addView(h);
+        for(int d=0;d<14;d++){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-d);String k=key(c);int n=countFor(k);int pct=Math.round(n*100f/TASKS.length);LinearLayout row=card();row.setOrientation(LinearLayout.HORIZONTAL);TextView date=label(new SimpleDateFormat("EEE, dd MMM",Locale.US).format(c.getTime()),14,TEXT);row.addView(date,new LinearLayout.LayoutParams(0,-2,1));row.addView(label(n==TASKS.length?"✓":n>0?"•":"—",18,n==TASKS.length?ACCENT:MUTED));row.addView(label("  "+pct+"%",13,MUTED));content.addView(row);}
     }
 
-    private void refreshStats() {
-        int completed = 0;
-        for (int index = 0; index < TASKS.length; index++) {
-            if (preferences.getBoolean("t" + index + dateKey(), false)) completed++;
-        }
-        int percentage = Math.round(completed * 100f / TASKS.length);
-        long daysLeft = Math.max(0L, (targetCalendar().getTimeInMillis() - System.currentTimeMillis()) / 86400000L);
-        stats.setText("Today: " + percentage + "%  •  " + completed + "/" + TASKS.length
-                + " tasks\nStreak: " + preferences.getInt("streak", 0)
-                + " 🔥   Best: " + preferences.getInt("best", 0)
-                + " 🏆\nDays until target: " + daysLeft);
+    private void showReminders(){
+        baseHeader("Reminders","Daily alarms that keep your plan on track.");
+        Button add=button("+  ADD DAILY REMINDER");add.setOnClickListener(v->alarmDialog());content.addView(add);
+        TextView h=label("SAVED REMINDERS",18,TEXT);h.setTypeface(null,1);content.addView(h);
+        boolean found=false;
+        for(String k:prefs.getAll().keySet())if(k.startsWith("alarm")){String v=prefs.getString(k,"");String[] p=v.split("\\|",-1);if(p.length==3){found=true;LinearLayout row=card();row.setOrientation(LinearLayout.HORIZONTAL);row.addView(label("🔔  "+(p[0].trim().isEmpty()?"Discipline reminder":p[0]),15,TEXT),new LinearLayout.LayoutParams(0,-2,1));row.addView(label(String.format(Locale.US,"%02d:%02d",Integer.parseInt(p[1]),Integer.parseInt(p[2])),15,ACCENT));content.addView(row);}}
+        if(!found)content.addView(label("No reminders yet. Add your first one above.",14,MUTED));
+        content.addView(label("Tip: Android may ask for notification and exact-alarm permission.",12,MUTED));
     }
 
-    private Calendar targetCalendar() {
-        Calendar target = Calendar.getInstance();
-        target.set(2027, Calendar.AUGUST, 1, 0, 0, 0);
-        target.set(Calendar.MILLISECOND, 0);
-        return target;
+    private void openSettings(){try{startActivity(new Intent(this,SettingsActivity.class));}catch(Exception e){settingsDialog();}}
+    private void completeDay(){
+        String k=key();if(prefs.getBoolean("done"+k,false)){toast("Today is already completed. 🔥");return;}
+        if(countFor(k)!=TASKS.length){toast("Finish all 6 tasks first.");return;}
+        int streak=prefs.getInt("streak",0)+1;int best=Math.max(prefs.getInt("best",0),streak);
+        prefs.edit().putInt("streak",streak).putInt("best",best).putBoolean("done"+k,true).apply();toast("Day completed! 🔥");refreshHome();
     }
 
-    private void completeDay() {
-        for (int index = 0; index < TASKS.length; index++) {
-            if (!preferences.getBoolean("t" + index + dateKey(), false)) {
-                toast("Finish all tasks first.");
-                return;
-            }
-        }
-        int streak = preferences.getInt("streak", 0) + 1;
-        int best = Math.max(preferences.getInt("best", 0), streak);
-        preferences.edit()
-                .putInt("streak", streak)
-                .putInt("best", best)
-                .putBoolean("done" + dateKey(), true)
-                .apply();
-        toast("Day completed! 🔥");
-        refreshStats();
+    private void alarmDialog(){
+        LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(8),0,dp(8),0);
+        EditText name=new EditText(this);name.setHint("Reminder name");l.addView(name);TimePicker p=new TimePicker(this);p.setIs24HourView(true);l.addView(p);
+        new AlertDialog.Builder(this).setTitle("Add daily reminder").setView(l).setPositiveButton("SAVE",(d,w)->{schedule(name.getText().toString(),p.getHour(),p.getMinute());showReminders();toast("Reminder saved");}).setNegativeButton("CANCEL",null).show();
     }
-
-    private void alarmDialog() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        TimePicker picker = new TimePicker(this);
-        picker.setIs24HourView(true);
-        EditText name = new EditText(this);
-        name.setHint("Alarm name");
-        layout.addView(name);
-        layout.addView(picker);
-
-        new AlertDialog.Builder(this)
-                .setTitle("Add daily alarm")
-                .setView(layout)
-                .setPositiveButton("SAVE", (dialog, which) -> {
-                    schedule(this, name.getText().toString(), picker.getHour(), picker.getMinute());
-                    toast("Daily alarm saved");
-                })
-                .setNegativeButton("CANCEL", null)
-                .show();
+    private void schedule(String name,int hour,int minute){
+        int id=(name+hour+minute).hashCode();Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,hour);c.set(Calendar.MINUTE,minute);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);if(c.getTimeInMillis()<=System.currentTimeMillis())c.add(Calendar.DAY_OF_YEAR,1);
+        scheduleStatic(this,name,hour,minute,id,c.getTimeInMillis());prefs.edit().putString("alarm"+id,name+"|"+hour+"|"+minute).apply();
     }
-
-    private void schedule(Context context, String name, int hour, int minute) {
-        int id = (name + hour + minute).hashCode();
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, hour);
-        calendar.set(Calendar.MINUTE, minute);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        scheduleStatic(context, name, hour, minute, id, calendar.getTimeInMillis());
-        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
-                .putString("alarm" + id, name + "|" + hour + "|" + minute)
-                .apply();
+    public static void scheduleAll(Context context){SharedPreferences p=context.getSharedPreferences(PREFS,MODE_PRIVATE);for(String k:p.getAll().keySet())if(k.startsWith("alarm")){String v=p.getString(k,null);if(v==null)continue;String[] a=v.split("\\|",-1);if(a.length==3)try{scheduleStatic(context,a[0],Integer.parseInt(a[1]),Integer.parseInt(a[2]),k.substring(5).hashCode(),-1);}catch(Exception ignored){}}}
+    private static void scheduleStatic(Context c,String name,int h,int m,int id,long requested){
+        Calendar x=Calendar.getInstance();if(requested>0)x.setTimeInMillis(requested);else{x.set(Calendar.HOUR_OF_DAY,h);x.set(Calendar.MINUTE,m);x.set(Calendar.SECOND,0);x.set(Calendar.MILLISECOND,0);if(x.getTimeInMillis()<=System.currentTimeMillis())x.add(Calendar.DAY_OF_YEAR,1);}
+        AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am==null)return;if(Build.VERSION.SDK_INT>=31&&!am.canScheduleExactAlarms())return;
+        Intent in=new Intent(c,AlarmReceiver.class);in.putExtra("title",name==null||name.trim().isEmpty()?"Discipline reminder":name);in.putExtra("msg","It's time. Start your next task. 🔥");
+        PendingIntent pi=PendingIntent.getBroadcast(c,id,in,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,x.getTimeInMillis(),pi);
     }
-
-    public static void scheduleAll(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
-        for (String key : prefs.getAll().keySet()) {
-            if (!key.startsWith("alarm")) continue;
-            String value = prefs.getString(key, null);
-            if (value == null) continue;
-            String[] parts = value.split("\\|", -1);
-            if (parts.length != 3) continue;
-            try {
-                int hour = Integer.parseInt(parts[1]);
-                int minute = Integer.parseInt(parts[2]);
-                int id = key.substring(5).hashCode();
-                scheduleStatic(context, parts[0], hour, minute, id, -1L);
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    private static void scheduleStatic(Context context, String name, int hour, int minute,
-                                       int id, long requestedTime) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, hour);
-        calendar.set(Calendar.MINUTE, minute);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-        if (requestedTime > 0) {
-            calendar.setTimeInMillis(requestedTime);
-        } else if (calendar.getTimeInMillis() <= System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) return;
-        if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) return;
-
-        Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra("title", name == null || name.trim().isEmpty() ? "Discipline reminder" : name);
-        intent.putExtra("msg", "නැගිටින්න! දැන්ම වැඩේ පටන් ගන්න. Do it! Do it! 🔥");
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context, id, intent,
-                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
-    }
-
-    private void chatDialog() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        TextView chat = text("Assistant: ආයුබෝවන්! අද වැඩේ පටන් ගමු. 💪\n", 15);
-        EditText input = new EditText(this);
-        input.setHint("සිංහලෙන් හෝ English වලින් type කරන්න...");
-        layout.addView(chat);
-        layout.addView(input);
-
-        new AlertDialog.Builder(this)
-                .setTitle("AI Discipline Assistant")
-                .setView(layout)
-                .setPositiveButton("SEND", (dialog, which) -> {
-                    String question = input.getText().toString();
-                    chat.setText("Assistant: " + localReply(question));
-                })
-                .setNegativeButton("CLOSE", null)
-                .show();
-    }
-
-    private String localReply(String question) {
-        String q = question.toLowerCase(Locale.ROOT);
-        if (q.contains("නින්ද") || q.contains("sleep")) {
-            return "දැන් phone එක පැත්තකින් තියලා නිදාගන්න. හෙට වෙලාවට නැගිටින්න. 💪";
-        }
-        if (q.contains("බැහැ") || q.contains("can't")) {
-            return "එකපාරටම හැමදේම කරන්න ඕනේ නෑ. එක task එකක් දැන්ම පටන් ගන්න. Do it! 🔥";
-        }
-        return "හරි. දැන්ම පොඩි step එකක් ගන්න. ඔයාට මේක complete කරන්න පුළුවන්. Do it! Do it! 🔥";
-    }
-
-    private void settingsDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Voice & permissions")
-                .setMessage("Sinhala voice depends on the Text-to-Speech voice installed on your Android device.\n\nFor reliable alarms, allow Notifications and Exact alarms when Android asks.\n\nThe assistant works offline with built-in coaching.")
-                .setPositiveButton("OK", null)
-                .show();
-    }
-
-    private void toast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
+    private void chatDialog(){EditText input=new EditText(this);input.setHint("Ask in Sinhala or English...");new AlertDialog.Builder(this).setTitle("💬 Discipline Assistant").setMessage("I'm here to help you start your next step.").setView(input).setPositiveButton("SEND",(d,w)->toast(localReply(input.getText().toString()))).setNegativeButton("CLOSE",null).show();}
+    private String localReply(String q){q=q.toLowerCase(Locale.ROOT);if(q.contains("sleep")||q.contains("නින්ද"))return"Put the phone away and get ready for sleep. 🌙";if(q.contains("can't")||q.contains("බැහැ"))return"Start with one small task. 🔥";return"Start with one small step now. You've got this. 🔥";}
+    private void settingsDialog(){new AlertDialog.Builder(this).setTitle("Settings").setMessage("Open Settings from the bottom navigation to manage voice, notifications and progress.").setPositiveButton("OK",null).show();}
+    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
 }
