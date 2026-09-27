@@ -65,6 +65,15 @@ public class MainActivity extends Activity {
         content.removeAllViews();
         TextView t=label(title,26,TEXT);t.setTypeface(null,1);content.addView(t);
         content.addView(label(sub,13,MUTED));
+        ImageView disciplineIcon=new ImageView(this);
+        disciplineIcon.setImageResource(com.discipline309.app.R.drawable.ic_discipline);
+        disciplineIcon.setContentDescription("Discipline icon");
+        disciplineIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        LinearLayout.LayoutParams iconParams=new LinearLayout.LayoutParams(dp(72),dp(72));
+        iconParams.gravity=Gravity.CENTER_HORIZONTAL;
+        iconParams.topMargin=dp(8);
+        iconParams.bottomMargin=dp(6);
+        content.addView(disciplineIcon,iconParams);
     }
 
     private void showHome(){
