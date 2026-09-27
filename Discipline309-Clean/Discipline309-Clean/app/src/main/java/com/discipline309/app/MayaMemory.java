@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONException;
+import java.util.Locale;
 
 public class MayaMemory {
     private static final String PREFS = "maya_memory";
@@ -27,6 +28,29 @@ public class MayaMemory {
         old.put(fact);
         prefs.edit().putString(KEY, old.toString()).apply();
     }
+
+    public String relevant(String query) {
+        JSONArray a = read();
+        if (a.length() == 0) return "";
+        String q = query == null ? "" : query.toLowerCase(Locale.ROOT).trim();
+        if (q.isEmpty()) return all();
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < a.length(); i++) {
+            String fact = a.optString(i);
+            String f = fact.toLowerCase(Locale.ROOT);
+            boolean hit = false;
+            for (String token : q.split("\\\\s+")) {
+                if (token.length() >= 3 && f.contains(token)) { hit = true; break; }
+            }
+            if (hit) {
+                if (out.length() > 0) out.append("\\n");
+                out.append("• ").append(fact);
+            }
+        }
+        return out.toString();
+    }
+
+    public int count() { return read().length(); }
 
     public String all() {
         JSONArray a = read();
