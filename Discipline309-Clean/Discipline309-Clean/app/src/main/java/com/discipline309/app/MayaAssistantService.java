@@ -18,6 +18,13 @@ import android.speech.tts.TextToSpeech;
 import java.util.*;
 
 public class MayaAssistantService extends Service {
+    // Wake-word architecture:
+    // This service currently uses Android SpeechRecognizer for command capture.
+    // A provider-independent WakeWordEngine hook lets us add Porcupine/openWakeWord
+    // later without changing the command-routing code.
+    private boolean wakeWordEnabled = true;
+    private boolean wakeWordDetected = false;
+
     private static final int ID=3099;
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
