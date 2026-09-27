@@ -287,9 +287,7 @@ public class MayaAssistantService extends Service {
         else speak(text);
     }
 
-    private void speak(String s){
-        if(tts!=null&&ready) tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"maya_"+System.currentTimeMillis());
-    }
+    private void speak(String s){if(tts!=null&&ready){SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);if(!p.getBoolean("auto_speak",true))return;float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;tts.setSpeechRate(rate);tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"maya_"+System.currentTimeMillis());}}
     private void createChannel(){
         if(Build.VERSION.SDK_INT>=26){
             NotificationChannel ch=new NotificationChannel("maya_assistant","Maya Assistant",NotificationManager.IMPORTANCE_LOW);
