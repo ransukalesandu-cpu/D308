@@ -14,6 +14,8 @@ import android.widget.EditText;
 import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Locale;
+import android.os.Handler;
+import android.os.Looper;
 
 public class VoiceAssistant {
     public static final String ASSISTANT_NAME = "Maya";
@@ -108,7 +110,7 @@ public class VoiceAssistant {
             final String userQuestion = question;
             String memory = activity.getSharedPreferences("maya_memory", 0).getString("items", "[]");
             String personality = sweet ? "sweet/caring" : cute ? "cute" : funny ? "funny" : "normal";
-            MayaAI.ask(activity, userQuestion, "Saved memory: " + memory, personality, this::speak);
+            MayaAI.ask(activity, userQuestion, "Saved memory: " + memory, personality, reply -> new Handler(Looper.getMainLooper()).post(() -> speak(reply)));
             return;
         }
         speak(reply);
@@ -116,6 +118,11 @@ public class VoiceAssistant {
 
     private void speak(String text) {
         if (tts == null) return;
+        android.content.SharedPreferences p=activity.getSharedPreferences("settings",0);
+        if(!p.getBoolean("auto_speak",true)) return;
+        float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
+        tts.setLanguage(new Locale("si","LK"));
+        tts.setSpeechRate(rate);
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis());
     }
 
