@@ -157,7 +157,23 @@ public class VoiceAssistant {
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
         tts.setLanguage(new Locale("si","LK"));
         tts.setSpeechRate(rate);
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis());
+        String safe=text==null?"":text.trim();
+        if(safe.isEmpty()) return;
+        tts.speak(safe, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis());
+    }
+
+    private String naturalSinhala(String text) {
+        if(text==null || text.trim().isEmpty()) return "හරි 😄 කියන්න, මං අහගෙන ඉන්නවා.";
+        String s=text.trim();
+        s=s.replace("Today's mission:", "අද mission එක:");
+        s=s.replace("You have ", "ඔයාට දැනට ");
+        s=s.replace(" XP, Level ", " XP තියෙනවා, Level ");
+        s=s.replace("Current streak: ", "දැනට streak එක ");
+        s=s.replace(" days. Best streak: ", " දවස්. හොඳම streak එක ");
+        s=s.replace("You're on Day ", "ඔයා දැන් Day ");
+        s=s.replace(" of 309. ", " / 309. ");
+        s=s.replace(" days remaining.", " දවස් ඉතුරුයි.");
+        return s;
     }
 
     public void destroy() {
