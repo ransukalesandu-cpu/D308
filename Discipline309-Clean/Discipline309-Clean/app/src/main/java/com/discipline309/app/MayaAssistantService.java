@@ -99,8 +99,17 @@ public class MayaAssistantService extends Service {
         }else if(q.contains("motivat")||q.contains("වැඩ")||q.contains("බැහැ")){
             speak(modeReply("හරි, පොඩි task එකක් දැන්ම පටන් ගමු. 🔥","හරි hero 😂 excuses වලට අද නිවාඩු! පටන් ගමු. 🔥","හරි, අමාරු නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛"));
         }else{
-            speak("හරි 😄 මට apps open කරන්න, call screen, DND, notifications, torch, volume, music වගේ phone actions කරන්න කියන්න.");
+            askAI(s);
         }
+    }
+
+    private void askAI(String userText){
+        String all=memory==null?"":memory.all();
+        SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
+        String personality=p.getBoolean("mode_sweet",false)?"sweet/caring":
+            p.getBoolean("mode_cute",false)?"cute":
+            p.getBoolean("mode_funny",true)?"funny":"normal";
+        MayaAI.ask(this,userText,all,personality,reply->handler.post(()->speak(reply)));
     }
 
     private boolean isMemoryCommand(String q){
