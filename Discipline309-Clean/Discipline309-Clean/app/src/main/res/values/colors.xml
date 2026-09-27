@@ -1,1 +1,8 @@
-<resources><color name="bg">#0D0F14</color><color name="card">#171A22</color><color name="accent">#62D99A</color><color name="text">#F5F7FB</color><color name="muted">#9BA3B2</color></resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="discipline_bg">#0B1020</color>
+    <color name="discipline_surface">#151C32</color>
+    <color name="discipline_accent">#7C5CFF</color>
+    <color name="discipline_text">#FFFFFF</color>
+    <color name="discipline_muted">#B8C0D9</color>
+</resources>
