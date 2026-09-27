@@ -61,7 +61,7 @@ public class MayaAssistantService extends Service {
         try{
             wakeWordAdapter=new OpenWakeWordAdapter(
                 this,
-                () -> handler.post(this::onMayaWakeWord),
+                () -> { handler.post(this::onMayaWakeWord); },
                 error -> handler.post(() -> {
                     realWakeWordActive=false;
                     // Keep Maya usable if the bundled ONNX engine cannot initialize.
@@ -171,7 +171,7 @@ public class MayaAssistantService extends Service {
         }else if(q.contains("app settings")||q.contains("application settings")){
             openSystemSettings(Settings.ACTION_APPLICATION_SETTINGS,"App settings");
         }else if(q.contains("notification settings")){
-            openSystemSettings(Settings.ACTION_NOTIFICATION_SETTINGS,"Notification settings");
+            openSystemSettings(Settings.ACTION_APP_NOTIFICATION_SETTINGS,"Notification settings");
         }else if(q.contains("calendar")||q.contains("schedule")||q.contains("කැලැන්ඩර්")||q.contains("event")){
             calendarEvent(q);
         }else if(q.contains("remind")||q.contains("reminder")||q.contains("මතක් කරන්න")){
