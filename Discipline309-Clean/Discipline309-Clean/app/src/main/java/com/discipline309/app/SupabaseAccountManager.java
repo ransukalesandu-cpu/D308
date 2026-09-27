@@ -19,23 +19,21 @@ public final class SupabaseAccountManager {
     private static final String URL="https://ohyhoixzpenuodeqlnzi.supabase.co";
     private static final String KEY="sb_publishable_2d3twySH_g0xQtsqVniOxA_1McxPbje";
     private static final String PREF="supabase_account";
+    private static final String LAST_SNAPSHOT="progress_last_sync_snapshot";
+    private static final String LAST_SYNC_AT="progress_last_sync_at";
+    private static final String CONFLICT_SNAPSHOT="progress_last_conflict_snapshot";
     private static final ExecutorService IO=Executors.newCachedThreadPool();
     public interface Callback { void done(boolean ok,String message); }
 
     private static SharedPreferences p(Context c){
         try{
-            MasterKey masterKey=new MasterKey.Builder(c)
-                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                    .build();
-            SharedPreferences secure=EncryptedSharedPreferences.create(
-                    c,PREF,masterKey,
+            MasterKey masterKey=new MasterKey.Builder(c).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build();
+            SharedPreferences secure=EncryptedSharedPreferences.create(c,PREF,masterKey,
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
             migrateLegacySession(c,secure);
             return secure;
-        }catch(Exception e){
-            throw new IllegalStateException("Secure account storage unavailable",e);
-        }
+        }catch(Exception e){throw new IllegalStateException("Secure account storage unavailable",e);}
     }
 
     private static void migrateLegacySession(Context c,SharedPreferences secure){
@@ -64,27 +62,20 @@ public final class SupabaseAccountManager {
     }
 
     public static void signUp(Context c,String email,String password,Callback cb){
-        IO.execute(()->{
-            try{
-                JSONObject body=new JSONObject().put("email",email).put("password",password);
-                JSONObject r=request("POST","/auth/v1/signup",body,null);
-                if(r.optString("access_token","").isEmpty()) cb.done(true,"Account created. Verify your email if required, then sign in.");
-                else {saveSession(c,r);cb.done(true,"Account created and signed in.");}
-            }catch(Exception e){cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            JSONObject body=new JSONObject().put("email",email).put("password",password);
+            JSONObject r=request("POST","/auth/v1/signup",body,null);
+            if(r.optString("access_token","").isEmpty()) cb.done(true,"Account created. Verify your email if required, then sign in.");
+            else {saveSession(c,r);cb.done(true,"Account created and signed in.");}
+        }catch(Exception e){cb.done(false,errorMessage(e));}});
     }
 
     public static void signIn(Context c,String email,String password,Callback cb){
-        IO.execute(()->{
-            try{
-                JSONObject body=new JSONObject().put("email",email).put("password",password);
-                JSONObject r=request("POST","/auth/v1/token?grant_type=password",body,null);
-                saveSession(c,r);
-                loadExistingProfile(c);
-                loadPermissions(c);
-                cb.done(true,"Signed in.");
-            }catch(Exception e){cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            JSONObject body=new JSONObject().put("email",email).put("password",password);
+            JSONObject r=request("POST","/auth/v1/token?grant_type=password",body,null);
+            saveSession(c,r);loadExistingProfile(c);loadPermissions(c);cb.done(true,"Signed in.");
+        }catch(Exception e){cb.done(false,errorMessage(e));}});
     }
 
     public static void createPrimaryProfile(Context c,String name,Callback cb){
@@ -92,87 +83,110 @@ public final class SupabaseAccountManager {
     }
 
     public static void joinInvite(Context c,String code,Callback cb){
-        IO.execute(()->{
-            try{
-                String primaryId=rpcText("consume_account_invite",new JSONObject().put("invite_code",code.trim().toUpperCase(Locale.US)),c);
-                p(c).edit().putString("role","sub").putString("parent_id",primaryId).apply();
-                loadPermissions(c);
-                cb.done(true,"Joined the Primary account.");
-            }catch(Exception e){cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            String primaryId=rpcText("consume_account_invite",new JSONObject().put("invite_code",code.trim().toUpperCase(Locale.US)),c);
+            p(c).edit().putString("role","sub").putString("parent_id",primaryId).apply();
+            loadPermissions(c);cb.done(true,"Joined the Primary account.");
+        }catch(Exception e){cb.done(false,errorMessage(e));}});
     }
 
     public static void createInvite(Context c,Callback cb){
-        IO.execute(()->{
-            try{
-                String uid=userId(c); if(uid.isEmpty()||!"primary".equals(role(c)))throw new IOException("Primary account required.");
-                String code=randomCode();
-                request("POST","/rest/v1/account_invites",new JSONObject().put("primary_id",uid).put("code",code),c);
-                cb.done(true,code);
-            }catch(Exception e){cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            String uid=userId(c); if(uid.isEmpty()||!"primary".equals(role(c)))throw new IOException("Primary account required.");
+            String code=randomCode();
+            request("POST","/rest/v1/account_invites",new JSONObject().put("primary_id",uid).put("code",code),c);
+            cb.done(true,code);
+        }catch(Exception e){cb.done(false,errorMessage(e));}});
     }
 
     public static void loadLinked(Context c,Callback cb){
-        IO.execute(()->{
-            try{
-                if(!loggedIn(c)||!"primary".equals(role(c)))throw new IOException("Primary account required.");
-                String uid=userId(c);
-                JSONArray profiles=requestArray("GET","/rest/v1/profiles?parent_id=eq."+URLEncoder.encode(uid,"UTF-8")+"&role=eq.sub&select=id,display_name,role,created_at",c);
-                JSONArray out=new JSONArray();
-                for(int i=0;i<profiles.length();i++){
-                    JSONObject prof=profiles.getJSONObject(i),item=new JSONObject(prof.toString());
-                    String id=prof.optString("id");
-                    JSONArray rows=requestArray("GET","/rest/v1/discipline_progress?user_id=eq."+URLEncoder.encode(id,"UTF-8")+"&select=snapshot,updated_at",c);
-                    JSONArray perms=requestArray("GET","/rest/v1/sub_permissions?sub_user_id=eq."+URLEncoder.encode(id,"UTF-8")+"&select=can_view_progress,can_edit_habits,can_edit_mission,can_reset_progress,can_use_maya,can_access_settings,can_sync_progress,can_manage_account,updated_at",c);
-                    if(rows.length()>0){JSONObject row=rows.getJSONObject(0);item.put("snapshot",row.optJSONObject("snapshot"));item.put("updated_at",row.optString("updated_at"));}
-                    if(perms.length()>0)item.put("permissions",perms.getJSONObject(0));
-                    out.put(item);
-                }
-                cb.done(true,out.toString());
-            }catch(Exception e){cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            if(!loggedIn(c)||!"primary".equals(role(c)))throw new IOException("Primary account required.");
+            String uid=userId(c);
+            JSONArray profiles=requestArray("GET","/rest/v1/profiles?parent_id=eq."+URLEncoder.encode(uid,"UTF-8")+"&role=eq.sub&select=id,display_name,role,created_at",c);
+            JSONArray out=new JSONArray();
+            for(int i=0;i<profiles.length();i++){
+                JSONObject prof=profiles.getJSONObject(i),item=new JSONObject(prof.toString());
+                String id=prof.optString("id");
+                JSONArray rows=requestArray("GET","/rest/v1/discipline_progress?user_id=eq."+URLEncoder.encode(id,"UTF-8")+"&select=snapshot,updated_at",c);
+                JSONArray perms=requestArray("GET","/rest/v1/sub_permissions?sub_user_id=eq."+URLEncoder.encode(id,"UTF-8")+"&select=can_view_progress,can_edit_habits,can_edit_mission,can_reset_progress,can_use_maya,can_access_settings,can_sync_progress,can_manage_account,updated_at",c);
+                if(rows.length()>0){JSONObject row=rows.getJSONObject(0);item.put("snapshot",row.optJSONObject("snapshot"));item.put("updated_at",row.optString("updated_at"));}
+                if(perms.length()>0)item.put("permissions",perms.getJSONObject(0));
+                out.put(item);
+            }
+            cb.done(true,out.toString());
+        }catch(Exception e){cb.done(false,errorMessage(e));}});
     }
 
     public static void setPermission(Context c,String subId,String column,boolean value,Callback cb){
         final Set<String> allowed=new HashSet<>(Arrays.asList("can_view_progress","can_edit_habits","can_edit_mission","can_reset_progress","can_use_maya","can_access_settings","can_sync_progress","can_manage_account"));
         if(!allowed.contains(column)){cb.done(false,"Invalid permission.");return;}
-        IO.execute(()->{
-            try{
-                JSONObject body=new JSONObject().put("sub_user_id",subId).put(column,value);
-                request("POST","/rest/v1/sub_permissions?on_conflict=sub_user_id",body,c,"resolution=merge-duplicates,return=minimal");
-                cb.done(true,"Permission updated.");
-            }catch(Exception e){cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            JSONObject body=new JSONObject().put("sub_user_id",subId).put(column,value);
+            request("POST","/rest/v1/sub_permissions?on_conflict=sub_user_id",body,c,"resolution=merge-duplicates,return=minimal");
+            cb.done(true,"Permission updated.");
+        }catch(Exception e){cb.done(false,errorMessage(e));}});
     }
 
     public static void loadPermissions(Context c){
         if(!loggedIn(c)||!"sub".equals(role(c)))return;
-        IO.execute(()->{
-            try{
-                JSONArray a=requestArray("GET","/rest/v1/sub_permissions?sub_user_id=eq."+URLEncoder.encode(userId(c),"UTF-8")+"&select=can_view_progress,can_edit_habits,can_edit_mission,can_reset_progress,can_use_maya,can_access_settings,can_sync_progress,can_manage_account",c);
-                if(a.length()>0){
-                    JSONObject x=a.getJSONObject(0);SharedPreferences.Editor e=p(c).edit();
-                    Iterator<String> it=x.keys();while(it.hasNext()){String k=it.next();if(x.opt(k) instanceof Boolean)e.putBoolean(k,x.optBoolean(k));}e.apply();
-                }
-            }catch(Exception ignored){}
-        });
+        IO.execute(()->{try{
+            JSONArray a=requestArray("GET","/rest/v1/sub_permissions?sub_user_id=eq."+URLEncoder.encode(userId(c),"UTF-8")+"&select=can_view_progress,can_edit_habits,can_edit_mission,can_reset_progress,can_use_maya,can_access_settings,can_sync_progress,can_manage_account",c);
+            if(a.length()>0){
+                JSONObject x=a.getJSONObject(0);SharedPreferences.Editor e=p(c).edit();
+                Iterator<String> it=x.keys();while(it.hasNext()){String k=it.next();if(x.opt(k) instanceof Boolean)e.putBoolean(k,x.optBoolean(k));}e.apply();
+            }
+        }catch(Exception ignored){}}); 
     }
 
     public static void syncLocalProgress(Context c,Callback cb){
         if(!loggedIn(c)){if(cb!=null)cb.done(false,"Not signed in.");return;}
         if(!can(c,"can_sync_progress")){if(cb!=null)cb.done(false,"Primary disabled progress sync.");return;}
-        IO.execute(()->{
-            try{
-                JSONObject s=buildSnapshot(c);
-                JSONObject body=new JSONObject().put("user_id",userId(c)).put("snapshot",s).put("updated_at",new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).format(new Date()));
-                request("POST","/rest/v1/discipline_progress?on_conflict=user_id",body,c,"resolution=merge-duplicates,return=minimal");
-                if(cb!=null)cb.done(true,"Progress synced.");
-            }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}
-        });
+        IO.execute(()->{try{
+            JSONObject local=buildSnapshot(c);
+            String localText=local.toString();
+            SharedPreferences prefs=p(c);
+            String baseline=prefs.getString(LAST_SNAPSHOT,"");
+            long lastSync=prefs.getLong(LAST_SYNC_AT,0L);
+
+            JSONArray rows=requestArray("GET","/rest/v1/discipline_progress?user_id=eq."+URLEncoder.encode(userId(c),"UTF-8")+"&select=snapshot,updated_at",c);
+            JSONObject remote=rows.length()>0?rows.getJSONObject(0):null;
+            String remoteText=remote==null||remote.optJSONObject("snapshot")==null?"":remote.optJSONObject("snapshot").toString();
+            long remoteAt=parseIsoMillis(remote==null?"":remote.optString("updated_at"));
+
+            boolean localChanged=!baseline.isEmpty()&&!localText.equals(baseline);
+            boolean remoteChanged=!baseline.isEmpty()&&!remoteText.equals(baseline);
+            boolean conflict=localChanged&&remoteChanged&&remoteAt>lastSync;
+
+            if(conflict){
+                prefs.edit().putString(CONFLICT_SNAPSHOT,remoteText).apply();
+            }
+
+            String now=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).format(new Date());
+            JSONObject body=new JSONObject().put("user_id",userId(c)).put("snapshot",local).put("updated_at",now);
+            request("POST","/rest/v1/discipline_progress?on_conflict=user_id",body,c,"resolution=merge-duplicates,return=minimal");
+
+            prefs.edit().putString(LAST_SNAPSHOT,localText).putLong(LAST_SYNC_AT,System.currentTimeMillis()).apply();
+
+            if(cb!=null)cb.done(true,conflict
+                    ?"Progress synced. A newer remote version was detected and backed up locally before using this device's changes."
+                    :"Progress synced.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
+    public static String lastConflictSnapshot(Context c){return p(c).getString(CONFLICT_SNAPSHOT,"");}
+    public static void clearLastConflict(Context c){p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}
+
     public static void signOut(Context c){p(c).edit().clear().apply();}
+
+    private static long parseIsoMillis(String value){
+        if(value==null||value.isEmpty())return 0L;
+        try{return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX",Locale.US).parse(value).getTime();}
+        catch(Exception ignored){}
+        try{return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).parse(value).getTime();}
+        catch(Exception ignored){}
+        return 0L;
+    }
 
     private static void loadExistingProfile(Context c)throws Exception{
         JSONArray a=requestArray("GET","/rest/v1/profiles?id=eq."+URLEncoder.encode(userId(c),"UTF-8")+"&select=id,display_name,role,parent_id",c);
