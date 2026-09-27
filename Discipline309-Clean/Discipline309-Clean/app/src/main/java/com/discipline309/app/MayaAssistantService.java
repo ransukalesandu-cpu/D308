@@ -54,10 +54,27 @@ public class MayaAssistantService extends Service {
         handler=new Handler(Looper.getMainLooper());
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
         handler.postDelayed(this::startWakeWord,700);
+        handler.postDelayed(this::scheduleProactiveCheckIn,2500);
     }
 
     private boolean mayaAllowed(){
         return !SupabaseAccountManager.loggedIn(this) || SupabaseAccountManager.can(this,"can_use_maya");
+    }
+
+    private static final long PROACTIVE_INTERVAL_MS=2L*60L*60L*1000L;
+    private final Object PROACTIVE_TOKEN=new Object();
+
+    private void scheduleProactiveCheckIn(){
+        if(stopping || handler==null) return;
+        handler.removeCallbacksAndMessages(PROACTIVE_TOKEN);
+        handler.postDelayed(PROACTIVE_TOKEN, () -> {
+            if(!stopping && mayaAllowed() && ready && getSharedPreferences("settings",MODE_PRIVATE).getBoolean("auto_speak",true)){
+                if(!listening && !ttsSpeaking){
+                    speak(MayaPredictiveActions.nextSuggestion(this));
+                }
+            }
+            scheduleProactiveCheckIn();
+        }, PROACTIVE_INTERVAL_MS);
     }
 
     private void startWakeWord(){
