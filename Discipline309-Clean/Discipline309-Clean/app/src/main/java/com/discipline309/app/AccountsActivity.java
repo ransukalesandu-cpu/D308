@@ -101,15 +101,15 @@ public class AccountsActivity extends Activity {
             c.addView(label("Today: "+s.optInt("todayTasks",0)+"/"+s.optInt("totalTasks",0)+" tasks",12,MUTED));
             if(!s.optString("todayMission","").isEmpty())c.addView(label("Mission: "+s.optString("todayMission"),12,MUTED));
             c.addView(label("Last sync: "+x.optString("updated_at","unknown"),10,MUTED));
-            addPermissionSwitch(c,x,"can_view_progress","View progress");
-            addPermissionSwitch(c,x,"can_edit_habits","Edit habits");
-            addPermissionSwitch(c,x,"can_edit_mission","Edit mission");
-            addPermissionSwitch(c,x,"can_reset_progress","Reset progress");
-            addPermissionSwitch(c,x,"can_use_maya","Use Maya");
-            addPermissionSwitch(c,x,"can_access_settings","Access settings");
-            addPermissionSwitch(c,x,"can_sync_progress","Cloud sync");
-            addPermissionSwitch(c,x,"can_manage_account","Manage account");
         }
+        addPermissionSwitch(c,x,"can_view_progress","View progress");
+        addPermissionSwitch(c,x,"can_edit_habits","Edit habits");
+        addPermissionSwitch(c,x,"can_edit_mission","Edit mission");
+        addPermissionSwitch(c,x,"can_reset_progress","Reset progress");
+        addPermissionSwitch(c,x,"can_use_maya","Use Maya");
+        addPermissionSwitch(c,x,"can_access_settings","Access settings");
+        addPermissionSwitch(c,x,"can_sync_progress","Cloud sync");
+        addPermissionSwitch(c,x,"can_manage_account","Manage account");
         list.addView(c);
     }
     private void addPermissionSwitch(LinearLayout card,JSONObject x,String key,String title){
