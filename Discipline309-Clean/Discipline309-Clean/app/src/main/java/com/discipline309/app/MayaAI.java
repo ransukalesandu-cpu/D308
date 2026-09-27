@@ -34,7 +34,12 @@ public class MayaAI {
                     "Do not ask for or store passwords, OTPs, PINs, card numbers, or other secrets. " +
                     "The user may be a teenager, so keep advice age-appropriate and safe. " +
                     "Personality mode: "+personality+". " +
-                    "Saved ordinary memory (use only when relevant): "+memoryText);
+                    "The LIVE APP STATE below is authoritative for the user's current discipline progress. " +
+                    "Use it when answering questions about day number, remaining days, tasks, mission, mission completion, streaks, XP, level, milestones, achievements, or journal. " +
+                    "Never invent a number when live state provides it. If the user asks for something the state does not contain, say so briefly. " +
+                    "If asked for today's mission, give the exact mission from live state. " +
+                    "If asked how they are doing, summarize the actual state and give one practical next step. " +
+                    "LIVE APP STATE: "+memoryText);
                 messages.put(system);
 
                 JSONObject user=new JSONObject();
