@@ -24,6 +24,8 @@ public class MayaAssistantService extends Service {
     // later without changing the command-routing code.
     private boolean wakeWordEnabled = true;
     private boolean wakeWordDetected = false;
+    private boolean realWakeWordActive = false;
+    private OpenWakeWordAdapter wakeWordAdapter;
 
     private static final int ID=3099;
     private SpeechRecognizer recognizer;
@@ -46,7 +48,39 @@ public class MayaAssistantService extends Service {
         startForeground(ID,n);
         handler=new Handler(Looper.getMainLooper());
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
-        handler.postDelayed(this::listen,700);
+        handler.postDelayed(this::startWakeWord,700);
+    }
+
+    private void startWakeWord(){
+        if(stopping || !wakeWordEnabled) return;
+        if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
+            speak("Microphone permission එක allow කරන්න.");
+            return;
+        }
+        try{
+            wakeWordAdapter=new OpenWakeWordAdapter(
+                this,
+                () -> handler.post(this::onMayaWakeWord),
+                error -> handler.post(() -> {
+                    realWakeWordActive=false;
+                    // Keep Maya usable if the bundled ONNX engine cannot initialize.
+                    listen();
+                })
+            );
+            wakeWordAdapter.start();
+        }catch(Exception e){
+            realWakeWordActive=false;
+            listen();
+        }
+    }
+
+    private void onMayaWakeWord(){
+        if(stopping) return;
+        wakeWordDetected=true;
+        realWakeWordActive=true;
+        if(wakeWordAdapter!=null) wakeWordAdapter.stop();
+        speak(modeReply("ඔව්, කියන්න.","Yoo 😄 කියන්න, Maya online!","ඔව්, කියන්න. 💛"));
+        handler.postDelayed(this::listen,350);
     }
 
     private void listen(){
@@ -66,7 +100,14 @@ public class MayaAssistantService extends Service {
             public void onResults(Bundle b){
                 ArrayList<String> m=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String s=m==null||m.isEmpty()?"":m.get(0);
-                handle(s); restart(1300);
+                handle(s);
+                if(realWakeWordActive){
+                    realWakeWordActive=false;
+                    wakeWordDetected=false;
+                    restart(900);
+                }else{
+                    restart(1300);
+                }
             }
         });
         Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -80,8 +121,8 @@ public class MayaAssistantService extends Service {
     private void handle(String raw){
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
-        if(!(l.contains("maya")||l.contains("මායා"))) return;
-        String q=l.replace("maya","").replace("මායා","").trim();
+        if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
+        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
 
         if(isMemoryCommand(q)){
             handleMemory(q);
@@ -310,6 +351,13 @@ public class MayaAssistantService extends Service {
         }
     }
     @Override public int onStartCommand(Intent i,int flags,int id){return START_STICKY;}
-    @Override public void onDestroy(){stopping=true;if(handler!=null)handler.removeCallbacksAndMessages(null);if(recognizer!=null)recognizer.destroy();if(tts!=null){tts.stop();tts.shutdown();}super.onDestroy();}
+    @Override public void onDestroy(){
+        stopping=true;
+        if(handler!=null)handler.removeCallbacksAndMessages(null);
+        if(recognizer!=null)recognizer.destroy();
+        if(wakeWordAdapter!=null)wakeWordAdapter.stop();
+        if(tts!=null){tts.stop();tts.shutdown();}
+        super.onDestroy();
+    }
     @Override public IBinder onBind(Intent i){return null;}
 }
