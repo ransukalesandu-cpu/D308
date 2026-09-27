@@ -198,6 +198,8 @@ public class MayaAssistantService extends Service {
     }
 
     private void askAI(String userText){
+        String predictive = MayaPredictiveActions.nextSuggestion(this);
+        if (userText == null || userText.trim().isEmpty()) { speak(predictive); return; }
         String memoryText=memory==null?"":memory.all();
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
         String personality;
