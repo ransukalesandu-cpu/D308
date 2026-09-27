@@ -124,8 +124,9 @@ public class VoiceAssistant {
         } else {
             final String userQuestion = question;
             String memory = activity.getSharedPreferences("maya_memory", 0).getString("items", "[]");
+            String liveContext = activity instanceof MainActivity ? ((MainActivity) activity).buildMayaContext() : "Live app state unavailable.";
             String personality = sweet ? "sweet/caring" : cute ? "cute" : funny ? "funny" : "normal";
-            MayaAI.ask(activity, userQuestion, "Saved memory: " + memory, personality, reply -> new Handler(Looper.getMainLooper()).post(() -> speak(reply)));
+            MayaAI.ask(activity, userQuestion, liveContext + " Saved ordinary memory: " + memory, personality, reply -> new Handler(Looper.getMainLooper()).post(() -> speak(reply)));
             return;
         }
         speak(reply);
