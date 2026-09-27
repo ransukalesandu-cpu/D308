@@ -17,6 +17,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if(!context.getSharedPreferences("settings",Context.MODE_PRIVATE).getBoolean("notifications",true)) return;
         String title = intent.getStringExtra("title");
         if (title == null || title.trim().isEmpty()) title = "Discipline reminder";
 
