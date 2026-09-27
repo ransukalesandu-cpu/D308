@@ -18,11 +18,11 @@ import java.util.Locale;
 public class SettingsActivity extends Activity {
     private SharedPreferences prefs; private TextToSpeech tts; private ToneGenerator tone;
     private void clickSound(){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,70);tone.startTone(ToneGenerator.TONE_PROP_ACK,90);}catch(Exception ignored){}}
-    private int BG=0xFF0B0E14,SURFACE=0xFF191D27,TEXT=0xFFF7F8FC,MUTED=0xFFAAB2C3,ACCENT=0xFF63E6BE;
+    private int BG=0xFF061126,SURFACE=0xFF0B1B3A,TEXT=0xFFF5F8FF,MUTED=0xFF9CB2D9,ACCENT=0xFF2F7BFF;
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
-    private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(6),dp(4),dp(6));return v;}
-    private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(SURFACE);g.setCornerRadius(dp(18));l.setBackground(g);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
-    @Override protected void onCreate(Bundle b){super.onCreate(b);if(SupabaseAccountManager.loggedIn(this)&&!SupabaseAccountManager.can(this,"can_access_settings")){new AlertDialog.Builder(this).setTitle("Settings restricted").setMessage("Your Primary account has disabled Settings access for this Sub account.").setPositiveButton("OK",(d,w)->finish()).show();return;}prefs=getSharedPreferences("settings",MODE_PRIVATE);String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");if("neon".equals(t)){BG=0xFF05050A;SURFACE=0xFF101525;TEXT=0xFFFFFFFF;MUTED=0xFF9CA8C7;ACCENT=0xFF00E5FF;}else if("soft".equals(t)){BG=0xFFF6F3F8;SURFACE=0xFFFFFFFF;TEXT=0xFF25222B;MUTED=0xFF77727F;ACCENT=0xFFB56CFF;}getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);buildUi();}
+    private Button buttonStyle(Button b){b.setTextColor(TEXT);b.setAllCaps(false);b.setTextSize(14);b.setMinHeight(dp(48));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(0xFF102957);g.setCornerRadius(dp(16));g.setStroke(dp(1),0xFF173D78);b.setBackground(g);return b;}\n    private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(6),dp(4),dp(6));return v;}
+    private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(SURFACE);g.setCornerRadius(dp(18));g.setStroke(dp(1),0xFF173D78);l.setBackground(g);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
+    @Override protected void onCreate(Bundle b){super.onCreate(b);if(SupabaseAccountManager.loggedIn(this)&&!SupabaseAccountManager.can(this,"can_access_settings")){new AlertDialog.Builder(this).setTitle("Settings restricted").setMessage("Your Primary account has disabled Settings access for this Sub account.").setPositiveButton("OK",(d,w)->finish()).show();return;}prefs=getSharedPreferences("settings",MODE_PRIVATE);String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");BG=0xFF061126;SURFACE=0xFF0B1B3A;TEXT=0xFFF5F8FF;MUTED=0xFF9CB2D9;ACCENT=0xFF2F7BFF;getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);buildUi();}
     private void buildUi(){
         ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(18),dp(20),dp(18),dp(28));root.setBackgroundColor(BG);
         TextView t=label("⚙  Settings",27,TEXT);t.setTypeface(null,1);root.addView(t);root.addView(label("Personalize your discipline experience.",13,MUTED));
@@ -30,12 +30,12 @@ public class SettingsActivity extends Activity {
         Switch speak=new Switch(this);speak.setText("Auto speak AI responses");speak.setTextColor(TEXT);speak.setTextSize(15);speak.setChecked(prefs.getBoolean("auto_speak",true));speak.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("auto_speak",c).apply());voice.addView(speak);
         voice.addView(label("Speech speed",14,TEXT));SeekBar speed=new SeekBar(this);speed.setMax(100);speed.setProgress(prefs.getInt("speech_speed",50));voice.addView(speed);TextView speedText=label("Normal",12,MUTED);voice.addView(speedText);
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
-        Button test=new Button(this);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
+        Button test=new Button(this);test=buttonStyle(test);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
         LinearLayout ai=card();ai.addView(label("🧠 MAYA REAL AI BRAIN",11,MUTED));
         ai.addView(label("Connect Maya to an AI model for natural conversations. The key is stored only on this phone.",12,MUTED));
         EditText key=new EditText(this);key.setHint("AI API key");key.setText(MayaSecureStorage.maya(this).getString("api_key",""));key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
         EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));model.setSingleLine(true);ai.addView(model);
-        Button saveAi=new Button(this);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{MayaSecureStorage.maya(this).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();});ai.addView(saveAi);
+        Button saveAi=new Button(this);saveAi=buttonStyle(saveAi);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{MayaSecureStorage.maya(this).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();});ai.addView(saveAi);
         ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
         root.addView(ai);
 
@@ -47,10 +47,10 @@ public class SettingsActivity extends Activity {
         webKey.setSingleLine(true);
         webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         web.addView(webKey);
-        Button saveWeb=new Button(this);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
+        Button saveWeb=new Button(this);saveWeb=buttonStyle(saveWeb);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
         saveWeb.setOnClickListener(v->{MayaSecureStorage.web(this).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();});
         web.addView(saveWeb);
-        Button testWeb=new Button(this);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
+        Button testWeb=new Button(this);testWeb=buttonStyle(testWeb);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
         testWeb.setOnClickListener(v->{
             if(!WebSearch.enabled(this)){Toast.makeText(this,"Add a Tavily API key first.",Toast.LENGTH_SHORT).show();return;}
             Toast.makeText(this,"Searching the web…",Toast.LENGTH_SHORT).show();
@@ -63,11 +63,7 @@ public class SettingsActivity extends Activity {
         LinearLayout customize=card();customize.addView(label("🎨 CUSTOMIZE EXPERIENCE",11,MUTED));
         customize.addView(label("Choose one of 3 complete UI styles. The app restarts its screen when you return.",12,MUTED));
         RadioGroup themes=new RadioGroup(this); themes.setOrientation(RadioGroup.VERTICAL);
-        String[] themeNames={"🌙 Midnight — clean dark","⚡ Neon — cyber energy","☁ Soft — calm pastel"};
-        String[] themeKeys={"midnight","neon","soft"}; String current=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");
-        for(int i=0;i<3;i++){RadioButton rb=new RadioButton(this);rb.setText(themeNames[i]);rb.setTextColor(TEXT);rb.setTextSize(15);rb.setTag(themeKeys[i]);rb.setChecked(current.equals(themeKeys[i]));themes.addView(rb);}
-        themes.setOnCheckedChangeListener((g,id)->{RadioButton rb=g.findViewById(id);if(rb!=null){getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putString("theme",String.valueOf(rb.getTag())).apply();Toast.makeText(this,"UI saved — reopen the app to apply ✨",Toast.LENGTH_SHORT).show();}});
-        customize.addView(themes);
+        String[] themeNames={"🌌 Deep Navy — 309 Day"};\n        String[] themeKeys={"midnight"}; String current="midnight";\n        RadioButton rb=new RadioButton(this);rb.setText(themeNames[0]);rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);themes.addView(rb);\n        themes.setOnCheckedChangeListener((g,id)->getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putString("theme","midnight").apply());\n        
         root.addView(customize);
 
         LinearLayout modes=card();modes.addView(label("🤖 MAYA PERSONALITY MODES",11,MUTED));
@@ -82,13 +78,13 @@ public class SettingsActivity extends Activity {
 
         LinearLayout control=card();control.addView(label("📱 MAYA PHONE CONTROLS",11,MUTED));
         control.addView(label("Voice commands for simple phone actions.",12,MUTED));
-        Button battery=new Button(this);battery.setText("🔋  Battery / background settings");battery.setAllCaps(false);battery.setOnClickListener(v->{try{Intent i=new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);startActivity(i);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});control.addView(battery);
-        Button voiceHelp=new Button(this);voiceHelp.setText("🎙️  Maya command guide");voiceHelp.setAllCaps(false);voiceHelp.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(voiceHelp);
+        Button battery=new Button(this);battery=buttonStyle(battery);battery.setText("🔋  Battery / background settings");battery.setAllCaps(false);battery.setOnClickListener(v->{try{Intent i=new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);startActivity(i);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});control.addView(battery);
+        Button voiceHelp=new Button(this);voiceHelp=buttonStyle(voiceHelp);voiceHelp.setText("🎙️  Maya command guide");voiceHelp.setAllCaps(false);voiceHelp.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(voiceHelp);
         root.addView(control);
 
         LinearLayout accounts=card();accounts.addView(label("👥 PRIMARY + SUB ACCOUNTS",11,MUTED));
         accounts.addView(label("Sign in, create a Primary account, invite brothers as Sub accounts, and view their synced 309 progress.",12,MUTED));
-        Button openAccounts=new Button(this);openAccounts.setText("👥  Open Account Dashboard");openAccounts.setAllCaps(false);openAccounts.setOnClickListener(v->startActivity(new Intent(this,AccountsActivity.class)));accounts.addView(openAccounts);
+        Button openAccounts=new Button(this);openAccounts=buttonStyle(openAccounts);openAccounts.setText("👥  Open Account Dashboard");openAccounts.setAllCaps(false);openAccounts.setOnClickListener(v->startActivity(new Intent(this,AccountsActivity.class)));accounts.addView(openAccounts);
         root.addView(accounts);
 
         LinearLayout maya=card();maya.addView(label("MAYA BACKGROUND ASSISTANT",11,MUTED));
