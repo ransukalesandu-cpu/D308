@@ -238,8 +238,10 @@ public class MayaAssistantService extends Service {
             AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
             long now=SystemClock.uptimeMillis();
             int key=pause?KeyEvent.KEYCODE_MEDIA_PAUSE:KeyEvent.KEYCODE_MEDIA_PLAY;
-            am.dispatchMediaKeyEvent(new KeyEvent(now,now,KeyEvent.ACTION_DOWN,key));
-            am.dispatchMediaKeyEvent(new KeyEvent(now,now,KeyEvent.ACTION_UP,key));
+            KeyEvent down=new KeyEvent(now,now,KeyEvent.ACTION_DOWN,key,0,0,KeyCharacterMap.VIRTUAL_KEYBOARD,0,0,0);
+            KeyEvent up=new KeyEvent(now,now,KeyEvent.ACTION_UP,key,0,0,KeyCharacterMap.VIRTUAL_KEYBOARD,0,0,0);
+            am.dispatchMediaKeyEvent(down);
+            am.dispatchMediaKeyEvent(up);
             speak(pause?"Music pause කළා. ⏸️":"Music play කළා. ▶️");
         }catch(Exception e){speak("Music control කරන්න බැරි වුණා.");}
     }
