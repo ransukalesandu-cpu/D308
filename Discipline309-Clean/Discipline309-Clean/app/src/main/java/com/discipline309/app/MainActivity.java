@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
             "Wake up on time", "Study / learning", "Workout or active recovery",
             "Eat planned meals", "No-phone block", "Night review + prepare tomorrow"
     };
-    private static final int BG=0xFF0B0E14, SURFACE=0xFF191D27, TEXT=0xFFF7F8FC, MUTED=0xFFAAB2C3, ACCENT=0xFF63E6BE;
+    private int BG=0xFF0B0E14, SURFACE=0xFF191D27, TEXT=0xFFF7F8FC, MUTED=0xFFAAB2C3, ACCENT=0xFF63E6BE;
     private SharedPreferences prefs;
     private LinearLayout content;
     private TextView homeStats, homeStreak;
@@ -38,8 +38,17 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle b){
         super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
-        prefs=getSharedPreferences(PREFS,MODE_PRIVATE); voiceAssistant=new VoiceAssistant(this); buildShell(); showHome();
+        prefs=getSharedPreferences(PREFS,MODE_PRIVATE); applyUiTheme(); voiceAssistant=new VoiceAssistant(this); buildShell(); showHome();
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);
+    }
+
+    private void applyUiTheme(){
+        SharedPreferences u=getSharedPreferences("ui_settings",MODE_PRIVATE);
+        String theme=u.getString("theme","midnight");
+        if("neon".equals(theme)){BG=0xFF05050A;SURFACE=0xFF101525;TEXT=0xFFFFFFFF;MUTED=0xFF9CA8C7;ACCENT=0xFF00E5FF;}
+        else if("soft".equals(theme)){BG=0xFFF6F3F8;SURFACE=0xFFFFFFFF;TEXT=0xFF25222B;MUTED=0xFF77727F;ACCENT=0xFFB56CFF;}
+        else {BG=0xFF0B0E14;SURFACE=0xFF191D27;TEXT=0xFFF7F8FC;MUTED=0xFFAAB2C3;ACCENT=0xFF63E6BE;}
+        getWindow().setStatusBarColor(BG); getWindow().setNavigationBarColor(BG);
     }
 
     private void buildShell(){
