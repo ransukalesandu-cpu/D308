@@ -323,7 +323,7 @@ public class MayaAssistantService extends Service {
         MayaAI.ask(this,userText,context,personality,reply->handler.post(()->{
             lastMayaReply=reply==null?"":reply;
             speak(reply);
-        })));
+        }));
     }
 
     private boolean isMemoryCommand(String q){
@@ -336,8 +336,7 @@ public class MayaAssistantService extends Service {
         if(q.contains("what do you remember") || q.contains("what you remember") ||
            q.contains("මොනවා මතක") || q.contains("මතක තියෙන්නේ මොනවාද") || q.contains("memory list")){
             String all=memory.all();
-            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:
-"+all);
+            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:\n"+all);
             return;
         }
         if(q.contains("forget") || q.contains("delete memory") || q.contains("clear memory") ||
