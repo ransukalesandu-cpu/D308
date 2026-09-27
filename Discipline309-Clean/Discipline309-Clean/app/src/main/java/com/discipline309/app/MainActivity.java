@@ -84,6 +84,25 @@ public class MainActivity extends Activity {
         LinearLayout hero=card();hero.addView(label(day==0?"PROGRAM STARTS SOON":"DAY "+day+" / 309",12,MUTED));hero.addView(label(day==0?formatDate(startDate()):"Keep moving. "+Math.max(0,309-day)+" days remaining.",24,TEXT));addBar(hero,Math.max(0,day),309);hero.addView(label("Today  "+pct+"%   •   "+done+"/"+total+" tasks   •   🔥 "+currentStreak()+" day streak",13,MUTED));content.addView(hero);
         LinearLayout xpBox=card();xpBox.addView(label("LEVEL "+level(),11,MUTED));xpBox.addView(label(xp()+" XP",23,TEXT));addBar(xpBox,xp()%500,500);xpBox.addView(label((500-(xp()%500))+" XP to next level",12,MUTED));content.addView(xpBox);
         content.addView(title("TODAY'S MISSION"));
+        LinearLayout mission=card();
+        mission.addView(label("🎯 DAILY CHALLENGE",11,MUTED));
+        String missionKey="mission_"+key();
+        String[] missions={"Complete every planned task today","Finish one focused study session","Do your routine before entertainment","Write a 3-line evening reflection","Complete today without skipping a habit"};
+        int missionIndex=Math.abs(key().hashCode())%missions.length;
+        String missionText=prefs.getString(missionKey,missions[missionIndex]);
+        mission.addView(label(missionText,18,TEXT));
+        mission.addView(label("Reward: +50 XP  •  Resets tomorrow",12,MUTED));
+        CheckBox missionDone=new CheckBox(this);
+        missionDone.setText("Mission complete");
+        missionDone.setTextColor(TEXT);
+        missionDone.setChecked(prefs.getBoolean(missionKey+"_done",false));
+        missionDone.setOnCheckedChangeListener((v,checked)->{
+            prefs.edit().putBoolean(missionKey+"_done",checked).apply();
+            if(checked) toast("Mission complete! +50 XP 🎯");
+        });
+        mission.addView(missionDone);
+        content.addView(mission);
+        content.addView(title("TODAY'S HABITS"));
         for(int i=0;i<total;i++)addTaskRow(i,key());
         Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);
         LinearLayout quick=card();quick.addView(label("MAYA + QUICK ACTIONS",11,MUTED));
