@@ -156,7 +156,7 @@ public class MayaAssistantService extends Service {
                 break;
             }
         }
-        fact=fact.replaceFirst("^[,:;\- ]+","");
+        fact=fact.replaceFirst("^[,:;- ]+","");
         if(fact.isEmpty()){
             speak("මොකක්ද මතක තියාගන්න ඕනේ? 😄");
             return;
