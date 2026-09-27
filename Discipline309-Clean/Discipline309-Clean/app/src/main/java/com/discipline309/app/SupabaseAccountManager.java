@@ -56,9 +56,10 @@ public final class SupabaseAccountManager {
     public static String userId(Context c){return p(c).getString("user_id","");}
     public static String displayName(Context c){return p(c).getString("display_name","");}
     public static String role(Context c){return p(c).getString("role","");}
+    public static String parentId(Context c){return p(c).getString("parent_id","");}
     public static boolean can(Context c,String permission){
         if(!"sub".equals(role(c))) return true;
-        return p(c).getBoolean(permission,true);
+        return p(c).getBoolean(permission,false);
     }
 
     public static void signUp(Context c,String email,String password,Callback cb){
@@ -136,7 +137,8 @@ public final class SupabaseAccountManager {
                 JSONObject x=a.getJSONObject(0);SharedPreferences.Editor e=p(c).edit();
                 Iterator<String> it=x.keys();while(it.hasNext()){String k=it.next();if(x.opt(k) instanceof Boolean)e.putBoolean(k,x.optBoolean(k));}e.apply();
             }
-        }catch(Exception ignored){}}); 
+        }catch(Exception ignored){}
+    });
     }
 
     public static void syncLocalProgress(Context c,Callback cb){
@@ -158,9 +160,7 @@ public final class SupabaseAccountManager {
             boolean remoteChanged=!baseline.isEmpty()&&!remoteText.equals(baseline);
             boolean conflict=localChanged&&remoteChanged&&remoteAt>lastSync;
 
-            if(conflict){
-                prefs.edit().putString(CONFLICT_SNAPSHOT,remoteText).apply();
-            }
+            if(conflict)prefs.edit().putString(CONFLICT_SNAPSHOT,remoteText).apply();
 
             String now=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).format(new Date());
             JSONObject body=new JSONObject().put("user_id",userId(c)).put("snapshot",local).put("updated_at",now);
@@ -176,15 +176,12 @@ public final class SupabaseAccountManager {
 
     public static String lastConflictSnapshot(Context c){return p(c).getString(CONFLICT_SNAPSHOT,"");}
     public static void clearLastConflict(Context c){p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}
-
     public static void signOut(Context c){p(c).edit().clear().apply();}
 
     private static long parseIsoMillis(String value){
         if(value==null||value.isEmpty())return 0L;
-        try{return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX",Locale.US).parse(value).getTime();}
-        catch(Exception ignored){}
-        try{return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).parse(value).getTime();}
-        catch(Exception ignored){}
+        try{return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX",Locale.US).parse(value).getTime();}catch(Exception ignored){}
+        try{return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).parse(value).getTime();}catch(Exception ignored){}
         return 0L;
     }
 
@@ -224,8 +221,7 @@ public final class SupabaseAccountManager {
 
     private static void refresh(Context c)throws Exception{
         String rt=p(c).getString("refresh_token","");if(rt.isEmpty())return;
-        JSONObject r=requestRaw("POST","/auth/v1/token?grant_type=refresh_token",new JSONObject().put("refresh_token",rt),null,false);
-        saveSession(c,r);
+        JSONObject r=requestRaw("POST","/auth/v1/token?grant_type=refresh_token",new JSONObject().put("refresh_token",rt),null,false);saveSession(c,r);
     }
 
     private static JSONObject request(String method,String path,JSONObject body,Context c)throws Exception{return request(method,path,body,c,null);}
