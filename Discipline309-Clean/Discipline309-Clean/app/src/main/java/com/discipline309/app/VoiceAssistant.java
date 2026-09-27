@@ -96,6 +96,24 @@ public class VoiceAssistant {
         boolean funny=activity.getSharedPreferences("settings",0).getBoolean("mode_funny",true);
         boolean cute=activity.getSharedPreferences("settings",0).getBoolean("mode_cute",false);
         boolean sweet=activity.getSharedPreferences("settings",0).getBoolean("mode_sweet",false);
+        if (activity instanceof MainActivity) {
+            MainActivity m=(MainActivity)activity;
+            if (question.contains("what is my mission") || question.contains("today mission") || question.contains("mission mokakda") || question.contains("mission eka mokakda")) {
+                speak(m.mayaQuickStatus("mission")); return;
+            }
+            if (question.contains("how much xp") || question.contains("my xp") || question.contains("xp kiyadha") || question.contains("level kiyadha")) {
+                speak(m.mayaQuickStatus("xp")); return;
+            }
+            if (question.contains("my streak") || question.contains("streak kiyadha") || question.contains("best streak")) {
+                speak(m.mayaQuickStatus("streak")); return;
+            }
+            if (question.contains("which day") || question.contains("what day") || question.contains("day kiyadha") || question.contains("day eke")) {
+                speak(m.mayaQuickStatus("day")); return;
+            }
+            if (question.contains("how am i doing") || question.contains("my progress") || question.contains("progress eka kohomada")) {
+                speak(m.mayaQuickStatus("progress")); return;
+            }
+        }
         if (question.contains("reset mission") || question.contains("mission reset") || question.contains("mission eka reset") || question.contains("mission eka ain")) {
             if (activity instanceof MainActivity) {
                 ((MainActivity) activity).resetTodayMissionFromMaya();
