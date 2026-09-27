@@ -39,6 +39,14 @@ public class MayaMemory {
         return out.toString();
     }
 
+    public void remove(int index) {
+        JSONArray a=read();
+        if(index<0 || index>=a.length()) return;
+        JSONArray out=new JSONArray();
+        for(int i=0;i<a.length();i++) if(i!=index) out.put(a.optString(i));
+        prefs.edit().putString(KEY,out.toString()).apply();
+    }
+
     public void clear() {
         prefs.edit().remove(KEY).apply();
     }
