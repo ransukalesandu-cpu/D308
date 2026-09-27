@@ -165,13 +165,25 @@ public class MainActivity extends Activity {
     private void deleteHabit(int idx){
         int last=DEFAULT_TASKS.length+customCount()-1;if(idx!=last){String name=prefs.getString("habit_"+last,"Habit");prefs.edit().putString("habit_"+idx,name).remove("habit_"+last).putInt("custom_count",customCount()-1).apply();}else prefs.edit().remove("habit_"+idx).putInt("custom_count",Math.max(0,customCount()-1)).apply();showHabits();
     }
+    private void showAchievements(){
+        header("ACHIEVEMENTS","Milestones earned through consistency.");
+        int days=completedDays(), streak=bestStreak(), missions=0;
+        for(String k:prefs.getAll().keySet()) if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&prefs.getBoolean(k,false)) missions++;
+        LinearLayout summary=card(); summary.addView(label("🏆 "+days+" completed days",22,TEXT)); summary.addView(label("🔥 Best streak: "+streak+" days  •  🎯 Missions: "+missions,13,MUTED)); content.addView(summary);
+        int[] milestones={1,3,7,14,30,50,100,150,200,309}; String[] names={"First Step","3-Day Spark","One Week","Two Weeks","30-Day Discipline","50-Day Warrior","100-Day Mastery","150-Day Elite","200-Day Relentless","309-Day Legend"};
+        for(int i=0;i<milestones.length;i++){int m=milestones[i]; boolean u=days>=m; LinearLayout a=card(); a.addView(label(u?"🏆 "+names[i]:"🔒 "+names[i],17,u?TEXT:MUTED)); a.addView(label(m+" completed days",12,MUTED)); content.addView(a);}
+        int[] streaks={3,7,14,30}; String[] sn={"3-Day Streak","7-Day Streak","14-Day Streak","30-Day Streak"};
+        for(int i=0;i<streaks.length;i++){boolean u=streak>=streaks[i]; LinearLayout a=card(); a.addView(label(u?"🔥 "+sn[i]:"🔒 "+sn[i],17,u?TEXT:MUTED)); a.addView(label(streaks[i]+" consecutive completed days",12,MUTED)); content.addView(a);}
+        LinearLayout m=card(); m.addView(label("🎯 MISSION ACHIEVEMENTS",11,MUTED)); int[] mm={1,7,30}; for(int x:mm)m.addView(label(missions>=x?"🏆 "+x+" daily missions completed":"🔒 "+x+" daily missions",14,missions>=x?TEXT:MUTED)); content.addView(m);
+    }
+
     private void showStats(){
         header("PROGRESS & STATS","See the full picture, not just today's streak.");
         int completed=completedDays(),best=bestStreak(),today=countFor(key()),total=totalTasks();
         LinearLayout summary=card();summary.addView(label("LEVEL "+level(),11,MUTED));summary.addView(label(completed+" completed days",23,TEXT));summary.addView(label("🔥 "+currentStreak()+" current  •  🏆 "+best+" best streak",14,MUTED));summary.addView(label("⚡ "+xp()+" total XP  •  "+totalCompletedTasks()+" completed tasks",14,MUTED));content.addView(summary);
         LinearLayout week=card();week.addView(label("LAST 7 DAYS",11,MUTED));for(int i=6;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);int n=countFor(key(c));int pct=total==0?0:Math.round(n*100f/total);week.addView(label(new SimpleDateFormat("EEE",Locale.US).format(c.getTime())+"   "+n+"/"+total+"   "+pct+"%",13,TEXT));}content.addView(week);
         LinearLayout cal=card();cal.addView(label("LAST 30 DAYS",11,MUTED));for(int i=29;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);String k=key(c);TextView r=label(new SimpleDateFormat("dd MMM",Locale.US).format(c.getTime())+"   "+(prefs.getBoolean("done_"+k,false)?"✓ COMPLETE":countFor(k)>0?"• PARTIAL":"— MISSED"),13,TEXT);cal.addView(r);}content.addView(cal);
-        Button chat=button("💬  Chat with Maya");chat.setOnClickListener(v->chatDialog());content.addView(chat);Button journal=button("📝  Daily Journal & Reflection");journal.setOnClickListener(v->journalDialog());content.addView(journal);
+        Button achievements=button("🏆  View Achievements");achievements.setOnClickListener(v->showAchievements());content.addView(achievements);\n                Button chat=button("💬  Chat with Maya");chat.setOnClickListener(v->chatDialog());content.addView(chat);Button journal=button("📝  Daily Journal & Reflection");journal.setOnClickListener(v->journalDialog());content.addView(journal);
         LinearLayout badges=card();badges.addView(label("ACHIEVEMENTS",11,MUTED));int[] ms={1,7,30,50,100,150,200,309};for(int m:ms)if(completed>=m)badges.addView(label("🏆 "+m+" day milestone unlocked",14,TEXT));else badges.addView(label("🔒 "+m+" day milestone",14,MUTED));content.addView(badges);
     }
     private void journalDialog(){
