@@ -104,12 +104,24 @@ public class MayaAssistantService extends Service {
     }
 
     private void askAI(String userText){
-        String all=memory==null?"":memory.all();
+        String memoryText=memory==null?"":memory.all();
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
-        String personality=p.getBoolean("mode_sweet",false)?"sweet/caring":
-            p.getBoolean("mode_cute",false)?"cute":
-            p.getBoolean("mode_funny",true)?"funny":"normal";
-        MayaAI.ask(this,userText,all,personality,reply->handler.post(()->speak(reply)));
+        SharedPreferences d=getSharedPreferences("discipline",MODE_PRIVATE);
+        String personality;
+        if(p.getBoolean("mode_auto",false)){
+            int hour=java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+            personality=hour<12?"calm morning coach":hour>=21?"gentle night coach":"energetic discipline coach";
+        }else if(p.getBoolean("mode_sweet",false)) personality="sweet/caring";
+        else if(p.getBoolean("mode_cute",false)) personality="cute";
+        else if(p.getBoolean("mode_funny",true)) personality="funny";
+        else personality="normal";
+        int completed=0;
+        for(String k:d.getAll().keySet()) if(k.startsWith("done_") && d.getBoolean(k,false)) completed++;
+        int today=0;
+        String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.US).format(new java.util.Date());
+        for(int i=0;i<20;i++) if(d.getBoolean("task_"+i+"_"+todayKey,false)) today++;
+        String context="Saved memory: "+memoryText+" | Discipline context: today has "+today+" completed tasks; "+completed+" completed days are recorded. Use this only when relevant.";
+        MayaAI.ask(this,userText,context,personality,reply->handler.post(()->speak(reply)));
     }
 
     private boolean isMemoryCommand(String q){
