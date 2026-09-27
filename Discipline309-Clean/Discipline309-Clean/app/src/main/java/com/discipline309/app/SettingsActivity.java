@@ -84,7 +84,12 @@ public class SettingsActivity extends Activity {
         control.addView(label("Voice commands for simple phone actions.",12,MUTED));
         Button battery=new Button(this);battery.setText("🔋  Battery / background settings");battery.setAllCaps(false);battery.setOnClickListener(v->{try{Intent i=new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);startActivity(i);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});control.addView(battery);
         Button voiceHelp=new Button(this);voiceHelp.setText("🎙️  Maya command guide");voiceHelp.setAllCaps(false);voiceHelp.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(voiceHelp);
-        root.addView(control);\n\n        LinearLayout accounts=card();accounts.addView(label("👥 PRIMARY + SUB ACCOUNTS",11,MUTED));\n        accounts.addView(label("Sign in, create a Primary account, invite brothers as Sub accounts, and view their synced 309 progress.",12,MUTED));\n        Button openAccounts=new Button(this);openAccounts.setText("👥  Open Account Dashboard");openAccounts.setAllCaps(false);openAccounts.setOnClickListener(v->startActivity(new Intent(this,AccountsActivity.class)));accounts.addView(openAccounts);\n        root.addView(accounts);
+        root.addView(control);
+
+        LinearLayout accounts=card();accounts.addView(label("👥 PRIMARY + SUB ACCOUNTS",11,MUTED));
+        accounts.addView(label("Sign in, create a Primary account, invite brothers as Sub accounts, and view their synced 309 progress.",12,MUTED));
+        Button openAccounts=new Button(this);openAccounts.setText("👥  Open Account Dashboard");openAccounts.setAllCaps(false);openAccounts.setOnClickListener(v->startActivity(new Intent(this,AccountsActivity.class)));accounts.addView(openAccounts);
+        root.addView(accounts);
 
         LinearLayout maya=card();maya.addView(label("MAYA BACKGROUND ASSISTANT",11,MUTED));
         Switch bgMaya=new Switch(this);bgMaya.setText("Keep Maya available in background");bgMaya.setTextColor(TEXT);bgMaya.setTextSize(15);
