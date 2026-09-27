@@ -30,6 +30,24 @@ public class SettingsActivity extends Activity {
         voice.addView(label("Speech speed",14,TEXT));SeekBar speed=new SeekBar(this);speed.setMax(100);speed.setProgress(prefs.getInt("speech_speed",50));voice.addView(speed);TextView speedText=label("Normal",12,MUTED);voice.addView(speedText);
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=new Button(this);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
+        LinearLayout customize=card();customize.addView(label("🎨 CUSTOMIZE EXPERIENCE",11,MUTED));
+        customize.addView(label("Choose one of 3 complete UI styles. The app restarts its screen when you return.",12,MUTED));
+        RadioGroup themes=new RadioGroup(this); themes.setOrientation(RadioGroup.VERTICAL);
+        String[] themeNames={"🌙 Midnight — clean dark","⚡ Neon — cyber energy","☁ Soft — calm pastel"};
+        String[] themeKeys={"midnight","neon","soft"}; String current=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");
+        for(int i=0;i<3;i++){RadioButton rb=new RadioButton(this);rb.setText(themeNames[i]);rb.setTextColor(TEXT);rb.setTextSize(15);rb.setTag(themeKeys[i]);rb.setChecked(current.equals(themeKeys[i]));themes.addView(rb);}
+        themes.setOnCheckedChangeListener((g,id)->{RadioButton rb=g.findViewById(id);if(rb!=null){getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putString("theme",String.valueOf(rb.getTag())).apply();Toast.makeText(this,"UI saved — reopen the app to apply ✨",Toast.LENGTH_SHORT).show();}});
+        customize.addView(themes);
+        root.addView(customize);
+
+        LinearLayout modes=card();modes.addView(label("🤖 MAYA PERSONALITY MODES",11,MUTED));
+        modes.addView(label("Turn styles on/off independently. Maya stays respectful and supportive.",12,MUTED));
+        Switch funny=new Switch(this);funny.setText("😂 Funny mode");funny.setTextColor(TEXT);funny.setTextSize(15);funny.setChecked(prefs.getBoolean("mode_funny",true));funny.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_funny",on).apply());modes.addView(funny);
+        Switch cute=new Switch(this);cute.setText("🌸 Cute mode");cute.setTextColor(TEXT);cute.setTextSize(15);cute.setChecked(prefs.getBoolean("mode_cute",false));cute.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_cute",on).apply());modes.addView(cute);
+        Switch sweet=new Switch(this);sweet.setText("💛 Sweet / caring mode");sweet.setTextColor(TEXT);sweet.setTextSize(15);sweet.setChecked(prefs.getBoolean("mode_sweet",false));sweet.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_sweet",on).apply());modes.addView(sweet);
+        Switch auto=new Switch(this);auto.setText("🧠 Auto mood");auto.setTextColor(TEXT);auto.setTextSize(15);auto.setChecked(prefs.getBoolean("mode_auto",true));auto.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_auto",on).apply());modes.addView(auto);
+        root.addView(modes);
+
         LinearLayout coach=card();coach.addView(label("BACKGROUND COACH",11,MUTED));Switch bgCoach=new Switch(this);bgCoach.setText("Funny Sinhala motivation in background");bgCoach.setTextColor(TEXT);bgCoach.setTextSize(15);bgCoach.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));bgCoach.setOnCheckedChangeListener((v,on)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();Intent i=new Intent(this,MotivationService.class);if(on){if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();}else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}});coach.addView(bgCoach);coach.addView(label("Uses your phone's installed Sinhala TTS voice. Android shows a persistent notification while active.",12,MUTED));root.addView(coach);
 
         LinearLayout maya=card();maya.addView(label("MAYA BACKGROUND ASSISTANT",11,MUTED));
