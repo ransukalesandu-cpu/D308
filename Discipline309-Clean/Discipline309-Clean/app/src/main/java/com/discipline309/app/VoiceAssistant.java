@@ -34,7 +34,7 @@ public class VoiceAssistant {
         });
     }
 
-    public void start() {
+    public void start() {\n        if(SupabaseAccountManager.loggedIn(activity)&&!SupabaseAccountManager.can(activity,"can_use_maya")){\n            Toast.makeText(activity,"Maya is disabled by your Primary account.",Toast.LENGTH_SHORT).show();\n            return;\n        }
         if (android.os.Build.VERSION.SDK_INT >= 23 &&
                 activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             activity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3099);
