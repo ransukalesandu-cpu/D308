@@ -240,6 +240,11 @@ public class MayaAssistantService extends Service {
             reminder(q);
         }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")){
             deviceInfo();
+        }else if(q.contains("plan")||q.contains("short plan")||q.contains("daily plan")||q.contains("මගේ plan")||q.contains("අද plan")||q.contains("අද වැඩ")){
+            speak("📝 "+MayaOfflineNLP.answer(this,"plan"));
+        }else if(q.contains("focus")||q.contains("focus goal")||q.contains("මගේ focus")){
+            String live=MayaContextProvider.build(this);
+            speak("🎯 "+extractContext(live,"focusGoal="));
         }else if(q.contains("mission")||q.contains("මගේ mission")||q.contains("mission එක")){
             speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"mission"));
         }else if(q.contains("xp")||q.contains("level")||q.contains("මගේ ලෙවල්")){
@@ -257,6 +262,15 @@ public class MayaAssistantService extends Service {
         }else{
             askAI(s);
         }
+    }
+
+    private String extractContext(String s,String key){
+        int i=s.indexOf(key); if(i<0)return "අද focus goal එකක් set කරලා නැහැ.";
+        int j=s.indexOf(';',i); if(j<0)j=s.length();
+        String v=s.substring(i+key.length(),j).trim();
+        if(v.startsWith(""")) v=v.substring(1);
+        if(v.endsWith(""")) v=v.substring(0,v.length()-1);
+        return v.isEmpty()?"අද focus goal එකක් set කරලා නැහැ.":v;
     }
 
     private void askAI(String userText){
