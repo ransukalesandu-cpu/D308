@@ -17,6 +17,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if("com.discipline309.DISMISS".equals(intent.getAction())) { dismissNotification(context,intent); return; }
         if(!context.getSharedPreferences("settings",Context.MODE_PRIVATE).getBoolean("notifications",true)) return;
         String title = intent.getStringExtra("title");
         if (title == null || title.trim().isEmpty()) title = "Discipline reminder";
@@ -48,12 +49,17 @@ public class AlarmReceiver extends BroadcastReceiver {
             builder = new Notification.Builder(context);
         }
 
+        Intent done = new Intent(context, AlarmReceiver.class).setAction("com.discipline309.DISMISS").putExtra("notification_id", (int) (System.currentTimeMillis() % 100000));
+        PendingIntent doneIntent = PendingIntent.getBroadcast(context, (int) (System.currentTimeMillis() % 100000), done, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
         builder.setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setContentTitle(title)
                 .setContentText(finalMessage)
                 .setStyle(new Notification.BigTextStyle().bigText(finalMessage))
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
+                .addAction(android.R.drawable.ic_menu_view, "Open 309", pendingIntent)
+                .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Dismiss", doneIntent)
                 .setPriority(Notification.PRIORITY_HIGH);
 
         if (manager != null) {
@@ -61,6 +67,11 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
 
         speak(context, finalMessage);
+    }
+
+    private void dismissNotification(Context context, Intent intent) {
+        int id=intent.getIntExtra("notification_id",-1);
+        if(id>=0){ NotificationManager manager=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE); if(manager!=null) manager.cancel(id); }
     }
 
     private void speak(Context context, final String message) {
