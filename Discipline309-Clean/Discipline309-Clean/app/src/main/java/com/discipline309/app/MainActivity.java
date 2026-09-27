@@ -33,8 +33,9 @@ public class MainActivity extends Activity {
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP)sound(ToneGenerator.TONE_PROP_ACK);return false;});return b;}
     private String key(){return key(Calendar.getInstance());}
     private String key(Calendar c){return new SimpleDateFormat("yyyyMMdd",Locale.US).format(c.getTime());}
-    private Calendar startDate(){Calendar c=target();c.add(Calendar.DAY_OF_YEAR,-308);return c;}
-    private Calendar target(){Calendar c=Calendar.getInstance();c.set(2027,Calendar.AUGUST,1,0,0,0);c.set(Calendar.MILLISECOND,0);return c;}
+    private void ensureProgramStart(){if(!prefs.contains("program_start")){Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);prefs.edit().putLong("program_start",c.getTimeInMillis()).apply();}}
+    private Calendar startDate(){Calendar c=Calendar.getInstance();c.setTimeInMillis(prefs.getLong("program_start",System.currentTimeMillis()));return c;}
+    private Calendar target(){Calendar c=startDate();c.add(Calendar.DAY_OF_YEAR,308);return c;}
     private int daysFromStart(){long diff=System.currentTimeMillis()-startDate().getTimeInMillis();return(int)(diff/86400000L)+1;}
     private int dayNumber(){return Math.max(0,Math.min(309,daysFromStart()));}
     private int taskCount(){return DEFAULT_TASKS.length;}
@@ -52,7 +53,7 @@ public class MainActivity extends Activity {
     private int bestStreak(){int best=0,run=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){if(prefs.getBoolean("done_"+key(c),false))run++;else run=0;best=Math.max(best,run);c.add(Calendar.DAY_OF_YEAR,1);}return Math.max(best,prefs.getInt("best",0));}
 
     @Override protected void onCreate(Bundle b){
-        super.onCreate(b);prefs=getSharedPreferences(PREFS,MODE_PRIVATE);applyTheme();
+        super.onCreate(b);prefs=getSharedPreferences(PREFS,MODE_PRIVATE);ensureProgramStart();applyTheme();
         voiceAssistant=new VoiceAssistant(this);buildShell();showHome();
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);
     }
