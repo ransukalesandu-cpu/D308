@@ -28,6 +28,7 @@ public class MainActivity extends Activity {
     private ToneGenerator tone;
     private static final int PICK_MAYA_IMAGE=901;
     private static final int CAPTURE_MAYA_IMAGE=902;
+    private static final int PICK_MAYA_DOCUMENT=903;
 
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private void sound(int t){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,65);tone.startTone(t,80);}catch(Exception ignored){}}
@@ -83,6 +84,39 @@ public class MainActivity extends Activity {
     }
     private TextView title(String s){TextView t=label(s,19,TEXT);t.setTypeface(null,1);t.setPadding(dp(4),dp(14),dp(4),dp(5));return t;}
     private void addBar(LinearLayout box,int value,int max){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(Math.max(1,max));p.setProgress(Math.max(0,Math.min(max,value)));p.setProgressDrawable(getDrawable(android.R.drawable.progress_horizontal));box.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
+    private void openMayaDocument(){
+        Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT); i.setType("*/*"); i.addCategory(Intent.CATEGORY_OPENABLE); startActivityForResult(i,PICK_MAYA_DOCUMENT);
+    }
+    private void analyzeMayaDocument(Uri uri){
+        if(uri==null)return;
+        String type=getContentResolver().getType(uri);
+        if(type!=null && type.equals("application/pdf")){
+            new Thread(()->{
+                try{
+                    android.os.ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(uri,"r");
+                    if(fd==null)throw new Exception("fd");
+                    android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd);
+                    if(renderer.getPageCount()==0)throw new Exception("empty");
+                    android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0);
+                    Bitmap bitmap=Bitmap.createBitmap(page.getWidth()*2,page.getHeight()*2,Bitmap.Config.ARGB_8888);
+                    page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY); page.close(); renderer.close(); fd.close();
+                    runOnUiThread(()->analyzeMayaBitmapWithQuestion(bitmap,"Read and summarize this document page. Extract visible important text and explain it."));
+                }catch(Exception e){runOnUiThread(()->toast("PDF එක read කරන්න බැරි වුණා."));}
+            }).start();
+        }else{
+            String text=MayaVision.documentText(this,uri);
+            if(text.isEmpty()){toast("මේ document type එක තවම support වෙන්නේ නැහැ. Text file හෝ PDF එකක් තෝරන්න.");return;}
+            String clipped=text.length()>12000?text.substring(0,12000):text;
+            MayaAI.ask(this,"Analyze this document and summarize the important points:\n"+clipped,"Document provided by user", "document analyst",reply->runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Maya 📄").setMessage(reply).setPositiveButton("OK",null).show()));
+        }
+    }
+    private void analyzeMayaBitmapWithQuestion(Bitmap bitmap,String question){
+        try{
+            java.io.File file=new java.io.File(getCacheDir(),"maya_doc_page.jpg"); java.io.FileOutputStream out=new java.io.FileOutputStream(file); bitmap.compress(Bitmap.CompressFormat.JPEG,85,out); out.close();
+            MayaVision.analyze(this,Uri.fromFile(file),question,reply->runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Maya 📄").setMessage(reply).setPositiveButton("OK",null).show()));
+        }catch(Exception e){toast("Document page process කරන්න බැරි වුණා.");}
+    }
+
     private void openMayaGallery(){
         Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT); i.setType("image/*"); i.addCategory(Intent.CATEGORY_OPENABLE); startActivityForResult(i,PICK_MAYA_IMAGE);
     }
@@ -109,6 +143,7 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode,resultCode,data);
         if(resultCode!=RESULT_OK || data==null)return;
         if(requestCode==PICK_MAYA_IMAGE) analyzeMayaImage(data.getData());
+        else if(requestCode==PICK_MAYA_DOCUMENT) analyzeMayaDocument(data.getData());
         else if(requestCode==CAPTURE_MAYA_IMAGE){ Bitmap b=data.getParcelableExtra("data"); if(b!=null)analyzeMayaBitmap(b); }
     }
 
@@ -143,6 +178,7 @@ public class MainActivity extends Activity {
         Button maya=button("🎙️  Talk to Maya");maya.setOnClickListener(v->voiceAssistant.start());quick.addView(maya);
         Button image=button("🖼️  Ask Maya about a photo");image.setOnClickListener(v->openMayaGallery());quick.addView(image);
         Button camera=button("📷  Ask Maya with camera");camera.setOnClickListener(v->openMayaCamera());quick.addView(camera);
+        Button document=button("📄  Ask Maya about a document");document.setOnClickListener(v->openMayaDocument());quick.addView(document);
         Button journal=button("📝  Write today's journal");journal.setOnClickListener(v->journalDialog());quick.addView(journal);
         Button remind=button("⏰  Manage reminders");remind.setOnClickListener(v->showReminders());quick.addView(remind);
         content.addView(quick);
