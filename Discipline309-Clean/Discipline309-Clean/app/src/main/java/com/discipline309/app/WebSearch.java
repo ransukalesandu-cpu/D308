@@ -14,7 +14,7 @@ public class WebSearch {
     public static void search(Context context, String query, Callback callback){
         new Thread(() -> {
             try{
-                SharedPreferences p=context.getSharedPreferences("maya_web",Context.MODE_PRIVATE);
+                SharedPreferences p=MayaSecureStorage.web(context);
                 String key=p.getString("api_key","").trim();
                 if(key.isEmpty()){ callback.onResult(""); return; }
 
