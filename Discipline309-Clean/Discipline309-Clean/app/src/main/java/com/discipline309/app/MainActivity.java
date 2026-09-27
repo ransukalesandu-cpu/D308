@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.ViewGroup;
+import android.graphics.drawable.GradientDrawable;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -71,56 +72,83 @@ public class MainActivity extends Activity {
         return button;
     }
 
-    private void buildUi() {
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(18, 18, 18, 30);
-        root.setBackgroundColor(Color.rgb(13, 15, 20));
-        scroll.addView(root, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        setContentView(scroll);
+    private int dp(int v) { return (int)(v * getResources().getDisplayMetrics().density + .5f); }
 
-        root.addView(text("309 DAY DISCIPLINE 🔥", 26));
-        root.addView(text("Target: 01 Aug 2027", 16));
-        stats = text("", 14);
-        root.addView(stats);
-        refreshStats();
-
-        root.addView(text("Today's checklist", 20));
-        for (int index = 0; index < TASKS.length; index++) {
-            final int taskIndex = index;
-            CheckBox checkBox = new CheckBox(this);
-            checkBox.setText(TASKS[index]);
-            checkBox.setTextColor(Color.WHITE);
-            checkBox.setTextSize(16);
-            checkBox.setChecked(preferences.getBoolean("t" + index + dateKey(), false));
-            checkBox.setOnCheckedChangeListener((buttonView, checked) -> {
-                preferences.edit()
-                        .putBoolean("t" + taskIndex + dateKey(), checked)
-                        .apply();
-                refreshStats();
-            });
-            root.addView(checkBox);
-        }
-
-        Button complete = button("COMPLETE DAY");
-        complete.setOnClickListener(view -> completeDay());
-        root.addView(complete);
-
-        Button alarms = button("⏰ Alarms / reminders");
-        alarms.setOnClickListener(view -> alarmDialog());
-        root.addView(alarms);
-
-        Button assistant = button("💬 AI Discipline Assistant");
-        assistant.setOnClickListener(view -> chatDialog());
-        root.addView(assistant);
-
-        Button settings = button("⚙️ Settings / voice");
-        settings.setOnClickListener(view -> settingsDialog());
-        root.addView(settings);
+    private TextView label(String value, float size, int color) {
+        TextView v = new TextView(this);
+        v.setText(value); v.setTextSize(size); v.setTextColor(color);
+        v.setPadding(dp(4), dp(4), dp(4), dp(4)); return v;
     }
 
+    private LinearLayout card() {
+        LinearLayout c = new LinearLayout(this);
+        c.setOrientation(LinearLayout.VERTICAL);
+        c.setPadding(dp(18), dp(14), dp(18), dp(14));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.rgb(25, 29, 39)); bg.setCornerRadius(dp(18));
+        c.setBackground(bg);
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
+        p.setMargins(0, dp(7), 0, dp(7)); c.setLayoutParams(p);
+        return c;
+    }
+
+    private void buildUi() {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18), dp(20), dp(18), dp(28));
+        root.setBackgroundColor(Color.rgb(11, 14, 20));
+        scroll.addView(root); setContentView(scroll);
+
+        TextView title = label("309 DAY DISCIPLINE", 27, Color.WHITE);
+        title.setTypeface(null, 1); root.addView(title);
+        root.addView(label("Build discipline. One day at a time.", 14, Color.rgb(170,178,195)));
+
+        LinearLayout hero = card();
+        hero.addView(label("TARGET", 12, Color.rgb(145,155,175)));
+        hero.addView(label("01 AUG 2027", 23, Color.WHITE));
+        stats = label("", 15, Color.rgb(220,225,235));
+        stats.setPadding(4, dp(12), 4, dp(4)); hero.addView(stats);
+        root.addView(hero);
+
+        LinearLayout streak = card();
+        streak.addView(label("🔥  STREAK", 12, Color.rgb(145,155,175)));
+        TextView streakValue = label("", 20, Color.WHITE);
+        streakValue.setTypeface(null,1); streak.setTag(streakValue); streak.addView(streakValue);
+        streak.addView(label("Complete today's plan to keep your streak alive.", 13, Color.rgb(170,178,195)));
+        root.addView(streak);
+
+        TextView section = label("TODAY'S PLAN", 19, Color.WHITE);
+        section.setTypeface(null,1); root.addView(section);
+
+        for (int index = 0; index < TASKS.length; index++) {
+            final int taskIndex = index;
+            LinearLayout row = card();
+            CheckBox cb = new CheckBox(this);
+            cb.setText(TASKS[index]); cb.setTextColor(Color.WHITE); cb.setTextSize(15);
+            cb.setChecked(preferences.getBoolean("t" + index + dateKey(), false));
+            cb.setOnCheckedChangeListener((buttonView, checked) -> {
+                preferences.edit().putBoolean("t" + taskIndex + dateKey(), checked).apply();
+                refreshStats();
+            });
+            row.addView(cb); root.addView(row);
+        }
+
+        Button complete = button("✓  COMPLETE TODAY'S CHALLENGE");
+        complete.setOnClickListener(view -> completeDay()); root.addView(complete);
+
+        LinearLayout actions = card();
+        actions.addView(label("QUICK ACTIONS", 12, Color.rgb(145,155,175)));
+        Button alarms = button("⏰  Alarms & reminders");
+        alarms.setOnClickListener(view -> alarmDialog()); actions.addView(alarms);
+        Button assistant = button("💬  Discipline Assistant");
+        assistant.setOnClickListener(view -> chatDialog()); actions.addView(assistant);
+        Button settings = button("⚙  Settings");
+        settings.setOnClickListener(view -> settingsDialog()); actions.addView(settings);
+        root.addView(actions);
+        refreshStats();
+    }
     private String dateKey() {
         return new SimpleDateFormat("yyyyMMdd", Locale.US).format(new Date());
     }
