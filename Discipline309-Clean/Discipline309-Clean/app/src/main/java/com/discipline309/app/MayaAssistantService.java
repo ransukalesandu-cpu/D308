@@ -22,9 +22,11 @@ public class MayaAssistantService extends Service {
     private TextToSpeech tts;
     private boolean ready=false, stopping=false;
     private Handler handler;
+    private MayaMemory memory;
 
     @Override public void onCreate(){
         super.onCreate();
+        memory=new MayaMemory(this);
         createChannel();
         Intent open=new Intent(this,SettingsActivity.class);
         PendingIntent pi=PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
@@ -73,7 +75,9 @@ public class MayaAssistantService extends Service {
         if(!(l.contains("maya")||l.contains("මායා"))) return;
         String q=l.replace("maya","").replace("මායා","").trim();
 
-        if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")){
+        if(isMemoryCommand(q)){
+            handleMemory(q);
+        }else if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")){
             openApp(q);
         }else if(q.contains("call")||q.contains("කෝල්")){
             String target=q.replace("call","").replace("කෝල්","").trim();
@@ -88,7 +92,7 @@ public class MayaAssistantService extends Service {
             volumeUp();
         }else if(q.contains("music")||q.contains("pause")||q.contains("play")||q.contains("සින්දු")){
             mediaKey(q.contains("pause")||q.contains("නවත්ත"));
-        }else if(q.contains("notification")||q.contains("whatsapp")||q.contains("නොටිෆිකේෂන්")||q.contains("whatsapp")){
+        }else if(q.contains("notification")||q.contains("whatsapp")||q.contains("නොටිෆිකේෂන්")){
             readLatestNotification();
         }else if(q.contains("hello")||q.contains("hi")||q.contains("හෙලෝ")){
             speak(modeReply("හෙලෝ! මං Maya. කියන්න. 😄","හෙලෝ 😄 Maya online! කියන්නකෝ ✨","හෙලෝ! මං මෙතන. හෙමින් කියන්න. 💛"));
@@ -97,6 +101,58 @@ public class MayaAssistantService extends Service {
         }else{
             speak("හරි 😄 මට apps open කරන්න, call screen, DND, notifications, torch, volume, music වගේ phone actions කරන්න කියන්න.");
         }
+    }
+
+    private boolean isMemoryCommand(String q){
+        return q.contains("remember") || q.contains("mathaka") || q.contains("මතක") ||
+               q.contains("memory") || q.contains("save this") || q.contains("save me") ||
+               q.contains("forget") || q.contains("delete memory") || q.contains("clear memory");
+    }
+
+    private void handleMemory(String q){
+        if(q.contains("what do you remember") || q.contains("what you remember") ||
+           q.contains("මොනවා මතක") || q.contains("මතක තියෙන්නේ මොනවාද") || q.contains("memory list")){
+            String all=memory.all();
+            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:\n"+all);
+            return;
+        }
+        if(q.contains("forget") || q.contains("delete memory") || q.contains("clear memory") ||
+           q.contains("මතක අයින්") || q.contains("මතක මකන්න")){
+            memory.clear();
+            speak("හරි, මගේ saved memory එක clear කළා. 🧹");
+            return;
+        }
+
+        String fact=q;
+        String[] prefixes={
+            "please remember","remember that","remember","save this","save me",
+            "mathaka thiyaganna","mathaka thiyaganna meka","මතක තියාගන්න","මතක තියාගන්න මේක",
+            "මතක තියාගන්න"
+        };
+        for(String prefix:prefixes){
+            if(fact.startsWith(prefix)){
+                fact=fact.substring(prefix.length()).trim();
+                break;
+            }
+        }
+        fact=fact.replaceFirst("^[,:;\- ]+","");
+        if(fact.isEmpty()){
+            speak("මොකක්ද මතක තියාගන්න ඕනේ? 😄");
+            return;
+        }
+
+        // Automatic memory only accepts clear, ordinary facts/preferences.
+        // Avoid storing passwords, codes, payment details, or other sensitive secrets.
+        String lower=fact.toLowerCase(Locale.ROOT);
+        if(lower.contains("password")||lower.contains("passcode")||lower.contains("otp")||
+           lower.contains("pin")||lower.contains("cvv")||lower.contains("credit card")||
+           lower.contains("debit card")){
+            speak("Passwords, PINs, OTPs වගේ sensitive details මං memory එකට save කරන්නේ නැහැ. 🔒");
+            return;
+        }
+
+        memory.remember(fact);
+        speak("හරි, ඒක මතක තියාගත්තා. 🧠✨");
     }
 
     private void openApp(String command){
