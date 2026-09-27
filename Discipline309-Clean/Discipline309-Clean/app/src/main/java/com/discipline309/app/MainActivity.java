@@ -320,6 +320,6 @@ public class MainActivity extends Activity {
     }
     private void openSettings(){try{startActivity(new Intent(this,SettingsActivity.class));}catch(Exception e){new AlertDialog.Builder(this).setTitle("Settings").setMessage("Open Settings from the app menu.").setPositiveButton("OK",null).show();}}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();sound(ToneGenerator.TONE_PROP_BEEP);}
-    @Override protected void onResume(){super.onResume();applyTheme();}
+    @Override protected void onPause(){super.onPause();SupabaseAccountManager.syncLocalProgress(this,null);}\n    @Override protected void onResume(){super.onResume();applyTheme();}
     @Override protected void onDestroy(){if(voiceAssistant!=null)voiceAssistant.destroy();if(tone!=null)tone.release();super.onDestroy();}
 }
