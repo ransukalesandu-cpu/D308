@@ -14,7 +14,7 @@ public class MayaAI {
     public static void ask(Context context, String userText, String memoryText, String personality, Callback callback){
         new Thread(() -> {
             try{
-                SharedPreferences p=context.getSharedPreferences("maya_ai",Context.MODE_PRIVATE);
+                SharedPreferences p=MayaSecureStorage.maya(context);
                 String key=p.getString("api_key","").trim();
                 if(key.isEmpty()){
                     String offline=MayaOfflineNLP.answer(context,userText);
