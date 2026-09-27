@@ -60,6 +60,19 @@ public final class MayaContextProvider {
         }
 
         String journal=p.getString("journal_"+todayKey,"none");
+        int shortPlanCount=p.getInt("plan_count_"+todayKey,0);
+        int shortPlanDone=0;
+        String focusGoal=p.getString("plan_"+todayKey+"_goal","");
+        StringBuilder shortPlan=new StringBuilder();
+        for(int i=0;i<shortPlanCount;i++){
+            boolean done=p.getBoolean("plan_"+todayKey+"_"+i+"_done",false);
+            if(done) shortPlanDone++;
+            String name=p.getString("plan_"+todayKey+"_"+i+"_name","Task");
+            String time=p.getString("plan_"+todayKey+"_"+i+"_time","Anytime");
+            String priority=p.getString("plan_"+todayKey+"_"+i+"_priority","Medium");
+            if(shortPlan.length()>0) shortPlan.append(" | ");
+            shortPlan.append(name).append(" [").append(time).append(", ").append(priority).append(done?", done":", pending").append("]");
+        }
         return "309 DAY DISCIPLINE LIVE APP STATE: "+
                 "day="+day+"/"+PROGRAM_DAYS+
                 "; daysRemaining="+remaining+
@@ -75,9 +88,10 @@ public final class MayaContextProvider {
                 "; XPToNextLevel="+xpToNext+
                 "; dayMilestonesUnlocked="+unlocked+"/10"+
                 "; rewardedMissions="+rewardedMissions+
+                "; shortPlan="+shortPlanDone+"/"+shortPlanCount+" completed"+
+                "; focusGoal=\""+safe(focusGoal)+"\""+
+                "; shortPlanDetails=\""+safe(shortPlan.toString())+"\""+
                 "; journalToday=\""+safe(journal)+"\".";
-    }
-
     public static String quickStatus(Context context,String type){
         String full=build(context);
         if("mission".equals(type)) return extract(full,"todayMission=")+"; completed="+extract(full,"missionCompleted=");
