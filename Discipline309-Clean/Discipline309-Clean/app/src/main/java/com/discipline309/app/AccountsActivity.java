@@ -11,7 +11,7 @@ import java.util.*;
 
 public class AccountsActivity extends Activity {
     private int BG=0xFF0B0E14,SURFACE=0xFF191D27,TEXT=0xFFF7F8FC,MUTED=0xFFAAB2C3,ACCENT=0xFF63E6BE;
-    private LinearLayout root;
+    private LinearLayout root;\n    private LinearLayout subList;\n    private final Handler refreshHandler=new Handler(Looper.getMainLooper());\n    private final Runnable refreshRunnable=()->{ if(SupabaseAccountManager.loggedIn(this) && "primary".equals(SupabaseAccountManager.role(this))){ refreshLinked(); refreshHandler.postDelayed(refreshRunnable,5000); } };
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(5),dp(4),dp(5));return v;}
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(SURFACE);g.setCornerRadius(dp(18));l.setBackground(g);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
@@ -71,17 +71,23 @@ public class AccountsActivity extends Activity {
             if(ok)new AlertDialog.Builder(this).setTitle("Invite code").setMessage(msg+"\n\nGive this code to your brother. It expires in 7 days and can be used once.").setPositiveButton("OK",null).show();else toast(msg);
         })));c.addView(invite);
         root.addView(c);
-        LinearLayout list=card();list.addView(label("SUB ACCOUNTS",11,MUTED));list.addView(label("Loading…",12,MUTED));root.addView(list);
+        subList=card();subList.addView(label("SUB ACCOUNTS",11,MUTED));subList.addView(label("Loading…",12,MUTED));root.addView(subList);
+        refreshLinked();
+    }
+    private void refreshLinked(){
+        if(subList==null)return;
         SupabaseAccountManager.loadLinked(this,(ok,msg)->runOnUiThread(()->{
-            list.removeAllViews();list.addView(label("SUB ACCOUNTS",11,MUTED));
-            if(!ok){list.addView(label(msg,12,MUTED));return;}
+            if(subList==null)return;
+            subList.removeAllViews();subList.addView(label("SUB ACCOUNTS  •  auto-refresh 5s",11,MUTED));
+            if(!ok){subList.addView(label(msg,12,MUTED));return;}
             try{
                 JSONArray a=new JSONArray(msg);
-                if(a.length()==0){list.addView(label("No linked sub accounts yet. Create an invite above.",13,MUTED));return;}
-                for(int i=0;i<a.length();i++)addSubCard(list,a.getJSONObject(i));
-            }catch(Exception e){list.addView(label("Could not read progress.",12,MUTED));}
+                if(a.length()==0){subList.addView(label("No linked sub accounts yet. Create an invite above.",13,MUTED));return;}
+                for(int i=0;i<a.length();i++)addSubCard(subList,a.getJSONObject(i));
+            }catch(Exception e){subList.addView(label("Could not read progress.",12,MUTED));}
         }));
     }
+
     private void addSubCard(LinearLayout list,JSONObject x)throws Exception{
         String name=x.optString("display_name","Sub Account");
         LinearLayout c=card();c.setPadding(dp(14),dp(10),dp(14),dp(10));
@@ -125,5 +131,5 @@ public class AccountsActivity extends Activity {
         EditText code=new EditText(this);code.setHint("8-character invite code");code.setSingleLine(true);c.addView(code);
         Button join=button("🔗 Join Primary");join.setOnClickListener(v->{String s=code.getText().toString().trim();if(s.length()<6){toast("Enter the invite code.");return;}SupabaseAccountManager.joinInvite(this,s,(ok,msg)->runOnUiThread(()->{toast(msg);if(ok)build();}));});c.addView(join);root.addView(c);
     }
-    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
+    @Override protected void onResume(){super.onResume();if(SupabaseAccountManager.loggedIn(this) && "primary".equals(SupabaseAccountManager.role(this))){refreshHandler.removeCallbacks(refreshRunnable);refreshHandler.post(refreshRunnable);}}\n    @Override protected void onPause(){refreshHandler.removeCallbacks(refreshRunnable);super.onPause();}\n    @Override protected void onDestroy(){refreshHandler.removeCallbacks(refreshRunnable);super.onDestroy();}\n    private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
 }
