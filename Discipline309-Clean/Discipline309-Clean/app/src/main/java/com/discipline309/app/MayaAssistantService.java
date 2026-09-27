@@ -36,6 +36,7 @@ public class MayaAssistantService extends Service {
     private MayaMemory memory;
     private int speechErrorCount=0;
     private boolean listening=false;
+    private boolean ttsSpeaking=false;
 
     @Override public void onCreate(){
         super.onCreate();
@@ -525,7 +526,28 @@ public class MayaAssistantService extends Service {
         speak("Phone එක "+model+". Android "+Build.VERSION.RELEASE+". API "+Build.VERSION.SDK_INT+".");
     }
 
-    private void speak(String s){if(tts!=null&&ready){SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);if(!p.getBoolean("auto_speak",true))return;float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;tts.setSpeechRate(rate);tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"maya_"+System.currentTimeMillis());}}
+    private void speak(String s){
+        if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
+        SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
+        if(!p.getBoolean("auto_speak",true))return;
+        // Prevent Maya from hearing her own response through SpeechRecognizer.
+        if(recognizer!=null&&listening){
+            try{recognizer.cancel();}catch(Exception ignored){}
+            listening=false;
+        }
+        float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
+        tts.setSpeechRate(rate);
+        ttsSpeaking=true;
+        String id="maya_"+System.currentTimeMillis();
+        if(Build.VERSION.SDK_INT>=15){
+            tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener(){
+                @Override public void onStart(String utteranceId){ttsSpeaking=true;}
+                @Override public void onDone(String utteranceId){ttsSpeaking=false;}
+                @Override public void onError(String utteranceId){ttsSpeaking=false;}
+            });
+        }
+        tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,id);
+    }
     private void createChannel(){
         if(Build.VERSION.SDK_INT>=26){
             NotificationChannel ch=new NotificationChannel("maya_assistant","Maya Assistant",NotificationManager.IMPORTANCE_LOW);
