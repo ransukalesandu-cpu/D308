@@ -96,7 +96,7 @@ public class SettingsActivity extends Activity {
         root.addView(maya);
         LinearLayout mem=card();mem.addView(label("🧠 MAYA MEMORY",11,MUTED));
         mem.addView(label("Saved memory stays on this phone and can be cleared anytime.",12,MUTED));
-        Button viewMem=new Button(this);viewMem.setText("👀  View saved memory");viewMem.setAllCaps(false);viewMem.setOnClickListener(v->{String all=new MayaMemory(this).all();new AlertDialog.Builder(this).setTitle("Maya memory").setMessage(all.isEmpty()?"No saved memory yet.":all).setPositiveButton("OK",null).show();});mem.addView(viewMem);
+        Button viewMem=new Button(this);viewMem.setText("👀  View / delete saved memory");viewMem.setAllCaps(false);viewMem.setOnClickListener(v->showMemoryManager());mem.addView(viewMem);
         Button clearMem=new Button(this);clearMem.setText("🗑  Clear all Maya memory");clearMem.setAllCaps(false);clearMem.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Clear Maya memory?").setMessage("This removes all saved ordinary facts and preferences.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,w)->{new MayaMemory(this).clear();Toast.makeText(this,"Maya memory cleared.",Toast.LENGTH_SHORT).show();} ).show());mem.addView(clearMem);
         root.addView(mem);
 
@@ -105,6 +105,8 @@ public class SettingsActivity extends Activity {
         LinearLayout about=card();about.addView(label("ABOUT 309",11,MUTED));about.addView(label("309 Day Discipline",19,TEXT));about.addView(label("Build discipline. One day at a time.\nVersion 2.0 • Discipline + Maya",13,MUTED));root.addView(about);
         scroll.addView(root);setContentView(scroll);
     }
+    private void showMemoryManager(){MayaMemory m=new MayaMemory(this);String all=m.all();if(all.isEmpty()){new AlertDialog.Builder(this).setTitle("Maya memory").setMessage("No saved memory yet.").setPositiveButton("OK",null).show();return;}String[] items=all.split(String.valueOf((char)10));new AlertDialog.Builder(this).setTitle("Maya memory — tap one to delete").setItems(items,(d,which)->new AlertDialog.Builder(this).setTitle("Delete this memory?").setMessage(items[which]).setNegativeButton("Cancel",null).setPositiveButton("Delete",(x,w)->{m.remove(which);showMemoryManager();}).show()).setNegativeButton("Close",null).show();}
+
     private void speak(String s){if(tts==null)tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS)speakNow(s);});else speakNow(s);}
     private void speakNow(String s){float rate=.65f+(prefs.getInt("speech_speed",50)/100f)*.85f;tts.setLanguage(Locale.US);tts.setSpeechRate(rate);tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"discipline_settings");}
     @Override protected void onDestroy(){if(tts!=null){tts.stop();tts.shutdown();}if(tone!=null)tone.release();super.onDestroy();}
