@@ -6,6 +6,9 @@ import android.content.*;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.hardware.camera2.CameraManager;
+import android.media.AudioManager;
+import android.view.KeyEvent;
 import android.os.*;
 import android.provider.ContactsContract;
 import android.provider.Settings;
@@ -77,15 +80,60 @@ public class MayaAssistantService extends Service {
             setDnd(true);
         }else if((q.contains("do not disturb")||q.contains("dnd")||q.contains("disturb")) && (q.contains("off")||q.contains("අයින්")||q.contains("disable"))){
             setDnd(false);
+        }else if(q.contains("flash")||q.contains("torch")||q.contains("ටෝච්")){
+            toggleFlash();
+        }else if(q.contains("volume")||q.contains("ශබ්ද")||q.contains("sound")){
+            volumeUp();
+        }else if(q.contains("music")||q.contains("pause")||q.contains("play")||q.contains("සින්දු")){
+            mediaKey(q.contains("pause")||q.contains("නවත්ත"));
         }else if(q.contains("notification")||q.contains("whatsapp")||q.contains("නොටිෆිකේෂන්")||q.contains("whatsapp")){
             readLatestNotification();
         }else if(q.contains("hello")||q.contains("hi")||q.contains("හෙලෝ")){
-            speak("හෙලෝ! මං Maya. කියන්න. 😄");
+            speak(modeReply("හෙලෝ! මං Maya. කියන්න. 😄","හෙලෝ 😄 Maya online! කියන්නකෝ ✨","හෙලෝ! මං මෙතන. හෙමින් කියන්න. 💛"));
         }else if(q.contains("motivat")||q.contains("වැඩ")||q.contains("බැහැ")){
-            speak("හරි hero, පොඩි task එකක් දැන්ම පටන් ගමු. Excuses පස්සේ. 😂🔥");
+            speak(modeReply("හරි, පොඩි task එකක් දැන්ම පටන් ගමු. 🔥","හරි hero 😂 excuses වලට අද නිවාඩු! පටන් ගමු. 🔥","හරි, අමාරු නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛"));
         }else{
-            speak("හරි, මං අහගෙන ඉන්නේ. Call, Do Not Disturb, notifications වගේ දේවල් කියන්න.");
+            speak("හරි 😄 මට call screen, DND, notifications, torch, volume, music වගේ phone actions කරන්න කියන්න.");
         }
+    }
+
+    private String modeReply(String normal,String funny,String sweet){
+        SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
+        if(p.getBoolean("mode_sweet",false)) return sweet;
+        if(p.getBoolean("mode_cute",false)) return funny;
+        if(p.getBoolean("mode_funny",true)) return funny;
+        return normal;
+    }
+
+    private void toggleFlash(){
+        if(Build.VERSION.SDK_INT<23){speak("මේ phone එකේ flashlight control support නැහැ.");return;}
+        try{
+            CameraManager cm=(CameraManager)getSystemService(CAMERA_SERVICE);
+            String id=cm.getCameraIdList()[0];
+            SharedPreferences p=getSharedPreferences("maya_runtime",MODE_PRIVATE);
+            boolean on=!p.getBoolean("flash",false);
+            cm.setTorchMode(id,on);p.edit().putBoolean("flash",on).apply();
+            speak(on?"Torch ON 🔦":"Torch OFF");
+        }catch(Exception e){speak("Torch control කරන්න බැරි වුණා.");}
+    }
+
+    private void volumeUp(){
+        try{
+            AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
+            am.adjustVolume(AudioManager.ADJUST_RAISE,AudioManager.FLAG_SHOW_UI);
+            speak("Volume ටිකක් වැඩි කළා. 🔊");
+        }catch(Exception e){speak("Volume control කරන්න බැරි වුණා.");}
+    }
+
+    private void mediaKey(boolean pause){
+        try{
+            AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
+            long now=SystemClock.uptimeMillis();
+            int key=pause?KeyEvent.KEYCODE_MEDIA_PAUSE:KeyEvent.KEYCODE_MEDIA_PLAY;
+            am.dispatchMediaKeyEvent(new KeyEvent(now,now,KeyEvent.ACTION_DOWN,key));
+            am.dispatchMediaKeyEvent(new KeyEvent(now,now,KeyEvent.ACTION_UP,key));
+            speak(pause?"Music pause කළා. ⏸️":"Music play කළා. ▶️");
+        }catch(Exception e){speak("Music control කරන්න බැරි වුණා.");}
     }
 
     private void callContact(String name){
