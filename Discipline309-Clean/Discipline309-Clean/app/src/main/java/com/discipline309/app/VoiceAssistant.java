@@ -84,7 +84,7 @@ public class VoiceAssistant {
     private void handle(String spoken) {
         String q = spoken == null ? "" : spoken.trim();
         String lower = q.toLowerCase(Locale.ROOT);
-        boolean called = lower.contains("maya") || lower.contains("මායා");
+        boolean called = lower.contains("maya") || lower.contains("මායා") || lower.contains("මායෝ") || lower.contains("මයා");
 
         if (!called) {
             speak("මට කතා කරන්න නම් මුලින් Maya කියලා කතා කරන්න. 😄");
@@ -98,20 +98,20 @@ public class VoiceAssistant {
         boolean sweet=activity.getSharedPreferences("settings",0).getBoolean("mode_sweet",false);
         if (activity instanceof MainActivity) {
             MainActivity m=(MainActivity)activity;
-            if (question.contains("what is my mission") || question.contains("today mission") || question.contains("mission mokakda") || question.contains("mission eka mokakda")) {
-                speak(m.mayaQuickStatus("mission")); return;
+            if (question.contains("අද mission") || question.contains("mission එක මොකක්ද") || question.contains("mission eka mokakda") || question.contains("ada mission")) {
+                speak("හරි 😄 "+m.mayaQuickStatus("mission")); return;
             }
-            if (question.contains("how much xp") || question.contains("my xp") || question.contains("xp kiyadha") || question.contains("level kiyadha")) {
-                speak(m.mayaQuickStatus("xp")); return;
+            if (question.contains("xp කීයද") || question.contains("xp kiyadha") || question.contains("මගේ xp") || question.contains("මගේ ලෙවල්") || question.contains("level kiyadha")) {
+                speak("හරි 😄 "+m.mayaQuickStatus("xp")); return;
             }
-            if (question.contains("my streak") || question.contains("streak kiyadha") || question.contains("best streak")) {
-                speak(m.mayaQuickStatus("streak")); return;
+            if (question.contains("මගේ streak") || question.contains("streak එක කීයද") || question.contains("streak kiyadha") || question.contains("best streak")) {
+                speak("ඔන්න 🔥 "+m.mayaQuickStatus("streak")); return;
             }
-            if (question.contains("which day") || question.contains("what day") || question.contains("day kiyadha") || question.contains("day eke")) {
-                speak(m.mayaQuickStatus("day")); return;
+            if (question.contains("මම කීවෙනි දවසේද") || question.contains("අද කීවෙනි දවසද") || question.contains("day kiyadha") || question.contains("දවස කීයද")) {
+                speak("හරි 📅 "+m.mayaQuickStatus("day")); return;
             }
-            if (question.contains("how am i doing") || question.contains("my progress") || question.contains("progress eka kohomada")) {
-                speak(m.mayaQuickStatus("progress")); return;
+            if (question.contains("මං කොහොමද") || question.contains("මම කොහොමද යන්නේ") || question.contains("progress eka kohomada") || question.contains("මගේ progress")) {
+                speak("හරි 😄 "+m.mayaQuickStatus("progress")); return;
             }
         }
         if (question.contains("reset mission") || question.contains("mission reset") || question.contains("mission eka reset") || question.contains("mission eka ain")) {
