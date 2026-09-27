@@ -33,9 +33,9 @@ public class SettingsActivity extends Activity {
         Button test=new Button(this);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
         LinearLayout ai=card();ai.addView(label("🧠 MAYA REAL AI BRAIN",11,MUTED));
         ai.addView(label("Connect Maya to an AI model for natural conversations. The key is stored only on this phone.",12,MUTED));
-        EditText key=new EditText(this);key.setHint("AI API key");key.setText(getSharedPreferences("maya_ai",MODE_PRIVATE).getString("api_key",""));key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
-        EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");model.setText(getSharedPreferences("maya_ai",MODE_PRIVATE).getString("model","gpt-5-mini"));model.setSingleLine(true);ai.addView(model);
-        Button saveAi=new Button(this);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{getSharedPreferences("maya_ai",MODE_PRIVATE).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();});ai.addView(saveAi);
+        EditText key=new EditText(this);key.setHint("AI API key");key.setText(MayaSecureStorage.maya(this).getString("api_key",""));key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
+        EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));model.setSingleLine(true);ai.addView(model);
+        Button saveAi=new Button(this);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{MayaSecureStorage.maya(this).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();});ai.addView(saveAi);
         ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
         root.addView(ai);
 
@@ -43,12 +43,12 @@ public class SettingsActivity extends Activity {
         web.addView(label("Give Maya real-time web search for current questions, news, and facts. The key is stored only on this phone.",12,MUTED));
         EditText webKey=new EditText(this);
         webKey.setHint("Tavily API key");
-        webKey.setText(getSharedPreferences("maya_web",MODE_PRIVATE).getString("api_key",""));
+        webKey.setText(MayaSecureStorage.web(this).getString("api_key",""));
         webKey.setSingleLine(true);
         webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         web.addView(webKey);
         Button saveWeb=new Button(this);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
-        saveWeb.setOnClickListener(v->{getSharedPreferences("maya_web",MODE_PRIVATE).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();});
+        saveWeb.setOnClickListener(v->{MayaSecureStorage.web(this).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();});
         web.addView(saveWeb);
         Button testWeb=new Button(this);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
         testWeb.setOnClickListener(v->{
