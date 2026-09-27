@@ -23,6 +23,7 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private LinearLayout content;
     private TextView homeStats, homeStreak;
+    private VoiceAssistant voiceAssistant;
     private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView label(String s,float size,int color){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(color);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
     private GradientDrawable shape(int color,int radius){GradientDrawable g=new GradientDrawable();g.setColor(color);g.setCornerRadius(dp(radius));return g;}
@@ -33,7 +34,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle b){
         super.onCreate(b);getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);
-        prefs=getSharedPreferences(PREFS,MODE_PRIVATE); buildShell(); showHome();
+        prefs=getSharedPreferences(PREFS,MODE_PRIVATE); voiceAssistant=new VoiceAssistant(this); buildShell(); showHome();
         if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);
     }
 
@@ -63,7 +64,8 @@ public class MainActivity extends Activity {
         Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);
         LinearLayout actions=card();actions.addView(label("QUICK ACTIONS",11,MUTED));
         Button r=button("⏰  Manage reminders");r.setOnClickListener(v->showReminders());actions.addView(r);
-        Button a=button("💬  Discipline Assistant");a.setOnClickListener(v->chatDialog());actions.addView(a);content.addView(actions);refreshHome();
+        Button a=button("🎙️  Talk to Maya");a.setOnClickListener(v->voiceAssistant.start());actions.addView(a);
+        Button chat=button("💬  Text Assistant");chat.setOnClickListener(v->chatDialog());actions.addView(chat);content.addView(actions);refreshHome();
     }
 
     private void refreshHome(){
@@ -122,4 +124,5 @@ public class MainActivity extends Activity {
     private String localReply(String q){q=q.toLowerCase(Locale.ROOT);if(q.contains("sleep")||q.contains("නින්ද"))return"Put the phone away and get ready for sleep. 🌙";if(q.contains("can't")||q.contains("බැහැ"))return"Start with one small task. 🔥";return"Start with one small step now. You've got this. 🔥";}
     private void settingsDialog(){new AlertDialog.Builder(this).setTitle("Settings").setMessage("Open Settings from the bottom navigation to manage voice, notifications and progress.").setPositiveButton("OK",null).show();}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
+    @Override protected void onDestroy(){if(voiceAssistant!=null)voiceAssistant.destroy();super.onDestroy();}
 }
