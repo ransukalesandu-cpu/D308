@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
     private void setChecked(int i,String d,boolean v){prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}
     private int countFor(String d){int n=0;for(int i=0;i<totalTasks();i++)if(checked(i,d))n++;return n;}
     private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
-    private int xp(){return completedDays()*100+totalCompletedTasks()*20;}
+    private int xp(){return completedDays()*100+totalCompletedTasks()*20+prefs.getInt("xp_bonus",0);}\n    private void awardXp(int amount,String reason){if(amount<=0)return;prefs.edit().putInt("xp_bonus",prefs.getInt("xp_bonus",0)+amount).apply();toast(reason+"  +"+amount+" XP");}
     private int totalCompletedTasks(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){n+=countFor(key(c));c.add(Calendar.DAY_OF_YEAR,1);}return n;}
     private int level(){return xp()/500+1;}
     private int currentStreak(){int n=0;Calendar c=Calendar.getInstance();if(!prefs.getBoolean("done_"+key(c),false))c.add(Calendar.DAY_OF_YEAR,-1);while(!c.before(startDate())&&prefs.getBoolean("done_"+key(c),false)){n++;c.add(Calendar.DAY_OF_YEAR,-1);}return n;}
@@ -98,7 +98,7 @@ public class MainActivity extends Activity {
         missionDone.setChecked(prefs.getBoolean(missionKey+"_done",false));
         missionDone.setOnCheckedChangeListener((v,checked)->{
             prefs.edit().putBoolean(missionKey+"_done",checked).apply();
-            if(checked) toast("Mission complete! +50 XP 🎯");
+            if(checked && !prefs.getBoolean(missionKey+"_rewarded",false)){ prefs.edit().putBoolean(missionKey+"_rewarded",true).apply(); awardXp(50,"Mission complete! 🎯"); }
         });
         mission.addView(missionDone);
         content.addView(mission);
