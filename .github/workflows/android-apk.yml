@@ -26,11 +26,11 @@ jobs:
           gradle-version: '8.11.1'
 
       - name: Build APK
-        working-directory: .
+        working-directory: Discipline309-Clean/Discipline309-Clean
         run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Discipline309-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: Discipline309-Clean/Discipline309-Clean/app/build/outputs/apk/debug/app-debug.apk
