@@ -245,15 +245,15 @@ public class MayaAssistantService extends Service {
         }else if(q.contains("focus")||q.contains("focus goal")||q.contains("මගේ focus")){
             String live=MayaContextProvider.build(this);
             speak("🎯 "+extractContext(live,"focusGoal="));
-        }else if(q.contains("mission")||q.contains("මගේ mission")||q.contains("mission එක")){
+        }else if(q.contains("mission")||q.contains("මගේ mission")||q.contains("mission එක")||q.contains("mission eka")||q.contains("ada mission")){
             speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"mission"));
-        }else if(q.contains("xp")||q.contains("level")||q.contains("මගේ ලෙවල්")){
+        }else if(q.contains("xp")||q.contains("level")||q.contains("මගේ ලෙවල්")||q.contains("mage xp")||q.contains("xp kiyada")){
             speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"xp"));
-        }else if(q.contains("streak")||q.contains("මගේ streak")){
+        }else if(q.contains("streak")||q.contains("මගේ streak")||q.contains("streak eka")||q.contains("mage streak")){
             speak("ඔන්න 🔥 "+MayaContextProvider.quickStatus(this,"streak"));
-        }else if(q.contains("day")||q.contains("දවස කීයද")||q.contains("කීවෙනි දවස")){
+        }else if(q.contains("day")||q.contains("දවස කීයද")||q.contains("කීවෙනි දවස")||q.contains("kaweni dawaseda")||q.contains("mage day")){
             speak("හරි 📅 "+MayaContextProvider.quickStatus(this,"day"));
-        }else if(q.contains("progress")||q.contains("කොහොමද යන්නේ")){
+        }else if(q.contains("progress")||q.contains("කොහොමද යන්නේ")||q.contains("mage progress")||q.contains("progress eka kohomada")){
             speak("හරි 😄 "+MayaContextProvider.quickStatus(this,"progress"));
         }else if(q.contains("hello")||q.contains("hi")||q.contains("හෙලෝ")){
             speak(modeReply("හෙලෝ! මං Maya. කියන්න. 😄","හෙලෝ 😄 Maya online! කියන්නකෝ ✨","හෙලෝ! මං මෙතන. හෙමින් කියන්න. 💛"));
