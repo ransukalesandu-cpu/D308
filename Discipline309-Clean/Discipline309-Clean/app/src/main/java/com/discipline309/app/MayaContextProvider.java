@@ -64,7 +64,7 @@ public final class MayaContextProvider {
                 "day="+day+"/"+PROGRAM_DAYS+
                 "; daysRemaining="+remaining+
                 "; todayTasks="+todayTasks+"/"+totalTasks+
-                "; todayMission=""+safe(mission)+"""+
+                "; todayMission=\""+safe(mission)+"\""+
                 "; missionCompleted="+missionDone+
                 "; currentStreak="+currentStreak+
                 "; bestStreak="+bestStreak+
@@ -75,7 +75,7 @@ public final class MayaContextProvider {
                 "; XPToNextLevel="+xpToNext+
                 "; dayMilestonesUnlocked="+unlocked+"/10"+
                 "; rewardedMissions="+rewardedMissions+
-                "; journalToday=""+safe(journal)+"".";
+                "; journalToday=\""+safe(journal)+"\".";
     }
 
     public static String quickStatus(Context context,String type){
