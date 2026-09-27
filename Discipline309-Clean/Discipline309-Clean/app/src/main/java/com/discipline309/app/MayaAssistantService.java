@@ -25,7 +25,7 @@ public class MayaAssistantService extends Service {
     // later without changing the command-routing code.
     private boolean wakeWordEnabled = true;
     private boolean wakeWordDetected = false;
-    private boolean realWakeWordActive = false;
+    private boolean realWakeWordActive = false;\n    private boolean conversationMode = false;
     private OpenWakeWordAdapter wakeWordAdapter;
 
     private static final int ID=3099;
@@ -180,7 +180,7 @@ public class MayaAssistantService extends Service {
         }
     }
 
-    private void handle(String raw){
+    private void endConversationMode(){\n        conversationMode=false;\n        realWakeWordActive=false;\n        wakeWordDetected=false;\n        if(handler!=null && !stopping) handler.postDelayed(this::startWakeWord,250);\n    }\n\n    private void handle(String raw){
         if(!mayaAllowed()){ stopSelf(); return; }
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
