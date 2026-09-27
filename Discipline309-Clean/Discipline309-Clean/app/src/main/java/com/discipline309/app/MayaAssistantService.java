@@ -294,6 +294,56 @@ public class MayaAssistantService extends Service {
         }
     }
 
+
+    private String normalizeMixedCommand(String q){
+        if(q==null) return "";
+        String s=q.toLowerCase(Locale.ROOT).trim();
+        String[][] map={
+            {"mage","මගේ"},{"eka","එක"},{"kiyada","කීයද"},{"kohomada","කොහොමද"},
+            {"mona","මොන"},{"monawada","මොනවද"},{"ada","අද"},{"dan","දැන්"},
+            {"karanna","කරන්න"},{"karamu","කරමු"},{"thiyenawada","තියෙනවද"},
+            {"nathi","නැති"},{"on","දාන්න"},{"off","අයින් කරන්න"},
+            {"balanna","බලන්න"},{"kiyanna","කියන්න"},{"hari","හරි"}
+        };
+        for(String[] pair:map) s=s.replaceAll("(?<![\\p{L}])"+java.util.regex.Pattern.quote(pair[0])+"(?![\\p{L}])",pair[1]);
+        return s.replaceAll("\\s+"," ").trim();
+    }
+
+    private String resolveSmartIntent(String q){
+        if(q==null) return "";
+        String s=q.trim();
+        String l=s.toLowerCase(Locale.ROOT);
+        if(l.contains("streak")) return "streak";
+        if(l.contains("xp") || l.contains("level")) return "xp";
+        if(l.contains("focus")) return "focus";
+        if(l.contains("plan") || l.contains("daily") || l.contains("short plan") || l.contains("අද වැඩ")) return "plan";
+        if(l.contains("torch") || l.contains("flash") || l.contains("ටෝච්")){
+            if(l.contains("off") || l.contains("අයින්")) return "torch off";
+            return "torch on";
+        }
+        return s;
+    }
+
+    private String[] splitMultiStepCommand(String q){
+        if(q==null || q.trim().isEmpty()) return new String[]{""};
+        String[] parts=q.split("\\s+(?:and|then|සහ|ඊළඟට|ඊට පස්සේ)\\s+");
+        return parts.length==0 ? new String[]{q.trim()} : parts;
+    }
+
+    private String followUpContext(String q){
+        if(q==null || q.trim().isEmpty()) return null;
+        String l=q.toLowerCase(Locale.ROOT).trim();
+        boolean shortReply=l.equals("yes")||l.equals("yeah")||l.equals("yep")||l.equals("ok")||
+            l.equals("okay")||l.equals("sure")||l.equals("no")||l.equals("nah")||
+            l.equals("හරි")||l.equals("ඔව්")||l.equals("ඔව් කරමු")||l.equals("ඒක කරමු");
+        boolean continuation=l.contains("and then")||l.contains("then what")||l.contains("what next")||
+            l.contains("තව කියන්න")||l.contains("ඊළඟට")||l.contains("ඉතින්")||l.contains("ඒක මොකක්ද");
+        if(!shortReply && !continuation) return null;
+        if(lastUserQuery.isEmpty() && lastMayaReply.isEmpty()) return null;
+        return "Continue the conversation naturally. Previous user: "+lastUserQuery+
+            " | Previous Maya reply: "+lastMayaReply+" | Current user: "+q;
+    }
+
     private String extractContext(String s,String key){
         int i=s.indexOf(key); if(i<0)return "අද focus goal එකක් set කරලා නැහැ.";
         int j=s.indexOf(';',i); if(j<0)j=s.length();
