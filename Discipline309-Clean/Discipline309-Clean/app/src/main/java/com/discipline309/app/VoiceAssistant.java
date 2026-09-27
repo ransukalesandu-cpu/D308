@@ -113,6 +113,15 @@ public class VoiceAssistant {
             if (question.contains("මං කොහොමද") || question.contains("මම කොහොමද යන්නේ") || question.contains("progress eka kohomada") || question.contains("මගේ progress")) {
                 speak("හරි 😄 "+m.mayaQuickStatus("progress")); return;
             }
+            if (question.contains("අද මොන tasks") || question.contains("ada mona tasks") || question.contains("today tasks") || question.contains("tasks monawada")) {
+                speak("හරි 😄 "+m.mayaQuickStatus("progress")); return;
+            }
+            if (question.contains("මට motivate") || question.contains("mata motivate") || question.contains("motivate me") || question.contains("මාව motivate")) {
+                speak("හරි 🔥 එක පොඩි task එකක් දැන්ම පටන් ගමු. අද excuses වලට නිවාඩු! 😄"); return;
+            }
+            if (question.contains("achievements") || question.contains("achievement") || question.contains("ජයග්‍රහණ")) {
+                speak("ඔයාගේ achievements බලන්න Stats එකේ Achievements open කරන්න. 🏆"); return;
+            }
         }
         if (question.contains("reset mission") || question.contains("mission reset") || question.contains("mission eka reset") || question.contains("mission eka ain")) {
             if (activity instanceof MainActivity) {
