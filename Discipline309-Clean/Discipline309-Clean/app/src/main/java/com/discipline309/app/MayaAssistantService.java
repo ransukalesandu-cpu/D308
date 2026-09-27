@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.hardware.camera2.CameraManager;
 import android.media.AudioManager;
 import android.view.KeyEvent;
+import android.view.KeyCharacterMap;
 import android.os.*;
 import android.provider.ContactsContract;
 import android.provider.Settings;
