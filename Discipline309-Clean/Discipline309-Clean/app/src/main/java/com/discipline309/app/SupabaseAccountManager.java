@@ -46,7 +46,7 @@ public final class SupabaseAccountManager {
                 JSONObject body=new JSONObject().put("email",email).put("password",password);
                 JSONObject r=request("POST","/auth/v1/token?grant_type=password",body,null);
                 saveSession(c,r);
-                ensureProfile(c, null, "primary", null);
+                loadExistingProfile(c);
                 cb.done(true,"Signed in.");
             }catch(Exception e){cb.done(false,errorMessage(e));}
         });
@@ -126,7 +126,7 @@ public final class SupabaseAccountManager {
         p(c).edit().clear().apply();
     }
 
-    private static void ensureProfile(Context c,String name,String role,String parentId)throws Exception{
+    private static void loadExistingProfile(Context c)throws Exception{\n        String uid=userId(c);\n        JSONArray existing=requestArray("GET","/rest/v1/profiles?id=eq."+URLEncoder.encode(uid,"UTF-8")+"&select=id,display_name,role,parent_id",null,c);\n        if(existing.length()>0){\n            JSONObject x=existing.getJSONObject(0);\n            p(c).edit().putString("display_name",x.optString("display_name","")).putString("role",x.optString("role","")).putString("parent_id",x.optString("parent_id","")).apply();\n        }\n    }\n\n    private static void ensureProfile(Context c,String name,String role,String parentId)throws Exception{
         String uid=userId(c);
         JSONArray existing=requestArray("GET","/rest/v1/profiles?id=eq."+URLEncoder.encode(uid,"UTF-8")+"&select=id,display_name,role,parent_id",null,c);
         if(existing.length()>0){
