@@ -222,7 +222,7 @@ public class MainActivity extends Activity {
         EditText input=new EditText(this);input.setHint("Ask Maya in Sinhala, Singlish or English...");input.setMinLines(2);
         new AlertDialog.Builder(this).setTitle("💬 Maya").setMessage("Ask anything about your routine, discipline or today.").setView(input).setPositiveButton("SEND",(d,w)->askMaya(input.getText().toString())).setNegativeButton("CLOSE",null).show();
     }
-    private String buildMayaContext(){
+    public String buildMayaContext(){
         String missionKey="mission_"+key();
         String mission=prefs.getString(missionKey,"");
         if(mission.isEmpty()){
