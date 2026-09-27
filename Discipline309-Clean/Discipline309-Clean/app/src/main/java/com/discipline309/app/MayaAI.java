@@ -16,7 +16,11 @@ public class MayaAI {
             try{
                 SharedPreferences p=context.getSharedPreferences("maya_ai",Context.MODE_PRIVATE);
                 String key=p.getString("api_key","").trim();
-                if(key.isEmpty()){callback.onReply("Maya AI brain එක activate කරන්න Settings වල AI API key එක add කරන්න. 🧠");return;}
+                if(key.isEmpty()){
+                    String offline=MayaOfflineNLP.answer(context,userText);
+                    callback.onReply(offline!=null?offline:"Internet/API නැති නිසා full AI reply එක available නැහැ. Basic offline commands තවමත් වැඩ කරනවා. 📡");
+                    return;
+                }
                 String endpoint=p.getString("endpoint","https://api.openai.com/v1/chat/completions").trim();
                 String model=p.getString("model","gpt-5-mini").trim();
 
