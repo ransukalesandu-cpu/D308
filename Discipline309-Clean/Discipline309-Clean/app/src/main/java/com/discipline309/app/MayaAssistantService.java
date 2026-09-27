@@ -37,6 +37,7 @@ public class MayaAssistantService extends Service {
 
     @Override public void onCreate(){
         super.onCreate();
+        if(!mayaAllowed()){ stopSelf(); return; }
         memory=new MayaMemory(this);
         createChannel();
         Intent open=new Intent(this,SettingsActivity.class);
@@ -52,8 +53,12 @@ public class MayaAssistantService extends Service {
         handler.postDelayed(this::startWakeWord,700);
     }
 
+    private boolean mayaAllowed(){
+        return !SupabaseAccountManager.loggedIn(this) || SupabaseAccountManager.can(this,"can_use_maya");
+    }
+
     private void startWakeWord(){
-        if(stopping || !wakeWordEnabled) return;
+        if(stopping || !wakeWordEnabled || !mayaAllowed()){ if(!mayaAllowed()) stopSelf(); return; }
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
             speak("Microphone permission එක allow කරන්න.");
             return;
@@ -76,7 +81,7 @@ public class MayaAssistantService extends Service {
     }
 
     private void onMayaWakeWord(){
-        if(stopping) return;
+        if(stopping || !mayaAllowed()){ stopSelf(); return; }
         wakeWordDetected=true;
         realWakeWordActive=true;
         if(wakeWordAdapter!=null) wakeWordAdapter.stop();
@@ -85,7 +90,7 @@ public class MayaAssistantService extends Service {
     }
 
     private void listen(){
-        if(stopping || !ready || !SpeechRecognizer.isRecognitionAvailable(this)) return;
+        if(stopping || !ready || !mayaAllowed() || !SpeechRecognizer.isRecognitionAvailable(this)){ if(!mayaAllowed()) stopSelf(); return; }
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){speak("Microphone permission එක allow කරන්න.");return;}
         if(recognizer!=null) recognizer.destroy();
         recognizer=SpeechRecognizer.createSpeechRecognizer(this);
@@ -99,6 +104,7 @@ public class MayaAssistantService extends Service {
             public void onEvent(int t,Bundle b){}
             public void onError(int e){restart(900);}
             public void onResults(Bundle b){
+                if(!mayaAllowed()){ stopSelf(); return; }
                 ArrayList<String> m=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String s=m==null||m.isEmpty()?"":m.get(0);
                 handle(s);
@@ -117,9 +123,10 @@ public class MayaAssistantService extends Service {
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"si-LK");
         recognizer.startListening(i);
     }
-    private void restart(long d){if(handler!=null)handler.postDelayed(this::listen,d);}
+    private void restart(long d){if(handler!=null && mayaAllowed())handler.postDelayed(this::listen,d);}
 
     private void handle(String raw){
+        if(!mayaAllowed()){ stopSelf(); return; }
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
         if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
@@ -497,7 +504,10 @@ public class MayaAssistantService extends Service {
             ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(ch);
         }
     }
-    @Override public int onStartCommand(Intent i,int flags,int id){return START_STICKY;}
+    @Override public int onStartCommand(Intent i,int flags,int id){
+        if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
+        return START_STICKY;
+    }
     @Override public void onDestroy(){
         stopping=true;
         if(handler!=null)handler.removeCallbacksAndMessages(null);
