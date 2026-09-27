@@ -10,10 +10,13 @@ import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.view.*;
 import android.widget.*;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import java.util.Locale;
 
 public class SettingsActivity extends Activity {
-    private SharedPreferences prefs; private TextToSpeech tts;
+    private SharedPreferences prefs; private TextToSpeech tts; private ToneGenerator tone;
+    private void clickSound(){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,70);tone.startTone(ToneGenerator.TONE_PROP_ACK,90);}catch(Exception ignored){}}
     private static final int BG=0xFF0B0E14,SURFACE=0xFF191D27,TEXT=0xFFF7F8FC,MUTED=0xFFAAB2C3,ACCENT=0xFF63E6BE;
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(6),dp(4),dp(6));return v;}
@@ -26,7 +29,7 @@ public class SettingsActivity extends Activity {
         Switch speak=new Switch(this);speak.setText("Auto speak AI responses");speak.setTextColor(TEXT);speak.setTextSize(15);speak.setChecked(prefs.getBoolean("auto_speak",true));speak.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("auto_speak",c).apply());voice.addView(speak);
         voice.addView(label("Speech speed",14,TEXT));SeekBar speed=new SeekBar(this);speed.setMax(100);speed.setProgress(prefs.getInt("speech_speed",50));voice.addView(speed);TextView speedText=label("Normal",12,MUTED);voice.addView(speedText);
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
-        Button test=new Button(this);test.setText("🔊  Test AI voice");test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
+        Button test=new Button(this);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
         LinearLayout coach=card();coach.addView(label("BACKGROUND COACH",11,MUTED));Switch bgCoach=new Switch(this);bgCoach.setText("Funny Sinhala motivation in background");bgCoach.setTextColor(TEXT);bgCoach.setTextSize(15);bgCoach.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));bgCoach.setOnCheckedChangeListener((v,on)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();Intent i=new Intent(this,MotivationService.class);if(on){if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();}else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}});coach.addView(bgCoach);coach.addView(label("Uses your phone's installed Sinhala TTS voice. Android shows a persistent notification while active.",12,MUTED));root.addView(coach);
 
         LinearLayout maya=card();maya.addView(label("MAYA BACKGROUND ASSISTANT",11,MUTED));
@@ -51,10 +54,10 @@ public class SettingsActivity extends Activity {
         });
         maya.addView(bgMaya);
         maya.addView(label("Maya uses a visible Android foreground notification while listening. Voice recognition may use mobile data depending on the phone's speech engine.",12,MUTED));
-        Button notifyAccess=new Button(this);notifyAccess.setText("🔔  Allow WhatsApp notification access");notifyAccess.setAllCaps(false);
+        Button notifyAccess=new Button(this);notifyAccess.setText("🔔  Allow WhatsApp notification access");notifyAccess.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});notifyAccess.setAllCaps(false);
         notifyAccess.setOnClickListener(v->{try{startActivity(new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});
         maya.addView(notifyAccess);
-        Button dndAccess=new Button(this);dndAccess.setText("🔕  Allow DND control");dndAccess.setAllCaps(false);
+        Button dndAccess=new Button(this);dndAccess.setText("🔕  Allow DND control");dndAccess.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});dndAccess.setAllCaps(false);
         dndAccess.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});
         maya.addView(dndAccess);
         root.addView(maya);
@@ -65,5 +68,5 @@ public class SettingsActivity extends Activity {
     }
     private void speak(String s){if(tts==null)tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS)speakNow(s);});else speakNow(s);}
     private void speakNow(String s){float rate=.65f+(prefs.getInt("speech_speed",50)/100f)*.85f;tts.setLanguage(Locale.US);tts.setSpeechRate(rate);tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"discipline_settings");}
-    @Override protected void onDestroy(){if(tts!=null){tts.stop();tts.shutdown();}super.onDestroy();}
+    @Override protected void onDestroy(){if(tts!=null){tts.stop();tts.shutdown();}if(tone!=null)tone.release();super.onDestroy();}
 }
