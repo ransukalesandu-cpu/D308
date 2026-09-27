@@ -73,7 +73,9 @@ public class MayaAssistantService extends Service {
         if(!(l.contains("maya")||l.contains("මායා"))) return;
         String q=l.replace("maya","").replace("මායා","").trim();
 
-        if(q.contains("call")||q.contains("කෝල්")){
+        if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")){
+            openApp(q);
+        }else if(q.contains("call")||q.contains("කෝල්")){
             String target=q.replace("call","").replace("කෝල්","").trim();
             callContact(target);
         }else if((q.contains("do not disturb")||q.contains("dnd")||q.contains("disturb")) && (q.contains("on")||q.contains("දාන්න")||q.contains("enable"))){
@@ -93,8 +95,37 @@ public class MayaAssistantService extends Service {
         }else if(q.contains("motivat")||q.contains("වැඩ")||q.contains("බැහැ")){
             speak(modeReply("හරි, පොඩි task එකක් දැන්ම පටන් ගමු. 🔥","හරි hero 😂 excuses වලට අද නිවාඩු! පටන් ගමු. 🔥","හරි, අමාරු නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛"));
         }else{
-            speak("හරි 😄 මට call screen, DND, notifications, torch, volume, music වගේ phone actions කරන්න කියන්න.");
+            speak("හරි 😄 මට apps open කරන්න, call screen, DND, notifications, torch, volume, music වගේ phone actions කරන්න කියන්න.");
         }
+    }
+
+    private void openApp(String command){
+        String q=command.toLowerCase(Locale.ROOT)
+            .replace("open app","").replace("open","").replace("launch","").replace("start","")
+            .replace("ඇප් එක open","").replace("ඇප් එක අරින්න","").trim();
+        String pkg=null, name=q;
+        if(q.contains("youtube")||q.contains("යූටියුබ්")){pkg="com.google.android.youtube";name="YouTube";}
+        else if(q.contains("whatsapp")||q.contains("වට්ස්ඇප්")){pkg="com.whatsapp";name="WhatsApp";}
+        else if(q.contains("chrome")||q.contains("ක්‍රෝම්")){pkg="com.android.chrome";name="Chrome";}
+        else if(q.contains("instagram")||q.contains("ඉන්ස්ටග්‍රෑම්")){pkg="com.instagram.android";name="Instagram";}
+        else if(q.contains("facebook")||q.contains("ෆේස්බුක්")){pkg="com.facebook.katana";name="Facebook";}
+        else if(q.contains("tiktok")||q.contains("ටික්ටොක්")){pkg="com.zhiliaoapp.musically";name="TikTok";}
+        else if(q.contains("spotify")||q.contains("ස්පොටිෆයි")){pkg="com.spotify.music";name="Spotify";}
+        else if(q.contains("maps")||q.contains("map")||q.contains("මැප්")){pkg="com.google.android.apps.maps";name="Google Maps";}
+        else if(q.contains("gmail")||q.contains("ජීමේල්")){pkg="com.google.android.gm";name="Gmail";}
+        else if(q.contains("camera")||q.contains("කැමරා")){pkg="com.android.camera";name="Camera";}
+        else if(q.contains("settings")||q.contains("සෙටින්")){pkg="com.android.settings";name="Settings";}
+        if(pkg==null){
+            speak("ඒ app එකේ නම මට හඳුනාගන්න බැරි වුණා. YouTube, WhatsApp, Chrome, Instagram, TikTok, Spotify, Maps වගේ app එකක් කියන්න.");
+            return;
+        }
+        try{
+            Intent launch=getPackageManager().getLaunchIntentForPackage(pkg);
+            if(launch==null){speak(name+" phone එකේ install කරලා නැහැ.");return;}
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(launch);
+            speak(name+" open කළා. 📱");
+        }catch(Exception e){speak(name+" open කරන්න බැරි වුණා.");}
     }
 
     private String modeReply(String normal,String funny,String sweet){
