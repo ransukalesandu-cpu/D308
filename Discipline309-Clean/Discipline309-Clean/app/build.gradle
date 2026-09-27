@@ -1,11 +1,55 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 
-android { namespace 'com.discipline309.app'; compileSdk 35
-    defaultConfig { applicationId 'com.discipline309.app'; minSdk 26; targetSdk 35; versionCode 7; versionName '2.2' }
+android {
+    namespace 'com.discipline309.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.discipline309.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 7
+        versionName '2.2'
+    }
+}
+
+def wakeModelsDir = file("$projectDir/src/main/assets")
+
+tasks.register("downloadWakeWordModels") {
+    outputs.files(
+        file("$wakeModelsDir/melspectrogram.onnx"),
+        file("$wakeModelsDir/embedding_model.onnx"),
+        file("$wakeModelsDir/maya.onnx")
+    )
+    doLast {
+        wakeModelsDir.mkdirs()
+        def models = [
+            "melspectrogram.onnx": "https://raw.githubusercontent.com/Tuesday-Labs/maya/main/WAKEWORD/models/melspectrogram.onnx",
+            "embedding_model.onnx": "https://raw.githubusercontent.com/Tuesday-Labs/maya/main/WAKEWORD/models/embedding_model.onnx",
+            "maya.onnx": "https://raw.githubusercontent.com/Tuesday-Labs/maya/main/WAKEWORD/models/maya.onnx"
+        ]
+        models.each { name, url ->
+            def out = file("$wakeModelsDir/$name")
+            if (!out.exists() || out.length() == 0) {
+                logger.lifecycle("Downloading openWakeWord model: $name")
+                new URL(url).withInputStream { input ->
+                    out.withOutputStream { output -> output << input }
+                }
+            }
+        }
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("downloadWakeWordModels")
 }
 
 dependencies {
     implementation 'androidx.room:room-runtime:2.8.2'
     implementation 'androidx.room:room-ktx:2.8.2'
     annotationProcessor 'androidx.room:room-compiler:2.8.2'
+    implementation 'xyz.rementia:openwakeword:0.1.4'
 }
