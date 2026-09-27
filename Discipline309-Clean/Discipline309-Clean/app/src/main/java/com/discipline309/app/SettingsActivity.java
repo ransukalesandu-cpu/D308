@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.view.*;
+import android.text.InputType;
 import android.widget.*;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -30,6 +31,14 @@ public class SettingsActivity extends Activity {
         voice.addView(label("Speech speed",14,TEXT));SeekBar speed=new SeekBar(this);speed.setMax(100);speed.setProgress(prefs.getInt("speech_speed",50));voice.addView(speed);TextView speedText=label("Normal",12,MUTED);voice.addView(speedText);
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=new Button(this);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
+        LinearLayout ai=card();ai.addView(label("🧠 MAYA REAL AI BRAIN",11,MUTED));
+        ai.addView(label("Connect Maya to an AI model for natural conversations. The key is stored only on this phone.",12,MUTED));
+        EditText key=new EditText(this);key.setHint("AI API key");key.setText(getSharedPreferences("maya_ai",MODE_PRIVATE).getString("api_key",""));key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
+        EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");model.setText(getSharedPreferences("maya_ai",MODE_PRIVATE).getString("model","gpt-5-mini"));model.setSingleLine(true);ai.addView(model);
+        Button saveAi=new Button(this);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{getSharedPreferences("maya_ai",MODE_PRIVATE).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();});ai.addView(saveAi);
+        ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
+        root.addView(ai);
+
         LinearLayout customize=card();customize.addView(label("🎨 CUSTOMIZE EXPERIENCE",11,MUTED));
         customize.addView(label("Choose one of 3 complete UI styles. The app restarts its screen when you return.",12,MUTED));
         RadioGroup themes=new RadioGroup(this); themes.setOrientation(RadioGroup.VERTICAL);
@@ -85,6 +94,12 @@ public class SettingsActivity extends Activity {
         dndAccess.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});
         maya.addView(dndAccess);
         root.addView(maya);
+        LinearLayout mem=card();mem.addView(label("🧠 MAYA MEMORY",11,MUTED));
+        mem.addView(label("Saved memory stays on this phone and can be cleared anytime.",12,MUTED));
+        Button viewMem=new Button(this);viewMem.setText("👀  View saved memory");viewMem.setAllCaps(false);viewMem.setOnClickListener(v->{String all=new MayaMemory(this).all();new AlertDialog.Builder(this).setTitle("Maya memory").setMessage(all.isEmpty()?"No saved memory yet.":all).setPositiveButton("OK",null).show();});mem.addView(viewMem);
+        Button clearMem=new Button(this);clearMem.setText("🗑  Clear all Maya memory");clearMem.setAllCaps(false);clearMem.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Clear Maya memory?").setMessage("This removes all saved ordinary facts and preferences.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,w)->{new MayaMemory(this).clear();Toast.makeText(this,"Maya memory cleared.",Toast.LENGTH_SHORT).show();} ).show());mem.addView(clearMem);
+        root.addView(mem);
+
         LinearLayout app=card();app.addView(label("APP",11,MUTED));Switch notifications=new Switch(this);notifications.setText("Notifications");notifications.setTextColor(TEXT);notifications.setTextSize(15);notifications.setChecked(prefs.getBoolean("notifications",true));notifications.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(notifications);
         Button reset=new Button(this);reset.setText("↻  Reset progress");reset.setAllCaps(false);reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Reset progress?").setMessage("This will remove saved discipline progress and alarms.").setNegativeButton("Cancel",null).setPositiveButton("Reset",(d,w)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().clear().apply();Toast.makeText(this,"Progress reset",Toast.LENGTH_SHORT).show();} ).show());app.addView(reset);root.addView(app);
         LinearLayout about=card();about.addView(label("ABOUT 309",11,MUTED));about.addView(label("309 Day Discipline",19,TEXT));about.addView(label("Build discipline. One day at a time.\nVersion 1.1 • Offline-first",13,MUTED));root.addView(about);
