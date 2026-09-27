@@ -16,7 +16,7 @@ public class WebSearch {
             try{
                 SharedPreferences p=MayaSecureStorage.web(context);
                 String key=p.getString("api_key","").trim();
-                if(key.isEmpty()){ callback.onResult(""); return; }
+                if(key.isEmpty()){ if(callback!=null) callback.onResult(""); return; }
 
                 JSONObject body=new JSONObject();
                 body.put("api_key",key);
@@ -36,7 +36,7 @@ public class WebSearch {
                 int code=c.getResponseCode();
                 InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
                 String response=read(stream);
-                if(code<200||code>=300){ callback.onResult(""); return; }
+                if(code<200||code>=300){ if(callback!=null) callback.onResult(""); c.disconnect(); return; }
 
                 JSONObject json=new JSONObject(response);
                 StringBuilder out=new StringBuilder();
@@ -56,7 +56,7 @@ public class WebSearch {
                            .append(" | ").append(url).append(" | ").append(snippet).append("\n");
                     }
                 }
-                callback.onResult(out.toString().trim());
+                if(callback!=null) callback.onResult(out.toString().trim());
                 c.disconnect();
             }catch(Exception e){ callback.onResult(""); }
         }).start();
@@ -65,7 +65,7 @@ public class WebSearch {
     public static String searchSync(Context context, String query){
         final String[] result={""};
         try{
-            SharedPreferences p=context.getSharedPreferences("maya_web",Context.MODE_PRIVATE);
+            SharedPreferences p=MayaSecureStorage.web(context);
             String key=p.getString("api_key","").trim();
             if(key.isEmpty()) return "";
             JSONObject body=new JSONObject();
@@ -75,7 +75,7 @@ public class WebSearch {
             body.put("include_answer",true);
             body.put("max_results",5);
             HttpURLConnection c=(HttpURLConnection)new URL("https://api.tavily.com/search").openConnection();
-            c.setRequestMethod("POST"); c.setConnectTimeout(12000); c.setReadTimeout(20000); c.setDoOutput(true);
+            c.setRequestMethod("POST"); c.setConnectTimeout(8000); c.setReadTimeout(12000); c.setDoOutput(true);
             c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
             c.getOutputStream().write(body.toString().getBytes(StandardCharsets.UTF_8));
             int code=c.getResponseCode();
@@ -107,7 +107,8 @@ public class WebSearch {
         if(in==null)return "";
         BufferedReader r=new BufferedReader(new InputStreamReader(in,StandardCharsets.UTF_8));
         StringBuilder b=new StringBuilder(); String line;
-        while((line=r.readLine())!=null)b.append(line);
+        final int MAX_BYTES=1024*1024;
+        while((line=r.readLine())!=null){ b.append(line); if(b.length()>MAX_BYTES) break; }
         r.close(); return b.toString();
     }
 }
