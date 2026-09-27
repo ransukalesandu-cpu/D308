@@ -25,7 +25,8 @@ public class MayaAssistantService extends Service {
     // later without changing the command-routing code.
     private boolean wakeWordEnabled = true;
     private boolean wakeWordDetected = false;
-    private boolean realWakeWordActive = false;\n    private boolean conversationMode = false;
+    private boolean realWakeWordActive = false;
+    private boolean conversationMode = false;
     private OpenWakeWordAdapter wakeWordAdapter;
 
     private static final int ID=3099;
@@ -36,7 +37,10 @@ public class MayaAssistantService extends Service {
     private MayaMemory memory;
     private int speechErrorCount=0;
     private boolean listening=false;
-    private boolean ttsSpeaking=false;\n    // Lightweight in-session context for short follow-up replies.\n    private String lastUserQuery="";\n    private String lastMayaReply="";
+    private boolean ttsSpeaking=false;
+    // Lightweight in-session context for short follow-up replies.
+    private String lastUserQuery="";
+    private String lastMayaReply="";
 
     @Override public void onCreate(){
         super.onCreate();
@@ -180,12 +184,38 @@ public class MayaAssistantService extends Service {
         }
     }
 
-    private void endConversationMode(){\n        conversationMode=false;\n        realWakeWordActive=false;\n        wakeWordDetected=false;\n        if(handler!=null && !stopping) handler.postDelayed(this::startWakeWord,250);\n    }\n\n    private void handle(String raw){
+    private void endConversationMode(){
+        conversationMode=false;
+        realWakeWordActive=false;
+        wakeWordDetected=false;
+        if(handler!=null && !stopping) handler.postDelayed(this::startWakeWord,250);
+    }
+
+    private void handle(String raw){
         if(!mayaAllowed()){ stopSelf(); return; }
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
         if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
-        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();\n        q=normalizeMixedCommand(q);\n        q=resolveSmartIntent(q);\n        String[] steps=splitMultiStepCommand(q);\n        if(steps.length>1){\n            StringBuilder combined=new StringBuilder();\n            for(String step:steps){\n                String intent=resolveSmartIntent(step);\n                if(combined.length()>0) combined.append(" | ");\n                combined.append(intent);\n            }\n            q=combined.toString();\n        }\n        if(q.isEmpty()) return;\n        String followUp=followUpContext(q);\n        if(followUp!=null){\n            askAI(followUp);\n            return;\n        }\n        lastUserQuery=q;
+        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
+        q=normalizeMixedCommand(q);
+        q=resolveSmartIntent(q);
+        String[] steps=splitMultiStepCommand(q);
+        if(steps.length>1){
+            StringBuilder combined=new StringBuilder();
+            for(String step:steps){
+                String intent=resolveSmartIntent(step);
+                if(combined.length()>0) combined.append(" | ");
+                combined.append(intent);
+            }
+            q=combined.toString();
+        }
+        if(q.isEmpty()) return;
+        String followUp=followUpContext(q);
+        if(followUp!=null){
+            askAI(followUp);
+            return;
+        }
+        lastUserQuery=q;
 
         if(isMemoryCommand(q)){
             handleMemory(q);
@@ -290,7 +320,10 @@ public class MayaAssistantService extends Service {
         String live=MayaContextProvider.build(this);
         String context="Public creator profile: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. This is public profile information and may be shared when asked. Do not reveal private memory or private conversations. | Saved memory: "+memoryText+" | "+live+
                 " Current app state is authoritative for discipline data. Use it naturally and don't invent values.";
-        MayaAI.ask(this,userText,context,personality,reply->handler.post(()->{\n            lastMayaReply=reply==null?"":reply;\n            speak(reply);\n        })));
+        MayaAI.ask(this,userText,context,personality,reply->handler.post(()->{
+            lastMayaReply=reply==null?"":reply;
+            speak(reply);
+        })));
     }
 
     private boolean isMemoryCommand(String q){
@@ -303,7 +336,8 @@ public class MayaAssistantService extends Service {
         if(q.contains("what do you remember") || q.contains("what you remember") ||
            q.contains("මොනවා මතක") || q.contains("මතක තියෙන්නේ මොනවාද") || q.contains("memory list")){
             String all=memory.all();
-            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:\n"+all);
+            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:
+"+all);
             return;
         }
         if(q.contains("forget") || q.contains("delete memory") || q.contains("clear memory") ||
