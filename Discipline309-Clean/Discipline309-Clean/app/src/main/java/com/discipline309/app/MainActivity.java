@@ -68,12 +68,7 @@ public class MainActivity extends Activity {
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);
         ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(14),dp(18),dp(12));sc.addView(content);root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(2),dp(4),dp(2),dp(4));nav.setBackgroundColor(0xFF11151E);
-        String[] names={"⌂
-Home","▣
-Journey","✓
-Habits","◫
-Stats","⚙
-Settings"};
+        String[] names={"⌂\nHome","▣\nJourney","✓\nHabits","◫\nStats","⚙\nSettings"};
         for(int i=0;i<5;i++){final int n=i;Button b=button(names[i]);b.setTextSize(11);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showJourney();else if(n==2)showHabits();else if(n==3)showStats();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}
         root.addView(nav);setContentView(root);
     }
