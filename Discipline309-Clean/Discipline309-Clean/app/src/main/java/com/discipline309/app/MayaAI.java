@@ -59,9 +59,24 @@ public class MayaAI {
                 messages.put(system);
 
                 SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
-                JSONArray recent=new JSONArray(history.getString("recent","[]"));
+                JSONArray recent=new JSONArray();
+                try{
+                    String saved=history.getString("recent","[]");
+                    if(saved!=null && saved.length()<=12000) recent=new JSONArray(saved);
+                }catch(Exception ignored){
+                    history.edit().remove("recent").apply();
+                }
                 int start=Math.max(0,recent.length()-8);
-                for(int i=start;i<recent.length();i++) messages.put(recent.getJSONObject(i));
+                for(int i=start;i<recent.length();i++){
+                    try{
+                        JSONObject item=recent.getJSONObject(i);
+                        String role=item.optString("role","");
+                        String content=item.optString("content","");
+                        if(("user".equals(role)||"assistant".equals(role)) && !content.trim().isEmpty() && content.length()<=3000){
+                            messages.put(item);
+                        }
+                    }catch(Exception ignored){}
+                }
 
                 JSONObject user=new JSONObject();
                 user.put("role","user");
@@ -98,8 +113,12 @@ public class MayaAI {
                 String finalReply=reply.isEmpty()?MayaOfflineNLP.answer(context,userText):reply;
                 if(finalReply==null||finalReply.trim().isEmpty()) finalReply="Mayaට දැන් full AI reply එක හදාගන්න බැහැ 😅. Basic offline commands තවමත් වැඩ කරනවා.";
                 try{
-                    JSONArray updated=new JSONArray(history.getString("recent","[]"));
-                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText);updated.put(hu);
+                    JSONArray updated=new JSONArray();
+                    try{
+                        String saved=history.getString("recent","[]");
+                        if(saved!=null && saved.length()<=12000) updated=new JSONArray(saved);
+                    }catch(Exception ignored){}
+                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(3000,userText.length())));updated.put(hu);
                     JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
                     while(updated.length()>8){
                         JSONArray trimmed=new JSONArray();
