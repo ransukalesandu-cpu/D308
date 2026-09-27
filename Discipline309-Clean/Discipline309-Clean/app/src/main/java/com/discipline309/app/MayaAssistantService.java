@@ -36,7 +36,7 @@ public class MayaAssistantService extends Service {
     private MayaMemory memory;
     private int speechErrorCount=0;
     private boolean listening=false;
-    private boolean ttsSpeaking=false;
+    private boolean ttsSpeaking=false;\n    // Lightweight in-session context for short follow-up replies.\n    private String lastUserQuery="";\n    private String lastMayaReply="";
 
     @Override public void onCreate(){
         super.onCreate();
@@ -185,7 +185,7 @@ public class MayaAssistantService extends Service {
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
         if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
-        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
+        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();\n        if(q.isEmpty()) return;\n        String followUp=followUpContext(q);\n        if(followUp!=null){\n            askAI(followUp);\n            return;\n        }\n        lastUserQuery=q;
 
         if(isMemoryCommand(q)){
             handleMemory(q);
@@ -290,7 +290,7 @@ public class MayaAssistantService extends Service {
         String live=MayaContextProvider.build(this);
         String context="Public creator profile: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. This is public profile information and may be shared when asked. Do not reveal private memory or private conversations. | Saved memory: "+memoryText+" | "+live+
                 " Current app state is authoritative for discipline data. Use it naturally and don't invent values.";
-        MayaAI.ask(this,userText,context,personality,reply->handler.post(()->speak(reply)));
+        MayaAI.ask(this,userText,context,personality,reply->handler.post(()->{\n            lastMayaReply=reply==null?"":reply;\n            speak(reply);\n        })));
     }
 
     private boolean isMemoryCommand(String q){
