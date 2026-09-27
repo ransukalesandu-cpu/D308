@@ -60,11 +60,17 @@ public class MayaAI {
 
                 SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
                 JSONArray recent=new JSONArray();
+                String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.ROOT).format(new java.util.Date());
                 try{
-                    String saved=history.getString("recent","[]");
-                    if(saved!=null && saved.length()<=12000) recent=new JSONArray(saved);
+                    String historyDay=history.getString("history_day","");
+                    if(!todayKey.equals(historyDay)){
+                        history.edit().remove("recent").putString("history_day",todayKey).apply();
+                    }else{
+                        String saved=history.getString("recent","[]");
+                        if(saved!=null && saved.length()<=12000) recent=new JSONArray(saved);
+                    }
                 }catch(Exception ignored){
-                    history.edit().remove("recent").apply();
+                    history.edit().remove("recent").putString("history_day",todayKey).apply();
                 }
                 int start=Math.max(0,recent.length()-8);
                 for(int i=start;i<recent.length();i++){
@@ -115,8 +121,11 @@ public class MayaAI {
                 try{
                     JSONArray updated=new JSONArray();
                     try{
-                        String saved=history.getString("recent","[]");
-                        if(saved!=null && saved.length()<=12000) updated=new JSONArray(saved);
+                        String historyDay=history.getString("history_day",todayKey);
+                        if(todayKey.equals(historyDay)){
+                            String saved=history.getString("recent","[]");
+                            if(saved!=null && saved.length()<=12000) updated=new JSONArray(saved);
+                        }
                     }catch(Exception ignored){}
                     JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(3000,userText.length())));updated.put(hu);
                     JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
