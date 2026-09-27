@@ -18,7 +18,7 @@ import java.util.*;
 public class MainActivity extends Activity {
     private static final String PREFS="discipline";
     private static final String[] DEFAULT_TASKS={"Wake up on time","Study / learning","Workout or active recovery","Eat planned meals","No-phone block","Night review + prepare tomorrow"};
-    private int BG=0xFF0B0E14,SURFACE=0xFF191D27,TEXT=0xFFF7F8FC,MUTED=0xFFAAB2C3,ACCENT=0xFF63E6BE;
+    private int BG=0xFF061126,SURFACE=0xFF0B1B3A,TEXT=0xFFF5F8FF,MUTED=0xFF9CB2D9,ACCENT=0xFF2F7BFF;
     private SharedPreferences prefs;
     private LinearLayout content;
     private VoiceAssistant voiceAssistant;
@@ -57,7 +57,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle b){super.onCreate(b);prefs=getSharedPreferences(PREFS,MODE_PRIVATE);ensureProgramStart();applyTheme();voiceAssistant=new VoiceAssistant(this);buildShell();showHome();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);}
     private void applyTheme(){String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");if("neon".equals(t)){BG=0xFF05050A;SURFACE=0xFF101525;TEXT=0xFFFFFFFF;MUTED=0xFF9CA8C7;ACCENT=0xFF00E5FF;}else if("soft".equals(t)){BG=0xFFF6F3F8;SURFACE=0xFFFFFFFF;TEXT=0xFF25222B;MUTED=0xFF77727F;ACCENT=0xFFB56CFF;}getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);}
-    private void buildShell(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(14),dp(18),dp(12));sc.addView(content);root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(2),dp(4),dp(2),dp(4));nav.setBackgroundColor(0xFF11151E);String[] names={"⌂\nHome","▣\nJourney","✓\nHabits","◫\nStats","⚙\nSettings"};for(int i=0;i<5;i++){final int n=i;Button b=button(names[i]);b.setTextSize(11);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showJourney();else if(n==2)showHabits();else if(n==3)showStats();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}root.addView(nav);setContentView(root);}
+    private void buildShell(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(14),dp(18),dp(12));sc.addView(content);root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(2),dp(4),dp(2),dp(4));nav.setBackgroundColor(0xFF11151E);String[] names={"⌂\nHome","◷\nPlan","✓\nHabits","◫\nStats","⚙\nSettings"};for(int i=0;i<5;i++){final int n=i;Button b=button(names[i]);b.setTextSize(11);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showStats();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}root.addView(nav);setContentView(root);}
     private void header(String title,String sub){content.removeAllViews();TextView t=label(title,26,TEXT);t.setTypeface(null,1);content.addView(t);content.addView(label(sub,13,MUTED));ImageView icon=new ImageView(this);icon.setImageResource(R.drawable.ic_discipline);icon.setContentDescription("Discipline");icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(64),dp(64));ip.gravity=Gravity.CENTER_HORIZONTAL;ip.topMargin=dp(5);content.addView(icon,ip);}
     private TextView title(String s){TextView t=label(s,19,TEXT);t.setTypeface(null,1);t.setPadding(dp(4),dp(14),dp(4),dp(5));return t;}
     private void addBar(LinearLayout box,int value,int max){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(Math.max(1,max));p.setProgress(Math.max(0,Math.min(max,value)));p.setProgressDrawable(getDrawable(android.R.drawable.progress_horizontal));box.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
@@ -75,6 +75,131 @@ public class MainActivity extends Activity {
     public void editTodayMissionFromMaya(String requested){final EditText e=new EditText(this);e.setHint("e.g. Study for 30 minutes");e.setSingleLine(false);if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}String current=prefs.getString("mission_"+key(),"");if(requested!=null&&!requested.trim().isEmpty())e.setText(requested.trim());else if(!current.isEmpty())e.setText(current);new AlertDialog.Builder(this).setTitle("🎯 Edit Today's Mission").setMessage("Maya can change today's mission. The new mission will be saved for today.").setView(e).setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){prefs.edit().putString("mission_"+key(),s).apply();toast("Today's mission updated by Maya 🎯");showHome();}}).setNegativeButton("CANCEL",null).show();}
     public void resetTodayMissionFromMaya(){if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}String k="mission_"+key();prefs.edit().remove(k).remove(k+"_done").apply();toast("Today's mission reset 🎯");showHome();}
     private void showMilestoneCard(){int days=completedDays();String next=days<7?"7 days":days<30?"30 days":days<50?"50 days":days<100?"100 days":days<150?"150 days":days<200?"200 days":days<309?"309 days":"ALL 309 DAYS";LinearLayout m=card();m.addView(label("NEXT MILESTONE",11,MUTED));m.addView(label("🏆 "+next,20,TEXT));content.addView(m);}
+    private String planDate(){return key();}
+
+    private int planCount(){return prefs.getInt("plan_count_"+planDate(),0);}
+
+    private String planTaskName(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_name","Task");}
+
+    private String planTaskTime(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_time","Anytime");}
+
+    private String planTaskPriority(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_priority","Medium");}
+
+    private boolean planTaskDone(int i){return prefs.getBoolean("plan_"+planDate()+"_"+i+"_done",false);}
+
+    private void showShortPlan(){
+        content.removeAllViews();
+        TextView top=label("Short Planning",26,TEXT);top.setTypeface(null,1);content.addView(top);
+        content.addView(label("Quick plan. Big results. Stay focused.",13,MUTED));
+
+        int count=planCount(),done=0;
+        for(int i=0;i<count;i++)if(planTaskDone(i))done++;
+        int pct=count==0?0:Math.round(done*100f/count);
+
+        LinearLayout progress=card();
+        progress.setBackground(shape(0xFF0D234A,20));
+        progress.addView(label("TODAY'S PLAN",11,MUTED));
+        TextView p=label(done+"/"+count+" tasks completed",22,TEXT);p.setTypeface(null,1);progress.addView(p);
+        addBar(progress,done,Math.max(1,count));
+        progress.addView(label(pct+"% complete  •  "+(count-done)+" remaining",12,MUTED));
+        content.addView(progress);
+
+        Button add=button("＋  CREATE / ADD TASK");
+        add.setTextColor(Color.WHITE);
+        add.setBackground(shape(0xFF1769FF,18));
+        add.setOnClickListener(v->addPlanTaskDialog());
+        content.addView(add);
+
+        if(count==0){
+            LinearLayout empty=card();
+            TextView e=label("📅\n\nNo plan for today yet.",19,TEXT);e.setGravity(Gravity.CENTER);
+            empty.addView(e);
+            empty.addView(label("Add a few important tasks and keep the plan short.",13,MUTED));
+            content.addView(empty);
+        }else{
+            content.addView(title("TODAY'S TASKS"));
+            for(int i=0;i<count;i++)addPlanTaskRow(i);
+            Button clear=button("✓  MARK ALL AS DONE");
+            clear.setOnClickListener(v->{for(int i=0;i<count;i++)prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",true).apply();showShortPlan();});
+            content.addView(clear);
+        }
+
+        LinearLayout focus=card();
+        focus.addView(label("FOCUS GOAL",11,MUTED));
+        String goal=prefs.getString("plan_"+planDate()+"_goal","");
+        focus.addView(label(goal.isEmpty()?"Set one main goal for today.":goal,17,TEXT));
+        Button goalBtn=button("🎯  Set / Edit Goal");
+        goalBtn.setOnClickListener(v->editPlanGoalDialog());
+        focus.addView(goalBtn);
+        content.addView(focus);
+
+        Button journey=button("▦  View 309-Day Journey");
+        journey.setOnClickListener(v->showJourney());
+        content.addView(journey);
+    }
+
+    private void addPlanTaskRow(int i){
+        LinearLayout row=card();row.setPadding(dp(10),dp(9),dp(10),dp(9));
+        LinearLayout line=new LinearLayout(this);line.setGravity(Gravity.CENTER_VERTICAL);
+        CheckBox cb=new CheckBox(this);cb.setChecked(planTaskDone(i));cb.setButtonTintList(android.content.res.ColorStateList.valueOf(ACCENT));
+        cb.setOnCheckedChangeListener((v,x)->{prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",x).apply();});
+        line.addView(cb,new LinearLayout.LayoutParams(dp(42),dp(48)));
+        LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+        TextView name=label(planTaskName(i),16,TEXT);name.setTypeface(null,1);info.addView(name);
+        info.addView(label(planTaskTime(i)+"   •   "+planTaskPriority(i),12,MUTED));
+        line.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+        Button edit=button("⋮");edit.setMinWidth(dp(44));edit.setOnClickListener(v->editPlanTaskDialog(i));
+        line.addView(edit);
+        row.addView(line);
+        content.addView(row);
+    }
+
+    private void addPlanTaskDialog(){
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(4),0,dp(4),0);
+        EditText name=new EditText(this);name.setHint("Task name");name.setSingleLine(true);box.addView(name);
+        EditText time=new EditText(this);time.setHint("Time (e.g. 5:00 PM - 6:00 PM)");time.setSingleLine(true);box.addView(time);
+        Spinner priority=new Spinner(this);String[] ps={"High","Medium","Low"};priority.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,ps));box.addView(priority);
+        new AlertDialog.Builder(this).setTitle("Create Short Plan Task").setView(box).setPositiveButton("ADD",(d,w)->{
+            String n=name.getText().toString().trim();if(n.isEmpty())return;
+            int i=planCount();SharedPreferences.Editor e=prefs.edit();
+            e.putInt("plan_count_"+planDate(),i+1).putString("plan_"+planDate()+"_"+i+"_name",n)
+             .putString("plan_"+planDate()+"_"+i+"_time",time.getText().toString().trim().isEmpty()?"Anytime":time.getText().toString().trim())
+             .putString("plan_"+planDate()+"_"+i+"_priority",ps[priority.getSelectedItemPosition()]).apply();
+            showShortPlan();
+        }).setNegativeButton("CANCEL",null).show();
+    }
+
+    private void editPlanTaskDialog(int i){
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
+        EditText name=new EditText(this);name.setText(planTaskName(i));box.addView(name);
+        EditText time=new EditText(this);time.setText(planTaskTime(i));box.addView(time);
+        Spinner priority=new Spinner(this);String[] ps={"High","Medium","Low"};priority.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,ps));
+        for(int j=0;j<ps.length;j++)if(ps[j].equals(planTaskPriority(i)))priority.setSelection(j);
+        box.addView(priority);
+        new AlertDialog.Builder(this).setTitle("Edit Task").setView(box).setPositiveButton("SAVE",(d,w)->{
+            prefs.edit().putString("plan_"+planDate()+"_"+i+"_name",name.getText().toString().trim())
+             .putString("plan_"+planDate()+"_"+i+"_time",time.getText().toString().trim())
+             .putString("plan_"+planDate()+"_"+i+"_priority",ps[priority.getSelectedItemPosition()]).apply();showShortPlan();
+        }).setNeutralButton("DELETE",(d,w)->deletePlanTask(i)).setNegativeButton("CANCEL",null).show();
+    }
+
+    private void deletePlanTask(int index){
+        int n=planCount();SharedPreferences.Editor e=prefs.edit();
+        for(int i=index;i<n-1;i++){
+            e.putString("plan_"+planDate()+"_"+i+"_name",prefs.getString("plan_"+planDate()+"_"+(i+1)+"_name","Task"));
+            e.putString("plan_"+planDate()+"_"+i+"_time",prefs.getString("plan_"+planDate()+"_"+(i+1)+"_time","Anytime"));
+            e.putString("plan_"+planDate()+"_"+i+"_priority",prefs.getString("plan_"+planDate()+"_"+(i+1)+"_priority","Medium"));
+            e.putBoolean("plan_"+planDate()+"_"+i+"_done",prefs.getBoolean("plan_"+planDate()+"_"+(i+1)+"_done",false));
+        }
+        e.remove("plan_"+planDate()+"_"+(n-1)+"_name").remove("plan_"+planDate()+"_"+(n-1)+"_time").remove("plan_"+planDate()+"_"+(n-1)+"_priority").remove("plan_"+planDate()+"_"+(n-1)+"_done");
+        e.putInt("plan_count_"+planDate(),Math.max(0,n-1)).apply();showShortPlan();
+    }
+
+    private void editPlanGoalDialog(){
+        EditText e=new EditText(this);e.setHint("e.g. Finish my study session");e.setText(prefs.getString("plan_"+planDate()+"_goal",""));
+        new AlertDialog.Builder(this).setTitle("Today's Focus Goal").setView(e).setPositiveButton("SAVE",(d,w)->{prefs.edit().putString("plan_"+planDate()+"_goal",e.getText().toString().trim()).apply();showShortPlan();}).setNegativeButton("CANCEL",null).show();
+    }
+
     private void showJourney(){header("309-DAY JOURNEY","Your complete discipline timeline.");int d=dayNumber();LinearLayout top=card();top.addView(label("CURRENT",11,MUTED));top.addView(label(d==0?"Not started":"Day "+d+" of 309",25,TEXT));top.addView(label(completedDays()+" completed days  •  "+xp()+" XP",13,MUTED));content.addView(top);Calendar c=startDate();Calendar now=Calendar.getInstance();int index=0;while(index<309){LinearLayout week=card();week.setOrientation(LinearLayout.HORIZONTAL);for(int j=0;j<7&&index<309;j++,index++){String k=key(c);int done=countFor(k);int bg=prefs.getBoolean("done_"+k,false)?ACCENT:(done>0?0xFF8A7A32:(c.before(now)?0xFF343B4A:0xFF202633));TextView cell=label((index+1)+"",11,TEXT);cell.setGravity(Gravity.CENTER);cell.setBackground(shape(bg,10));week.addView(cell,new LinearLayout.LayoutParams(0,dp(34),1));c.add(Calendar.DAY_OF_YEAR,1);}content.addView(week);}content.addView(label("Green = complete • Gold = partial • Grey = upcoming/missed.",12,MUTED));}
     private void showHabits(){header("HABITS & MISSIONS","Build your own daily system.");Button add=button("+  ADD CUSTOM HABIT");add.setEnabled(allowed("can_edit_habits"));add.setOnClickListener(v->addHabitDialog());content.addView(add);content.addView(title("TODAY"));for(int i=0;i<totalTasks();i++)addTaskRow(i,key());content.addView(label("Long-press a custom habit below to rename or delete it.",12,MUTED));for(int i=DEFAULT_TASKS.length;i<totalTasks();i++){final int idx=i;Button manage=button("⚙  "+taskName(i)+"  •  Edit / Delete");manage.setEnabled(allowed("can_edit_habits"));manage.setOnLongClickListener(v->{editHabitDialog(idx);return true;});content.addView(manage);}}
     private void addHabitDialog(){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}EditText e=new EditText(this);e.setHint("e.g. Read 20 minutes");new AlertDialog.Builder(this).setTitle("Add custom habit").setView(e).setPositiveButton("ADD",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){int n=customCount();prefs.edit().putInt("custom_count",n+1).putString("habit_"+(DEFAULT_TASKS.length+n),s).apply();showHabits();}}).setNegativeButton("CANCEL",null).show();}
