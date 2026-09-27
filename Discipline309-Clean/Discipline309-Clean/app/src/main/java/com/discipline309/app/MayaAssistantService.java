@@ -268,8 +268,8 @@ public class MayaAssistantService extends Service {
         int i=s.indexOf(key); if(i<0)return "අද focus goal එකක් set කරලා නැහැ.";
         int j=s.indexOf(';',i); if(j<0)j=s.length();
         String v=s.substring(i+key.length(),j).trim();
-        if(v.startsWith(""")) v=v.substring(1);
-        if(v.endsWith(""")) v=v.substring(0,v.length()-1);
+        if(v.startsWith("\"")) v=v.substring(1);
+        if(v.endsWith("\"")) v=v.substring(0,v.length()-1);
         return v.isEmpty()?"අද focus goal එකක් set කරලා නැහැ.":v;
     }
 
