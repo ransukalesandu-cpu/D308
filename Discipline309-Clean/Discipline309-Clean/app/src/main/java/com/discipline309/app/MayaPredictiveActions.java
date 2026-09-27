@@ -24,12 +24,18 @@ public final class MayaPredictiveActions {
                 else if(nextTask.isEmpty()) nextTask=p.getString("plan_"+key+"_"+i+"_name","next task");
             }
             String focus=p.getString("plan_"+key+"_goal","").trim();
-            if(planCount>0 && planDone<planCount && !nextTask.isEmpty() && hour>=18) return "Short Plan එකේ "+nextTask+" තාම pending. ඒකෙන් පටන් ගමුද? 📋";
-            if(planCount>0 && planDone<planCount && !focus.isEmpty() && hour<18) return "අද focus goal එක: "+focus+". දැන් ඒකට related next step එක කරමු. 🎯";
+            // Time-aware coaching: prioritize real tasks first, then use the time of day.
+            if(planCount>0 && planDone<planCount && !nextTask.isEmpty()){
+                if(hour>=18) return "දවස ඉවර වෙන්න කලින් Short Plan එකේ "+nextTask+" කරමුද? 📋";
+                if(hour<12) return "Good morning 😄 අද පළවෙනි target එක "+nextTask+" කරමු. 🎯";
+                if(!focus.isEmpty()) return "අද focus goal එක: "+focus+". ඊළඟට "+nextTask+" කරමු. 🔥";
+                return "දැන් next task එක "+nextTask+". පටන් ගමු. 💪";
+            }
             if(!missionDone && hour>=17) return "අද mission එක තාම complete නෑ. දැන් පොඩි step එකක් කරමුද? 🎯";
             if(!missionDone && hour<12) return "Good morning 😄 අද Day "+day+" එක start කරමු. 🎯";
             if(xp>0 && xp%500>=400) return "Level up එක ළඟයි! තව ටිකක් push කරමු. 🔥";
             if(hour>=21) return "දවස close කරන්න කලින් අද progress එක check කරමුද? 🌙";
+            if(hour>=12 && hour<17) return "දවල් focus time එක. එක වැඩක් තෝරගෙන finish කරමු. ⚡";
             return "Day "+day+" එකේ next step එකට ready. 💪";
         } catch(Exception e) {
             return "අද next step එකක් පටන් ගමු. 💪";
