@@ -34,6 +34,8 @@ public class MayaAssistantService extends Service {
     private boolean ready=false, stopping=false;
     private Handler handler;
     private MayaMemory memory;
+    private int speechErrorCount=0;
+    private boolean listening=false;
 
     @Override public void onCreate(){
         super.onCreate();
@@ -92,18 +94,35 @@ public class MayaAssistantService extends Service {
     private void listen(){
         if(stopping || !ready || !mayaAllowed() || !SpeechRecognizer.isRecognitionAvailable(this)){ if(!mayaAllowed()) stopSelf(); return; }
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){speak("Microphone permission එක allow කරන්න.");return;}
+        if(listening) return;
+        try{
         if(recognizer!=null) recognizer.destroy();
         recognizer=SpeechRecognizer.createSpeechRecognizer(this);
+        }catch(Exception e){
+            listening=false;
+            restart(1500);
+            return;
+        }
         recognizer.setRecognitionListener(new RecognitionListener(){
-            public void onReadyForSpeech(Bundle b){}
+            public void onReadyForSpeech(Bundle b){listening=true; speechErrorCount=0;}
             public void onBeginningOfSpeech(){}
             public void onRmsChanged(float r){}
             public void onBufferReceived(byte[] b){}
-            public void onEndOfSpeech(){}
+            public void onEndOfSpeech(){listening=false;}
             public void onPartialResults(Bundle b){}
             public void onEvent(int t,Bundle b){}
-            public void onError(int e){restart(900);}
+            public void onError(int e){
+                listening=false;
+                speechErrorCount++;
+                long delay=Math.min(5000,700L*(1L<<Math.min(3,speechErrorCount-1)));
+                if(speechErrorCount>=4){
+                    speechErrorCount=0;
+                    speak("Voice listening එකට පොඩි issue එකක්. Maya ආයෙත් try කරනවා. 🎙️");
+                    restart(2500);
+                }else restart(delay);
+            }
             public void onResults(Bundle b){
+                listening=false; speechErrorCount=0;
                 if(!mayaAllowed()){ stopSelf(); return; }
                 ArrayList<String> m=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String s=m==null||m.isEmpty()?"":m.get(0);
@@ -121,9 +140,19 @@ public class MayaAssistantService extends Service {
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"si-LK");
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"si-LK");
-        recognizer.startListening(i);
+        try{
+            recognizer.startListening(i);
+        }catch(Exception e){
+            listening=false;
+            restart(1500);
+        }
     }
-    private void restart(long d){if(handler!=null && mayaAllowed())handler.postDelayed(this::listen,d);}
+    private void restart(long d){
+        if(handler!=null && mayaAllowed() && !stopping){
+            handler.removeCallbacks(this::listen);
+            handler.postDelayed(this::listen,d);
+        }
+    }
 
     private void handle(String raw){
         if(!mayaAllowed()){ stopSelf(); return; }
