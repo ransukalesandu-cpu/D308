@@ -91,18 +91,21 @@ public class VoiceAssistant {
 
         String question = lower.replace("maya", "").replace("මායා", "").trim();
         String reply;
+        boolean funny=activity.getSharedPreferences("settings",0).getBoolean("mode_funny",true);
+        boolean cute=activity.getSharedPreferences("settings",0).getBoolean("mode_cute",false);
+        boolean sweet=activity.getSharedPreferences("settings",0).getBoolean("mode_sweet",false);
         if (question.isEmpty()) {
-            reply = "ඔව්, මං මෙතන. කියන්න, මොකද වෙන්නේ? 😄";
+            reply = sweet ? "ඔව්, මං මෙතන. හෙමින් කියන්න, මං අහගෙන ඉන්නවා. 💛" : cute ? "ඔව්ව් 😄✨ Maya මෙතන! කියන්නකෝ." : "ඔව්, මං මෙතන. කියන්න, මොකද වෙන්නේ? 😄";
         } else if (question.contains("hello") || question.contains("hi") || question.contains("හෙලෝ")) {
-            reply = "හෙලෝ! මං Maya. අද වැඩේ පටන් ගමුද? 🔥";
+            reply = funny ? "හෙලෝ! Maya online 😄 අද වැඩේ පටන් ගමුද, නැත්නම් excuses factory එක open කරමුද? 😂🔥" : cute ? "හෙලෝ! 🌸 Maya මෙතන. අදත් පොඩි step එකකින් පටන් ගමුද? ✨" : "හෙලෝ! මං Maya. අද වැඩේ පටන් ගමුද? 🔥";
         } else if (question.contains("motivat") || question.contains("වැඩ") || question.contains("බැහැ")) {
-            reply = "Excuses පස්සේ. පොඩි step එකක් දැන්ම කරමු. ඔයාට මේක පුළුවන්! 🔥";
+            reply = funny ? "Excuses වලට අද නිවාඩු 😂 පොඩි step එකක් දැන්ම කරමු! 🔥" : sweet ? "හරි, අමාරු දවසක් නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛" : cute ? "අපි පොඩි step එකක් කරමුකෝ 🌸✨ ඔයාට මේක පුළුවන්!" : "Excuses පස්සේ. පොඩි step එකක් දැන්ම කරමු. ඔයාට මේක පුළුවන්! 🔥";
         } else if (question.contains("sleep") || question.contains("නින්ද")) {
-            reply = "හරි, phone එක පැත්තකින් තියලා හොඳට rest ගන්න. 🌙";
+            reply = funny ? "Phone එකටත් දැන් bedtime 😂 පැත්තකින් තියලා rest ගන්න. 🌙" : sweet ? "හරි, phone එක පැත්තකින් තියලා හොඳට rest ගන්න. ඔයාට rest එකත් වැදගත්. 💛🌙" : "හරි, phone එක පැත්තකින් තියලා හොඳට rest ගන්න. 🌙";
         } else if (question.contains("thank") || question.contains("ස්තුති")) {
-            reply = "Anytime! දැන් වැඩේ continue කරමු. 😄🔥";
+            reply = cute ? "Anytimeee 😄✨ දැන් අපේ next little step එකට යමු!" : "Anytime! දැන් වැඩේ continue කරමු. 😄🔥";
         } else {
-            reply = "හරි, මං අහගෙන ඉන්නේ. තව ටිකක් පැහැදිලිව කියන්න. 😄";
+            reply = sweet ? "හරි 💛 මං අහගෙන ඉන්නේ. තව ටිකක් පැහැදිලිව කියන්න." : funny ? "මගේ AI brain එකට පොඩි clue එකක් දෙන්න 😂 තව ටිකක් පැහැදිලිව කියන්න." : "හරි, මං අහගෙන ඉන්නේ. තව ටිකක් පැහැදිලිව කියන්න. 😄";
         }
         speak(reply);
     }
