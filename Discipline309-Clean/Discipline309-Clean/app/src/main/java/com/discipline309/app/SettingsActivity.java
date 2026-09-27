@@ -64,7 +64,12 @@ public class SettingsActivity extends Activity {
         LinearLayout customize=card();customize.addView(label("🎨 CUSTOMIZE EXPERIENCE",11,MUTED));
         customize.addView(label("Choose one of 3 complete UI styles. The app restarts its screen when you return.",12,MUTED));
         RadioGroup themes=new RadioGroup(this); themes.setOrientation(RadioGroup.VERTICAL);
-        String[] themeNames={"🌌 Deep Navy — 309 Day"};\n        String[] themeKeys={"midnight"}; String current="midnight";\n        RadioButton rb=new RadioButton(this);rb.setText(themeNames[0]);rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);themes.addView(rb);\n        themes.setOnCheckedChangeListener((g,id)->getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putString("theme","midnight").apply());\n        
+        String[] themeNames={"🌌 Deep Navy — 309 Day"};
+        String[] themeKeys={"midnight"}; String current="midnight";
+        RadioButton rb=new RadioButton(this);rb.setText(themeNames[0]);rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);themes.addView(rb);
+        themes.setOnCheckedChangeListener((g,id)->getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putString("theme","midnight").apply());
+        
+        customize.addView(themes);
         root.addView(customize);
 
         LinearLayout modes=card();modes.addView(label("🤖 MAYA PERSONALITY MODES",11,MUTED));
