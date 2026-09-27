@@ -39,11 +39,11 @@ public class MayaMemory {
             String fact = a.optString(i);
             String f = fact.toLowerCase(Locale.ROOT);
             boolean hit = false;
-            for (String token : q.split("\\\\s+")) {
+            for (String token : q.split("\\s+")) {
                 if (token.length() >= 3 && f.contains(token)) { hit = true; break; }
             }
             if (hit) {
-                if (out.length() > 0) out.append("\\n");
+                if (out.length() > 0) out.append("\n");
                 out.append("• ").append(fact);
             }
         }
