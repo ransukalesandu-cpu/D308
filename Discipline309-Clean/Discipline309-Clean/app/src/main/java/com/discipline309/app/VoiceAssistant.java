@@ -157,7 +157,7 @@ public class VoiceAssistant {
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
         tts.setLanguage(new Locale("si","LK"));
         tts.setSpeechRate(rate);
-        String safe=text==null?"":text.trim();
+        String safe=naturalSinhala(text);
         if(safe.isEmpty()) return;
         tts.speak(safe, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis());
     }
