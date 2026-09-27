@@ -185,7 +185,7 @@ public class MayaAssistantService extends Service {
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
         if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
-        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();\n        if(q.isEmpty()) return;\n        String followUp=followUpContext(q);\n        if(followUp!=null){\n            askAI(followUp);\n            return;\n        }\n        lastUserQuery=q;
+        String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();\n        q=normalizeMixedCommand(q);\n        if(q.isEmpty()) return;\n        String followUp=followUpContext(q);\n        if(followUp!=null){\n            askAI(followUp);\n            return;\n        }\n        lastUserQuery=q;
 
         if(isMemoryCommand(q)){
             handleMemory(q);
