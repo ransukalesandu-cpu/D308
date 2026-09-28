@@ -66,6 +66,22 @@ public final class SupabaseAccountManager {
         }catch(Exception e){return true;}
     }
 
+    public static void sendPasswordReset(Context c,String email,Callback cb){
+        IO.execute(()->{try{
+            JSONObject body=new JSONObject().put("email",email.trim()).put("redirect_to","discipline309://auth/recovery");
+            requestRaw("POST","/auth/v1/recover",body,null,false);
+            if(cb!=null)cb.done(true,"Reset link eka email ekata yawwa. Email eka open karala link eka tap karanna.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+    }
+
+    public static void updatePassword(String accessToken,String newPassword,Callback cb){
+        IO.execute(()->{try{
+            JSONObject body=new JSONObject().put("password",newPassword);
+            requestRawWithToken("PUT","/auth/v1/user",body,accessToken);
+            if(cb!=null)cb.done(true,"Password updated successfully.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+    }
+
     public static void signUp(Context c,String email,String password,Callback cb){
         IO.execute(()->{try{
             JSONObject body=new JSONObject().put("email",email).put("password",password);
@@ -291,6 +307,12 @@ public final class SupabaseAccountManager {
     private static void refresh(Context c)throws Exception{
         String rt=p(c).getString("refresh_token","");if(rt.isEmpty())return;
         JSONObject r=requestRaw("POST","/auth/v1/token?grant_type=refresh_token",new JSONObject().put("refresh_token",rt),null,false);saveSession(c,r);
+    }
+
+    private static JSONObject requestRawWithToken(String method,String path,JSONObject body,String token)throws Exception{
+        HttpURLConnection h=(HttpURLConnection)new URL(URL+path).openConnection();h.setRequestMethod(method);h.setConnectTimeout(15000);h.setReadTimeout(20000);h.setRequestProperty("apikey",KEY);h.setRequestProperty("Authorization","Bearer "+token);h.setRequestProperty("Accept","application/json");
+        if(body!=null){h.setDoOutput(true);h.setRequestProperty("Content-Type","application/json");try(OutputStream o=h.getOutputStream()){o.write(body.toString().getBytes(StandardCharsets.UTF_8));}}
+        int code=h.getResponseCode();String txt=read(h,code);if(code<200||code>=300)throw new IOException(txt.isEmpty()?"HTTP "+code:txt);return txt.isEmpty()?new JSONObject():new JSONObject(txt);
     }
 
     private static JSONObject request(String method,String path,JSONObject body,Context c)throws Exception{return request(method,path,body,c,null);}
