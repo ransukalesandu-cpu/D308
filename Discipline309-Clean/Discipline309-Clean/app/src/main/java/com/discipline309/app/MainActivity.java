@@ -74,8 +74,12 @@ public class MainActivity extends Activity {
             b.setTextColor(active?Color.WHITE:MUTED);
             b.setTypeface(active?Typeface.create("sans-serif-medium",Typeface.BOLD):Typeface.create("sans-serif",Typeface.NORMAL));
             b.setBackground(shape(active?0xFF2A2256:0x00000000,14));
-            b.setElevation(active?dp(2):0);
-            String[] navLabels={"Home","Plan","Habits","Notes","Stats"};\n            b.setContentDescription(navLabels[i] + (active?" selected":""));
+            b.setElevation(active?dp(3):0);
+            b.setScaleX(active?1.16f:0.90f);
+            b.setScaleY(active?1.16f:0.90f);
+            b.animate().scaleX(active?1.16f:0.90f).scaleY(active?1.16f:0.90f).setDuration(180).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+            String[] navLabels={"Home","Plan","Habits","Notes","Stats"};
+            b.setContentDescription(navLabels[i] + (active?" selected":""));
         }
     }
 
