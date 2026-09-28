@@ -26,125 +26,122 @@ public class SettingsActivity extends Activity {
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(SURFACE);g.setCornerRadius(dp(18));g.setStroke(dp(1),0xFF173D78);l.setBackground(g);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
     @Override protected void onCreate(Bundle b){super.onCreate(b);try{if(SupabaseAccountManager.loggedIn(this)&&!SupabaseAccountManager.can(this,"can_access_settings")){new AlertDialog.Builder(this).setTitle("Settings restricted").setMessage("Your Primary account has disabled Settings access for this Sub account.").setPositiveButton("OK",(d,w)->finish()).show();return;}prefs=getSharedPreferences("settings",MODE_PRIVATE);String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");BG=0xFF061126;SURFACE=0xFF0B1B3A;TEXT=0xFFF5F8FF;MUTED=0xFF9CB2D9;ACCENT=0xFF2F7BFF;getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);buildUi();}catch(Exception e){Toast.makeText(this,"Settings could not open safely.",Toast.LENGTH_SHORT).show();finish();}}
     private void buildUi(){
-        ScrollView scroll=new ScrollView(this);LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(18),dp(20),dp(18),dp(28));root.setBackgroundColor(BG);
-        TextView t=label("⚙  Settings",27,TEXT);t.setTypeface(null,1);root.addView(t);root.addView(label("Personalize your discipline experience.",13,MUTED));
-        LinearLayout voice=card();voice.addView(label("AI VOICE",11,MUTED));
+        ScrollView scroll=new ScrollView(this);
+        LinearLayout root=new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(18),dp(20),dp(18),dp(28));
+        root.setBackgroundColor(BG);
+        TextView t=label("⚙  Settings",27,TEXT);t.setTypeface(null,1);root.addView(t);
+        root.addView(label("Choose a category to edit your settings.",13,MUTED));
+
+        addCategory(root,"🤖  AI ASSISTANT","Maya voice, AI brain, web search and memory.",v->showAiSettings());
+        addCategory(root,"🎭  MODES","Maya personality and background motivation modes.",v->showModeSettings());
+        addCategory(root,"🎨  DISPLAY","Theme and notification preferences.",v->showDisplaySettings());
+        addCategory(root,"🔐  SECURITY & PRIVACY","API keys, permissions and Maya privacy controls.",v->showSecuritySettings());
+        addCategory(root,"📱  PHONE & BACKGROUND","Background assistant, phone controls and battery settings.",v->showPhoneSettings());
+        addCategory(root,"👥  ACCOUNTS & DATA","Primary/Sub accounts and progress controls.",v->showAccountSettings());
+        addCategory(root,"ℹ️  ABOUT 309","App information and version.",v->showAboutSettings());
+
+        scroll.addView(root);setContentView(scroll);
+    }
+
+    private void addCategory(LinearLayout root,String titleText,String desc,View.OnClickListener action){
+        LinearLayout box=card();
+        box.setPadding(dp(16),dp(14),dp(16),dp(14));
+        TextView title=label(titleText,17,TEXT);title.setTypeface(null,1);box.addView(title);
+        box.addView(label(desc,12,MUTED));
+        Button open=new Button(this);open=buttonStyle(open);open.setText("Open  ›");open.setGravity(Gravity.CENTER);open.setOnClickListener(action);box.addView(open);
+        root.addView(box);
+    }
+
+    private LinearLayout categoryLayout(String titleText,String desc){
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(18),dp(18),dp(18),dp(28));root.setBackgroundColor(BG);
+        TextView t=label(titleText,25,TEXT);t.setTypeface(null,1);root.addView(t);root.addView(label(desc,13,MUTED));return root;
+    }
+    private ScrollView categoryScroll(LinearLayout root){ScrollView s=new ScrollView(this);s.addView(root);return s;}
+    private void showCategory(String titleText,String desc,LinearLayout body){
+        LinearLayout wrapper=categoryLayout(titleText,desc);
+        Button back=buttonStyle(new Button(this));back.setText("←  Back to Settings");back.setOnClickListener(v->buildUi());wrapper.addView(back);
+        wrapper.addView(body);
+        setContentView(categoryScroll(wrapper));
+    }
+
+    private void showAiSettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout voice=card();voice.addView(label("🎙️ AI VOICE",11,MUTED));
         Switch speak=new Switch(this);speak.setText("Auto speak AI responses");speak.setTextColor(TEXT);speak.setTextSize(15);speak.setChecked(prefs.getBoolean("auto_speak",true));speak.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("auto_speak",c).apply());voice.addView(speak);
         voice.addView(label("Speech speed",14,TEXT));SeekBar speed=new SeekBar(this);speed.setMax(100);speed.setProgress(prefs.getInt("speech_speed",50));voice.addView(speed);TextView speedText=label("Normal",12,MUTED);voice.addView(speedText);
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
-        Button test=new Button(this);test=buttonStyle(test);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
-        LinearLayout ai=card();ai.addView(label("🧠 MAYA REAL AI BRAIN",11,MUTED));
-        ai.addView(label("Connect Maya to an AI model for natural conversations. The key is stored only on this phone.",12,MUTED));
-        EditText key=new EditText(this);key.setHint("AI API key");try{key.setText(MayaSecureStorage.maya(this).getString("api_key",""));}catch(Exception ignored){key.setText("");}key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
+        Button test=buttonStyle(new Button(this));test.setText("🔊  Test AI voice");test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);body.addView(voice);
+
+        LinearLayout ai=card();ai.addView(label("🧠 MAYA AI BRAIN",11,MUTED));ai.addView(label("Connect Maya to your AI model. The key stays on this phone.",12,MUTED));
+        EditText key=new EditText(this);key.setHint("AI API key");try{key.setText(MayaSecureStorage.maya(this).getString("api_key",""));}catch(Exception ignored){}key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
         EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");try{model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));}catch(Exception ignored){model.setText("gpt-5-mini");}model.setSingleLine(true);ai.addView(model);
-        Button saveAi=new Button(this);saveAi=buttonStyle(saveAi);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_ai",key.getText().toString()); MayaSecureStorage.maya(this).edit().putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya AI settings could not be saved.",Toast.LENGTH_SHORT).show();}});ai.addView(saveAi);
-        ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
-        root.addView(ai);
+        Button save=buttonStyle(new Button(this));save.setText("💾  Save AI settings");save.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_ai",key.getText().toString());MayaSecureStorage.maya(this).edit().putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI settings saved 🧠",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not save AI settings.",Toast.LENGTH_SHORT).show();}});ai.addView(save);body.addView(ai);
 
-        LinearLayout web=card();web.addView(label("🌐 MAYA WEB SEARCH",11,MUTED));
-        web.addView(label("Give Maya real-time web search for current questions, news, and facts. The key is stored only on this phone.",12,MUTED));
-        EditText webKey=new EditText(this);
-        webKey.setHint("Tavily API key");
-        try{webKey.setText(MayaSecureStorage.web(this).getString("api_key",""));}catch(Exception ignored){webKey.setText("");}
-        webKey.setSingleLine(true);
-        webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        web.addView(webKey);
-        Button saveWeb=new Button(this);saveWeb=buttonStyle(saveWeb);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
-        saveWeb.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_web",webKey.getText().toString());Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya Web Search settings could not be saved.",Toast.LENGTH_SHORT).show();}});
-        web.addView(saveWeb);
-        Button testWeb=new Button(this);testWeb=buttonStyle(testWeb);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
-        testWeb.setOnClickListener(v->{
-            if(!WebSearch.enabled(this)){Toast.makeText(this,"Add a Tavily API key first.",Toast.LENGTH_SHORT).show();return;}
-            Toast.makeText(this,"Searching the web…",Toast.LENGTH_SHORT).show();
-            WebSearch.search(this,"latest technology news",(result)->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;try{Toast.makeText(this,result==null||result.isEmpty()?"Web search failed. Check the key/network.":"Web search is working 🌐",Toast.LENGTH_SHORT).show();}catch(Exception ignored){}}));
-        });
-        web.addView(testWeb);
-        web.addView(label("Maya searches the web only for current/search-style questions, then uses the results to answer. Never put the API key in GitHub.",11,MUTED));
-        root.addView(web);
+        LinearLayout web=card();web.addView(label("🌐 WEB SEARCH",11,MUTED));web.addView(label("Real-time search for current questions.",12,MUTED));
+        EditText webKey=new EditText(this);webKey.setHint("Tavily API key");try{webKey.setText(MayaSecureStorage.web(this).getString("api_key",""));}catch(Exception ignored){}webKey.setSingleLine(true);webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);web.addView(webKey);
+        Button saveWeb=buttonStyle(new Button(this));saveWeb.setText("💾  Save Web Search key");saveWeb.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_web",webKey.getText().toString());Toast.makeText(this,"Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not save web settings.",Toast.LENGTH_SHORT).show();}});web.addView(saveWeb);body.addView(web);
 
-        LinearLayout customize=card();customize.addView(label("🎨 CUSTOMIZE EXPERIENCE",11,MUTED));
-        customize.addView(label("Choose one of 3 complete UI styles. The app restarts its screen when you return.",12,MUTED));
-        RadioGroup themes=new RadioGroup(this); themes.setOrientation(RadioGroup.VERTICAL);
-        String[] themeNames={"🌌 Deep Navy — 309 Day"};
-        String[] themeKeys={"midnight"}; String current="midnight";
-        RadioButton rb=new RadioButton(this);rb.setText(themeNames[0]);rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);themes.addView(rb);
-        themes.setOnCheckedChangeListener((g,id)->getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putString("theme","midnight").apply());
-        
-        customize.addView(themes);
-        root.addView(customize);
-
-        LinearLayout modes=card();modes.addView(label("🤖 MAYA PERSONALITY MODES",11,MUTED));
-        modes.addView(label("Turn styles on/off independently. Maya stays respectful and supportive.",12,MUTED));
-        Switch funny=new Switch(this);funny.setText("😂 Funny mode");funny.setTextColor(TEXT);funny.setTextSize(15);funny.setChecked(prefs.getBoolean("mode_funny",true));funny.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_funny",on).apply());modes.addView(funny);
-        Switch cute=new Switch(this);cute.setText("🌸 Cute mode");cute.setTextColor(TEXT);cute.setTextSize(15);cute.setChecked(prefs.getBoolean("mode_cute",false));cute.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_cute",on).apply());modes.addView(cute);
-        Switch sweet=new Switch(this);sweet.setText("💛 Sweet / caring mode");sweet.setTextColor(TEXT);sweet.setTextSize(15);sweet.setChecked(prefs.getBoolean("mode_sweet",false));sweet.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_sweet",on).apply());modes.addView(sweet);
-        Switch auto=new Switch(this);auto.setText("🧠 Auto mood");auto.setTextColor(TEXT);auto.setTextSize(15);auto.setChecked(prefs.getBoolean("mode_auto",true));auto.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("mode_auto",on).apply());modes.addView(auto);
-        root.addView(modes);
-
-        LinearLayout coach=card();coach.addView(label("BACKGROUND COACH",11,MUTED));Switch bgCoach=new Switch(this);bgCoach.setText("Funny Sinhala motivation in background");bgCoach.setTextColor(TEXT);bgCoach.setTextSize(15);bgCoach.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));bgCoach.setOnCheckedChangeListener((v,on)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();Intent i=new Intent(this,MotivationService.class);if(on){try{if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",false).apply();v.setChecked(false);Toast.makeText(this,"Background coach could not start.",Toast.LENGTH_SHORT).show();}}else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}});coach.addView(bgCoach);coach.addView(label("Uses your phone's installed Sinhala TTS voice. Android shows a persistent notification while active.",12,MUTED));root.addView(coach);
-
-        LinearLayout control=card();control.addView(label("📱 MAYA PHONE CONTROLS",11,MUTED));
-        control.addView(label("Voice commands for simple phone actions.",12,MUTED));
-        Button battery=new Button(this);battery=buttonStyle(battery);battery.setText("🔋  Battery / background settings");battery.setAllCaps(false);battery.setOnClickListener(v->{try{Intent i=new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);startActivity(i);}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});control.addView(battery);
-        Button voiceHelp=new Button(this);voiceHelp=buttonStyle(voiceHelp);voiceHelp.setText("🎙️  Maya command guide");voiceHelp.setAllCaps(false);voiceHelp.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(voiceHelp);
-        root.addView(control);
-
-        LinearLayout accounts=card();accounts.addView(label("👥 PRIMARY + SUB ACCOUNTS",11,MUTED));
-        accounts.addView(label("Sign in, create a Primary account, invite brothers as Sub accounts, and view their synced 309 progress.",12,MUTED));
-        Button openAccounts=new Button(this);openAccounts=buttonStyle(openAccounts);openAccounts.setText("👥  Open Account Dashboard");openAccounts.setAllCaps(false);openAccounts.setOnClickListener(v->startActivity(new Intent(this,AccountsActivity.class)));accounts.addView(openAccounts);
-        root.addView(accounts);
-
-        LinearLayout maya=card();maya.addView(label("MAYA BACKGROUND ASSISTANT",11,MUTED));
-        Switch bgMaya=new Switch(this);bgMaya.setText("Keep Maya available in background");bgMaya.setTextColor(TEXT);bgMaya.setTextSize(15);
-        bgMaya.setChecked(getSharedPreferences("maya_settings",MODE_PRIVATE).getBoolean("enabled",false));
-        bgMaya.setOnCheckedChangeListener((v,on)->{
-            getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",on).apply();
-            if(on){
-                if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
-                    requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},3101);
-                    bgMaya.setChecked(false); return;
-                }
-                if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.READ_CONTACTS)!=PackageManager.PERMISSION_GRANTED)
-                    requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},3102);
-                Intent i=new Intent(this,MayaAssistantService.class);
-                try{if(android.os.Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Maya background assistant ON 🎙️",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",false).apply();v.setChecked(false);Toast.makeText(this,"Maya background assistant could not start.",Toast.LENGTH_SHORT).show();}
-            }else{
-                stopService(new Intent(this,MayaAssistantService.class));
-                Toast.makeText(this,"Maya background assistant OFF",Toast.LENGTH_SHORT).show();
-            }
-        });
-        maya.addView(bgMaya);
-        Button defaultAssistant=new Button(this);defaultAssistant=buttonStyle(defaultAssistant);defaultAssistant.setText("🤖  Set Maya as phone assistant");defaultAssistant.setAllCaps(false);
-        defaultAssistant.setOnClickListener(v->{
-            if(android.os.Build.VERSION.SDK_INT>=29){
-                try{
-                    android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(android.content.Context.ROLE_SERVICE);
-                    if(rm!=null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)){
-                        startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT),3098);
-                    }else Toast.makeText(this,"This phone does not expose the Assistant role.",Toast.LENGTH_SHORT).show();
-                }catch(Exception e){Toast.makeText(this,"Open Settings → Default apps → Digital assistant and choose Maya.",Toast.LENGTH_LONG).show();}
-            }else Toast.makeText(this,"Open Settings → Default apps → Assist app and choose Maya.",Toast.LENGTH_LONG).show();
-        });
-        maya.addView(defaultAssistant);
-        maya.addView(label("Maya uses a visible Android foreground notification while listening. Voice recognition may use mobile data depending on the phone's speech engine.",12,MUTED));
-        Button notifyAccess=new Button(this);notifyAccess.setText("🔔  Allow WhatsApp notification access");notifyAccess.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});notifyAccess.setAllCaps(false);
-        notifyAccess.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});
-        maya.addView(notifyAccess);
-        Button dndAccess=new Button(this);dndAccess.setText("🔕  Allow DND control");dndAccess.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});dndAccess.setAllCaps(false);
-        dndAccess.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});
-        maya.addView(dndAccess);
-        root.addView(maya);
-        LinearLayout mem=card();mem.addView(label("🧠 MAYA MEMORY",11,MUTED));
-        mem.addView(label("Saved memory stays on this phone and can be cleared anytime.",12,MUTED));
-        Button viewMem=new Button(this);viewMem.setText("👀  View / delete saved memory");viewMem.setAllCaps(false);viewMem.setOnClickListener(v->showMemoryManager());mem.addView(viewMem);
-        Button clearMem=new Button(this);clearMem.setText("🗑  Clear all Maya memory");clearMem.setAllCaps(false);clearMem.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Clear Maya memory?").setMessage("This removes all saved ordinary facts and preferences.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,w)->{try{new MayaMemory(this).clear();Toast.makeText(this,"Maya memory cleared.",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya memory could not be cleared.",Toast.LENGTH_SHORT).show();}}).show());mem.addView(clearMem);
-        root.addView(mem);
-
-        LinearLayout app=card();app.addView(label("APP",11,MUTED));Switch notifications=new Switch(this);notifications.setText("Notifications");notifications.setTextColor(TEXT);notifications.setTextSize(15);notifications.setChecked(prefs.getBoolean("notifications",true));notifications.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(notifications);
-        Button reset=new Button(this);reset.setText("↻  Reset progress");if(SupabaseAccountManager.loggedIn(this)&&!SupabaseAccountManager.can(this,"can_reset_progress"))reset.setEnabled(false);reset.setAllCaps(false);reset.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Reset progress?").setMessage("This removes progress, custom habits and reminders, then starts a fresh 309-day program.").setNegativeButton("Cancel",null).setPositiveButton("Reset",(d,w)->{SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);for(String k:p.getAll().keySet())if(k.startsWith("alarm")){try{int id=Integer.parseInt(k.substring(5));PendingIntent pi=PendingIntent.getBroadcast(this,id,new Intent(this,AlarmReceiver.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);if(am!=null)am.cancel(pi);}catch(Exception ignored){}}Calendar resetDate=Calendar.getInstance();resetDate.set(Calendar.HOUR_OF_DAY,0);resetDate.set(Calendar.MINUTE,0);resetDate.set(Calendar.SECOND,0);resetDate.set(Calendar.MILLISECOND,0);p.edit().clear().putLong("program_start",resetDate.getTimeInMillis()).apply();Toast.makeText(this,"Progress reset 🔥",Toast.LENGTH_SHORT).show();}).show());app.addView(reset);root.addView(app);
-        LinearLayout about=card();about.addView(label("ABOUT 309",11,MUTED));about.addView(label("309 Day Discipline",19,TEXT));about.addView(label("Build discipline. One day at a time.\nVersion 2.0 • Discipline + Maya",13,MUTED));root.addView(about);
-        scroll.addView(root);setContentView(scroll);
+        LinearLayout mem=card();mem.addView(label("🧠 MAYA MEMORY",11,MUTED));mem.addView(label("Saved memory stays on this phone.",12,MUTED));
+        Button view=buttonStyle(new Button(this));view.setText("👀  View / delete saved memory");view.setOnClickListener(v->showMemoryManager());mem.addView(view);
+        Button clear=buttonStyle(new Button(this));clear.setText("🗑  Clear all Maya memory");clear.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Clear Maya memory?").setMessage("This removes all saved ordinary facts and preferences.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,w)->{try{new MayaMemory(this).clear();Toast.makeText(this,"Maya memory cleared.",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not clear memory.",Toast.LENGTH_SHORT).show();}}).show());mem.addView(clear);body.addView(mem);
+        showCategory("🤖  AI ASSISTANT","Maya AI, voice, web search and memory.",body);
     }
+
+    private void showModeSettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout modes=card();modes.addView(label("🎭 MAYA PERSONALITY MODES",11,MUTED));
+        String[][] data={{"😂 Funny mode","mode_funny", "true"},{"🌸 Cute mode","mode_cute","false"},{"💛 Sweet / caring mode","mode_sweet","false"},{"🧠 Auto mood","mode_auto","true"}};
+        for(String[] x:data){Switch s=new Switch(this);s.setText(x[0]);s.setTextColor(TEXT);s.setTextSize(15);s.setChecked(prefs.getBoolean(x[1],Boolean.parseBoolean(x[2])));s.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean(x[1],on).apply());modes.addView(s);}
+        body.addView(modes);
+        LinearLayout coach=card();coach.addView(label("🔥 BACKGROUND COACH",11,MUTED));Switch bg=new Switch(this);bg.setText("Funny Sinhala motivation in background");bg.setTextColor(TEXT);bg.setTextSize(15);bg.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));bg.setOnCheckedChangeListener((v,on)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();Intent i=new Intent(this,MotivationService.class);if(on){try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",false).apply();v.setChecked(false);}}else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}});coach.addView(bg);body.addView(coach);
+        showCategory("🎭  MODES","Maya personality and motivation modes.",body);
+    }
+
+    private void showDisplaySettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout theme=card();theme.addView(label("🎨 THEME",11,MUTED));theme.addView(label("Choose the app appearance.",12,MUTED));
+        RadioButton rb=new RadioButton(this);rb.setText("🌌 Deep Navy — 309 Day");rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);theme.addView(rb);body.addView(theme);
+        LinearLayout app=card();app.addView(label("🔔 NOTIFICATIONS",11,MUTED));Switch n=new Switch(this);n.setText("Notifications");n.setTextColor(TEXT);n.setTextSize(15);n.setChecked(prefs.getBoolean("notifications",true));n.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(n);body.addView(app);
+        showCategory("🎨  DISPLAY","Theme and notification preferences.",body);
+    }
+
+    private void showSecuritySettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout p=card();p.addView(label("🔐 PERMISSIONS & PRIVACY",11,MUTED));p.addView(label("Open Android controls for permissions used by Maya.",12,MUTED));
+        Button notify=buttonStyle(new Button(this));notify.setText("🔔  Notification access");notify.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});p.addView(notify);
+        Button dnd=buttonStyle(new Button(this));dnd.setText("🔕  DND control access");dnd.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});p.addView(dnd);body.addView(p);
+        LinearLayout key=card();key.addView(label("🔑 API KEY SAFETY",11,MUTED));key.addView(label("Keys are stored locally. Never put API keys into GitHub.",12,MUTED));body.addView(key);
+        showCategory("🔐  SECURITY & PRIVACY","Permissions, privacy and key safety.",body);
+    }
+
+    private void showPhoneSettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout control=card();control.addView(label("📱 MAYA PHONE CONTROLS",11,MUTED));
+        Button battery=buttonStyle(new Button(this));battery.setText("🔋  Battery / background settings");battery.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});control.addView(battery);
+        Button help=buttonStyle(new Button(this));help.setText("🎙️  Maya command guide");help.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(help);body.addView(control);
+
+        LinearLayout maya=card();maya.addView(label("🎙️ BACKGROUND ASSISTANT",11,MUTED));Switch bg=new Switch(this);bg.setText("Keep Maya available in background");bg.setTextColor(TEXT);bg.setTextSize(15);bg.setChecked(getSharedPreferences("maya_settings",MODE_PRIVATE).getBoolean("enabled",false));bg.setOnCheckedChangeListener((v,on)->{getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",on).apply();if(on){if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},3101);bg.setChecked(false);return;}Intent i=new Intent(this,MayaAssistantService.class);try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Maya background assistant ON 🎙️",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",false).apply();bg.setChecked(false);}}else{stopService(new Intent(this,MayaAssistantService.class));Toast.makeText(this,"Maya background assistant OFF",Toast.LENGTH_SHORT).show();}});maya.addView(bg);
+        Button def=buttonStyle(new Button(this));def.setText("🤖  Set Maya as phone assistant");def.setOnClickListener(v->{if(Build.VERSION.SDK_INT>=29){try{android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(Context.ROLE_SERVICE);if(rm!=null&&rm.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT))startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT),3098);else Toast.makeText(this,"This phone does not expose the Assistant role.",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Open Default apps → Digital assistant and choose Maya.",Toast.LENGTH_LONG).show();}}else Toast.makeText(this,"Open Default apps → Assist app and choose Maya.",Toast.LENGTH_LONG).show();});maya.addView(def);body.addView(maya);
+        showCategory("📱  PHONE & BACKGROUND","Background assistant, phone controls and battery settings.",body);
+    }
+
+    private void showAccountSettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout accounts=card();accounts.addView(label("👥 PRIMARY + SUB ACCOUNTS",11,MUTED));accounts.addView(label("Sign in, create Primary accounts, invite Sub accounts and sync progress.",12,MUTED));Button open=buttonStyle(new Button(this));open.setText("👥  Open Account Dashboard");open.setOnClickListener(v->startActivity(new Intent(this,AccountsActivity.class)));accounts.addView(open);body.addView(accounts);
+        LinearLayout reset=card();reset.addView(label("⚠️ PROGRESS",11,MUTED));reset.addView(label("Reset the local 309-day progress and reminders.",12,MUTED));Button b=buttonStyle(new Button(this));b.setText("↻  Reset progress");if(SupabaseAccountManager.loggedIn(this)&&!SupabaseAccountManager.can(this,"can_reset_progress"))b.setEnabled(false);b.setOnClickListener(v->confirmReset());reset.addView(b);body.addView(reset);
+        showCategory("👥  ACCOUNTS & DATA","Accounts, sync and progress controls.",body);
+    }
+
+    private void confirmReset(){
+        new AlertDialog.Builder(this).setTitle("Reset progress?").setMessage("This removes progress, custom habits and reminders, then starts a fresh 309-day program.").setNegativeButton("Cancel",null).setPositiveButton("Reset",(d,w)->{SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);for(String k:p.getAll().keySet())if(k.startsWith("alarm")){try{int id=Integer.parseInt(k.substring(5));PendingIntent pi=PendingIntent.getBroadcast(this,id,new Intent(this,AlarmReceiver.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);if(am!=null)am.cancel(pi);}catch(Exception ignored){}}Calendar resetDate=Calendar.getInstance();resetDate.set(Calendar.HOUR_OF_DAY,0);resetDate.set(Calendar.MINUTE,0);resetDate.set(Calendar.SECOND,0);resetDate.set(Calendar.MILLISECOND,0);p.edit().clear().putLong("program_start",resetDate.getTimeInMillis()).apply();Toast.makeText(this,"Progress reset 🔥",Toast.LENGTH_SHORT).show();}).show();
+    }
+
+    private void showAboutSettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);LinearLayout about=card();about.addView(label("309 DAY DISCIPLINE",20,TEXT));about.addView(label("Build discipline. One day at a time.\nVersion 2.0 • Discipline + Maya",13,MUTED));body.addView(about);showCategory("ℹ️  ABOUT 309","App information and version.",body);
+    }
+
     private void showMemoryManager(){try{MayaMemory m=new MayaMemory(this);String all=m.all();if(all.isEmpty()){new AlertDialog.Builder(this).setTitle("Maya memory").setMessage("No saved memory yet.").setPositiveButton("OK",null).show();return;}String[] items=all.split(String.valueOf((char)10));new AlertDialog.Builder(this).setTitle("Maya memory — tap one to delete").setItems(items,(d,which)->new AlertDialog.Builder(this).setTitle("Delete this memory?").setMessage(items[which]).setNegativeButton("Cancel",null).setPositiveButton("Delete",(x,w)->{try{m.remove(which,()->runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())showMemoryManager();}));}catch(Exception e){Toast.makeText(this,"Could not delete memory.",Toast.LENGTH_SHORT).show();}}).show()).setNegativeButton("Close",null).show();}catch(Exception e){Toast.makeText(this,"Maya memory could not be opened.",Toast.LENGTH_SHORT).show();}}
 
     private void speak(String s){if(tts==null)tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS)speakNow(s);});else speakNow(s);}
