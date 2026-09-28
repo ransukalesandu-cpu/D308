@@ -17,6 +17,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        try {
         if("com.discipline309.DISMISS".equals(intent.getAction())) { dismissNotification(context,intent); return; }
         if(!context.getSharedPreferences("settings",Context.MODE_PRIVATE).getBoolean("notifications",true)) return;
         String title = intent.getStringExtra("title");
@@ -70,6 +71,9 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
 
         speak(context, finalMessage);
+        } catch (Exception ignored) {
+            // Never let an alarm callback crash the app/process.
+        }
     }
 
     private void dismissNotification(Context context, Intent intent) {
