@@ -55,6 +55,7 @@ public final class SupabaseAccountManager {
     public static boolean loggedIn(Context c){try{return !p(c).getString("access_token","").isEmpty()&&!p(c).getString("user_id","").isEmpty();}catch(Exception e){return false;}}
     public static String userId(Context c){try{return p(c).getString("user_id","");}catch(Exception e){return "";}}
     public static String accessToken(Context c){try{return p(c).getString("access_token","");}catch(Exception e){return "";}}
+    public static String publishableKey(){return KEY;}
     public static String displayName(Context c){try{return p(c).getString("display_name","");}catch(Exception e){return "";}}
     public static String role(Context c){try{return p(c).getString("role","");}catch(Exception e){return "";}}
     public static String parentId(Context c){try{return p(c).getString("parent_id","");}catch(Exception e){return "";}}
