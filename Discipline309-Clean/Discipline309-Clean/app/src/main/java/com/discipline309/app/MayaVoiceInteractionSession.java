@@ -19,15 +19,6 @@ public class MayaVoiceInteractionSession extends VoiceInteractionSession {
         startMayaService();
     }
 
-    @Override public void onHandleAssist(android.app.assist.AssistStructure structure, Bundle content) {
-        super.onHandleAssist(structure, content);
-        startMayaService();
-    }
-
-    @Override public void onHandleScreenshot(android.graphics.Bitmap screenshot) {
-        super.onHandleScreenshot(screenshot);
-        startMayaService();
-    }
 
     private void startMayaService() {
         try {
