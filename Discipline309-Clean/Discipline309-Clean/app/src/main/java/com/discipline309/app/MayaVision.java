@@ -20,7 +20,8 @@ public final class MayaVision {
     public static void analyze(Context context, Uri imageUri, String question, Callback callback) {
         new Thread(() -> {
             try {
-                android.content.SharedPreferences p=context.getSharedPreferences("maya_ai",Context.MODE_PRIVATE);
+                if(callback==null) return;
+                android.content.SharedPreferences p=MayaSecureStorage.maya(context);
                 String key=p.getString("api_key","").trim();
                 if(key.isEmpty()){ callback.onReply("Image understand කරන්න AI API key එක Settings වල add කරන්න. 🖼️"); return; }
 
@@ -71,7 +72,7 @@ public final class MayaVision {
                 }
                 callback.onReply(reply.isEmpty()?"Image එක ගැන reply එකක් හදාගන්න බැරි වුණා 😅":reply);
                 c.disconnect();
-            }catch(Exception e){ callback.onReply("Image analyze කරන්න බැරි වුණා. Image එක සහ AI settings check කරන්න. 🌐"); }
+            }catch(Exception e){ if(callback!=null) callback.onReply("Image analyze කරන්න බැරි වුණා. Image එක සහ AI settings check කරන්න. 🌐"); }
         }).start();
     }
 
