@@ -70,7 +70,7 @@ public class MayaAI {
                         history.edit().remove("recent").putString("history_day",todayKey).apply();
                     }else{
                         String saved=history.getString("recent","[]");
-                        if(saved!=null && saved.length()<=6000) recent=new JSONArray(saved);
+                        if(saved!=null && saved.length()<=4000) recent=new JSONArray(saved);
                     }
                 }catch(Exception ignored){
                     history.edit().remove("recent").putString("history_day",todayKey).apply();
@@ -81,7 +81,7 @@ public class MayaAI {
                         JSONObject item=recent.getJSONObject(i);
                         String role=item.optString("role","");
                         String content=item.optString("content","");
-                        if(("user".equals(role)||"assistant".equals(role)) && !content.trim().isEmpty() && content.length()<=1600){
+                        if(("user".equals(role)||"assistant".equals(role)) && !content.trim().isEmpty() && content.length()<=1000){
                             messages.put(item);
                         }
                     }catch(Exception ignored){}
@@ -151,10 +151,10 @@ public class MayaAI {
                         String historyDay=history.getString("history_day",todayKey);
                         if(todayKey.equals(historyDay)){
                             String saved=history.getString("recent","[]");
-                            if(saved!=null && saved.length()<=6000) updated=new JSONArray(saved);
+                            if(saved!=null && saved.length()<=4000) updated=new JSONArray(saved);
                         }
                     }catch(Exception ignored){}
-                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(1600,userText.length())));updated.put(hu);
+                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(1000,userText.length())));updated.put(hu);
                     JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
                     while(updated.length()>4){
                         JSONArray trimmed=new JSONArray();
