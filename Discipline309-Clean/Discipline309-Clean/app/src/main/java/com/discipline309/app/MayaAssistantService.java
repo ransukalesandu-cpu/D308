@@ -133,10 +133,10 @@ private boolean fallbackListening=false;
         if(stopping || !mayaAllowed()){ stopSelf(); return; }
         wakeWordDetected=true;
         realWakeWordActive=true;
+        conversationMode=true;
         if(wakeWordAdapter!=null) wakeWordAdapter.stop();
+        // TTS completion now opens the next listening turn, just like a continuous voice chat.
         speak(modeReply("ඔව්, කියන්න.","Yoo 😄 කියන්න, Maya online!","ඔව්, කියන්න. 💛"));
-        // Give TTS a moment to finish before opening SpeechRecognizer; starting both together can make the first command get lost.
-        handler.postDelayed(this::listen,900);
     }
 
     private void listen(){
