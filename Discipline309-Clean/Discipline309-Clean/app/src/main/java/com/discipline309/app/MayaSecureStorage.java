@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKey;
-import java.util.Map;
 
 public final class MayaSecureStorage {
     private static final String MAYA="maya_ai";
@@ -27,7 +26,13 @@ public final class MayaSecureStorage {
         legacy.edit().remove("api_key").apply();
     }
     public static String getApiKey(Context c,String name){try{migrate(c,name);return secure(c,name).getString("api_key","").trim();}catch(Exception e){return "";} }
-    public static SharedPreferences maya(Context c){migrate(c,MAYA);return secure(c,MAYA);}
-    public static SharedPreferences web(Context c){migrate(c,WEB);return secure(c,WEB);}
+    public static SharedPreferences maya(Context c){return openMigrated(c,MAYA);}
+    public static SharedPreferences web(Context c){return openMigrated(c,WEB);}
+    public static void setApiKey(Context c,String name,String key){
+        try{secure(c,name).edit().putString("api_key",key==null?"":key.trim()).apply();}catch(Exception ignored){}
+    }
+    private static SharedPreferences openMigrated(Context c,String name){
+        try{migrate(c,name);return secure(c,name);}catch(Exception e){throw new IllegalStateException("Secure Maya storage unavailable",e);}
+    }
     private MayaSecureStorage(){}
 }
