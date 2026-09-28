@@ -1,6 +1,8 @@
 package com.discipline309.app;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.net.URLEncoder;
@@ -13,13 +15,14 @@ import java.util.UUID;
  */
 public final class SupabaseBackendRepository {
     private final Context context;
+    private final Handler main=new Handler(Looper.getMainLooper());
     public interface Callback { void done(boolean ok,String message,JSONObject data); }
 
     public SupabaseBackendRepository(Context c){context=c.getApplicationContext();}
 
     private boolean ready(){return SupabaseAccountManager.loggedIn(context);}
 
-    public void getSettings(Callback cb){request("GET","/rest/v1/user_settings?user_id=eq."+uid()+"&select=*",null,cb);}
+    public void getSettings(Callback cb){requestArray("GET","/rest/v1/user_settings?user_id=eq."+uid()+"&select=*",cb);}
     public void saveSettings(JSONObject settings,Callback cb){
         try{
             JSONObject body=new JSONObject().put("user_id",uid())
@@ -33,7 +36,7 @@ public final class SupabaseBackendRepository {
         }catch(Exception e){fail(cb,e);}
     }
 
-    public void getHabits(Callback cb){request("GET","/rest/v1/habits?owner_id=eq."+uid()+"&active=eq.true&order=position.asc",null,cb);}
+    public void getHabits(Callback cb){requestArray("GET","/rest/v1/habits?owner_id=eq."+uid()+"&active=eq.true&order=position.asc",cb);}
     public void createHabit(String name,int position,Callback cb){
         try{request("POST","/rest/v1/habits",new JSONObject().put("owner_id",uid()).put("name",name).put("position",position),cb,"return=representation");}catch(Exception e){fail(cb,e);}
     }
@@ -46,11 +49,11 @@ public final class SupabaseBackendRepository {
         try{request("POST","/rest/v1/habit_logs?on_conflict=habit_id,day",new JSONObject().put("habit_id",habitId).put("owner_id",uid()).put("day",day).put("completed",completed).put("updated_at",now()),cb,"resolution=merge-duplicates,return=minimal");}catch(Exception e){fail(cb,e);}
     }
     public void getHabitLogs(String from,String to,Callback cb){
-        request("GET","/rest/v1/habit_logs?owner_id=eq."+uid()+"&day=gte."+enc(from)+"&day=lte."+enc(to)+"&order=day.desc",null,cb);
+        requestArray("GET","/rest/v1/habit_logs?owner_id=eq."+uid()+"&day=gte."+enc(from)+"&day=lte."+enc(to)+"&order=day.desc",cb);
     }
 
     public void getDailyPlan(String day,Callback cb){
-        request("GET","/rest/v1/daily_plans?owner_id=eq."+uid()+"&day=eq."+enc(day)+"&select=*,daily_plan_tasks(*)",null,cb);
+        requestArray("GET","/rest/v1/daily_plans?owner_id=eq."+uid()+"&day=eq."+enc(day)+"&select=*,daily_plan_tasks(*)",cb);
     }
     public void saveDailyPlan(String day,String focus,Callback cb){
         try{request("POST","/rest/v1/daily_plans?on_conflict=owner_id,day",new JSONObject().put("owner_id",uid()).put("day",day).put("focus",focus==null?"":focus).put("updated_at",now()),cb,"resolution=merge-duplicates,return=representation");}catch(Exception e){fail(cb,e);}
@@ -62,12 +65,12 @@ public final class SupabaseBackendRepository {
         try{request("PATCH","/rest/v1/daily_plan_tasks?id=eq."+enc(taskId),new JSONObject().put("completed",completed).put("updated_at",now()),cb,"return=minimal");}catch(Exception e){fail(cb,e);}
     }
 
-    public void getJournal(String day,Callback cb){request("GET","/rest/v1/journals?owner_id=eq."+uid()+"&day=eq."+enc(day)+"&select=*",null,cb);}
+    public void getJournal(String day,Callback cb){requestArray("GET","/rest/v1/journals?owner_id=eq."+uid()+"&day=eq."+enc(day)+"&select=*",cb);}
     public void saveJournal(String day,String body,Callback cb){
         try{request("POST","/rest/v1/journals?on_conflict=owner_id,day",new JSONObject().put("owner_id",uid()).put("day",day).put("body",body==null?"":body).put("updated_at",now()),cb,"resolution=merge-duplicates,return=representation");}catch(Exception e){fail(cb,e);}
     }
 
-    public void getReminders(Callback cb){request("GET","/rest/v1/reminders?owner_id=eq."+uid()+"&order=hour.asc,minute.asc",null,cb);}
+    public void getReminders(Callback cb){requestArray("GET","/rest/v1/reminders?owner_id=eq."+uid()+"&order=hour.asc,minute.asc",cb);}
     public void saveReminder(String id,String title,int hour,int minute,boolean enabled,Callback cb){
         try{
             JSONObject b=new JSONObject().put("owner_id",uid()).put("title",title).put("hour",hour).put("minute",minute).put("enabled",enabled).put("updated_at",now());
@@ -77,7 +80,7 @@ public final class SupabaseBackendRepository {
     }
     public void deleteReminder(String id,Callback cb){request("DELETE","/rest/v1/reminders?id=eq."+enc(id),null,cb,null);}
 
-    public void getNotes(Callback cb){request("GET","/rest/v1/notes?owner_id=eq."+uid()+"&select=*&order=updated_at.desc",null,cb);}
+    public void getNotes(Callback cb){requestArray("GET","/rest/v1/notes?owner_id=eq."+uid()+"&select=*&order=updated_at.desc",cb);}
     public void saveNote(String id,String title,String body,String category,Callback cb){
         try{
             JSONObject b=new JSONObject().put("owner_id",uid()).put("title",title).put("body",body).put("category",category).put("updated_at",now());
@@ -90,14 +93,20 @@ public final class SupabaseBackendRepository {
     private void request(String method,String path,JSONObject body,Callback cb){request(method,path,body,cb,null);}
     private void request(String method,String path,JSONObject body,Callback cb,String prefer){
         if(!ready()){fail(cb,new IllegalStateException("Not signed in."));return;}
-        new Thread(()->{
-            try{
-                JSONObject data=SupabaseAccountManager.backendRequest(context,method,path,body,prefer);
-                if(cb!=null)cb.done(true,"OK",data);
-            }catch(Exception e){fail(cb,e);}
-        }).start();
+        new Thread(()->{try{
+            JSONObject data=SupabaseAccountManager.backendRequestObject(context,method,path,body,prefer);
+            if(cb!=null)main.post(()->cb.done(true,"OK",data));
+        }catch(Exception e){fail(cb,e);}}).start();
     }
-    private void fail(Callback cb,Exception e){if(cb!=null)cb.done(false,e.getMessage()==null?"Backend error.":e.getMessage(),null);}
+    private void requestArray(String method,String path,Callback cb){
+        if(!ready()){fail(cb,new IllegalStateException("Not signed in."));return;}
+        new Thread(()->{try{
+            JSONArray rows=SupabaseAccountManager.backendRequestArray(context,method,path);
+            JSONObject wrapper=new JSONObject().put("rows",rows);
+            if(cb!=null)main.post(()->cb.done(true,"OK",wrapper));
+        }catch(Exception e){fail(cb,e);}}).start();
+    }
+    private void fail(Callback cb,Exception e){if(cb!=null)main.post(()->cb.done(false,e.getMessage()==null?"Backend error.":e.getMessage(),null));}
     private String uid(){return SupabaseAccountManager.userId(context);}
     private String enc(String s){try{return URLEncoder.encode(s==null?"":s,StandardCharsets.UTF_8.toString());}catch(Exception e){return "";}}
     private String now(){return new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",java.util.Locale.US).format(new java.util.Date());}
