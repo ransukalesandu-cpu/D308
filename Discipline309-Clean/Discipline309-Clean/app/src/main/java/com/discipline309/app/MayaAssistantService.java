@@ -785,6 +785,20 @@ private boolean fallbackListening=false;
     }
     @Override public int onStartCommand(Intent i,int flags,int id){
         if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
+        if(i!=null && "com.discipline309.app.MAYA_ASSISTANT_INVOCATION".equals(i.getAction())){
+            if(handler!=null){
+                handler.post(() -> {
+                    if(stopping || !ready) return;
+                    wakeWordDetected=true;
+                    realWakeWordActive=true;
+                    fallbackListening=true;
+                    if(wakeWordAdapter!=null){
+                        try{wakeWordAdapter.stop();}catch(Exception ignored){}
+                    }
+                    listen();
+                });
+            }
+        }
         return START_STICKY;
     }
     @Override public void onTaskRemoved(Intent rootIntent){
