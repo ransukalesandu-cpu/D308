@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private Calendar target(){Calendar c=startDate();c.add(Calendar.DAY_OF_YEAR,308);return c;}
     private int daysFromStart(){return(int)((System.currentTimeMillis()-startDate().getTimeInMillis())/86400000L)+1;}
     private int dayNumber(){return Math.max(0,Math.min(309,daysFromStart()));}
-    private String taskName(int i){try{if(i<0||i>=totalTasks())return "Habit";return i<DEFAULT_TASKS.length?DEFAULT_TASKS[i]:prefs.getString("habit_"+i,"Habit");}catch(Exception e){return "Habit";}}
+    private String taskName(int i){try{if(i<0||i>=totalTasks())return "Habit";String value=i<DEFAULT_TASKS.length?DEFAULT_TASKS[i]:prefs.getString("habit_"+i,"Habit");if(value==null||value.trim().isEmpty())return "Habit";return value.trim();}catch(Exception e){return "Habit";}}
     private int customCount(){try{return Math.max(0,Math.min(100,prefs.getInt("custom_count",0)));}catch(Exception e){return 0;}}
     private int totalTasks(){return DEFAULT_TASKS.length+customCount();}
     private boolean checked(int i,String d){try{return i>=0&&i<totalTasks()&&d!=null&&!d.isEmpty()&&prefs.getBoolean("task_"+i+"_"+d,false);}catch(Exception e){return false;}}
