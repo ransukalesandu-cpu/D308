@@ -25,7 +25,7 @@ public class MainActivity extends Activity {
     private VoiceAssistant voiceAssistant;
     private ToneGenerator tone;
     private final Handler syncHandler=new Handler(Looper.getMainLooper());
-    private final Runnable syncRunnable=new Runnable(){@Override public void run(){if(SupabaseAccountManager.loggedIn(MainActivity.this)&&"sub".equals(SupabaseAccountManager.role(MainActivity.this))){SupabaseAccountManager.syncLocalProgress(MainActivity.this,null);syncHandler.postDelayed(this,15000);}}};
+    private final Runnable syncRunnable=new Runnable(){@Override public void run(){try{if(isFinishing()||isDestroyed())return;if(SupabaseAccountManager.loggedIn(MainActivity.this)&&"sub".equals(SupabaseAccountManager.role(MainActivity.this))){SupabaseAccountManager.syncLocalProgress(MainActivity.this,null);syncHandler.postDelayed(this,15000);}}catch(Exception e){android.util.Log.e("309DayDiscipline","Periodic sync error",e);try{if(!isFinishing()&&!isDestroyed())syncHandler.postDelayed(this,30000);}catch(Exception ignored){}}}};
     private static final int PICK_MAYA_IMAGE=901,CAPTURE_MAYA_IMAGE=902,PICK_MAYA_DOCUMENT=903;
 
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
