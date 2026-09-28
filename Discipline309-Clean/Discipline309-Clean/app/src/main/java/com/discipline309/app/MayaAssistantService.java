@@ -134,18 +134,18 @@ private boolean fallbackListening=false;
                 () -> { handler.post(this::onMayaWakeWord); return kotlin.Unit.INSTANCE; },
                 error -> { handler.post(() -> {
                     realWakeWordActive=false;
-                    // Keep Maya usable if the bundled ONNX engine cannot initialize.
-                    // SpeechRecognizer fallback is already listening for the command,
-                    // so it must not require the wake word a second time.
-                    fallbackListening=true;
-                    listen();
+                    fallbackListening=false;
+                    // Do not fall back to always-on SpeechRecognizer when the wake-word
+                    // engine fails. Retry the wake-word engine instead to avoid
+                    // unintended continuous microphone listening.
+                    if(!stopping && mayaAllowed()) handler.postDelayed(wakeWordRunnable,5000);
                 }); return kotlin.Unit.INSTANCE; }
             );
             wakeWordAdapter.start();
         }catch(Exception e){
             realWakeWordActive=false;
-            fallbackListening=true;
-            listen();
+            fallbackListening=false;
+            if(!stopping && mayaAllowed()) handler.postDelayed(wakeWordRunnable,5000);
         }
     }
 
