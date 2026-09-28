@@ -69,7 +69,7 @@ public class AccountsActivity extends Activity {
     private void refreshLinked(){
         if(finishing || isFinishing() || subList==null)return;
         SupabaseAccountManager.loadLinked(this,(ok,msg)->runOnUiThread(()->{
-            if(subList==null)return;subList.removeAllViews();subList.addView(label("SUB ACCOUNTS  •  auto-refresh 5s",11,MUTED));
+            if(finishing || isFinishing() || subList==null)return;subList.removeAllViews();subList.addView(label("SUB ACCOUNTS  •  auto-refresh 5s",11,MUTED));
             if(!ok){subList.addView(label(msg,12,MUTED));return;}
             try{JSONArray a=new JSONArray(msg);if(a.length()==0){subList.addView(label("No linked sub accounts yet. Create an invite above.",13,MUTED));return;}for(int i=0;i<a.length();i++)addSubCard(subList,a.getJSONObject(i));}
             catch(Exception e){subList.addView(label("Could not read progress.",12,MUTED));}
