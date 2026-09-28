@@ -35,8 +35,28 @@ public class MotivationService extends Service {
             .setOngoing(true)
             .setContentIntent(PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT))
             .build();
-        startForeground(ID,n);
-        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));ready=true;scheduleNext(5000);}});
+        try{
+            startForeground(ID,n);
+        }catch(SecurityException e){
+            stopSelf();
+            return;
+        }catch(RuntimeException e){
+            stopSelf();
+            return;
+        }
+        try{
+            tts=new TextToSpeech(this,status->{
+                try{
+                    if(status==TextToSpeech.SUCCESS && tts!=null){
+                        tts.setLanguage(new Locale("si","LK"));
+                        ready=true;
+                        scheduleNext(5000);
+                    }
+                }catch(Exception ignored){}
+            });
+        }catch(Exception e){
+            ready=false;
+        }
     }
 
     private void scheduleNext(long delay){
