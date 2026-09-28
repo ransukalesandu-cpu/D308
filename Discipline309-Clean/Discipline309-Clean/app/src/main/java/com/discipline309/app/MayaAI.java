@@ -176,7 +176,9 @@ public class MayaAI {
         String s=q==null?"":q.toLowerCase(java.util.Locale.ROOT);
         String[] markers={"search the web","search web","google this","look this up","look it up","find online","latest","today","current","right now","news","price","weather","අද news","අලුත්ම","දැනට","දැන් තියෙන","online බලන්න","web එකේ බලන්න","search කරන්න"};
         for(String m:markers) if(s.contains(m)) return true;
-        return s.startsWith("who is ")||s.startsWith("what is ")||s.startsWith("where is ")||s.startsWith("when is ");
+        // Do not force a web request for every normal factual question.
+        // Explicit/current-search markers above are enough to opt into the slower web path.
+        return false;
     }
 
     private static String read(InputStream in)throws Exception{
