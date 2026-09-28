@@ -94,6 +94,13 @@ public class AuthActivity extends Activity {
         action.setOnClickListener(v->submit());
         card.addView(action);
 
+        if(!register){
+            TextView forgot=text("Forgot password?",13,ACCENT);
+            forgot.setGravity(Gravity.CENTER); forgot.setPadding(0,dp(10),0,dp(10));
+            forgot.setOnClickListener(v->showForgotPassword());
+            card.addView(forgot);
+        }
+
         Button switchMode=button(register?"Already have an account? Sign in":"New here? Create an account");
         switchMode.setOnClickListener(v->show(!registerMode)); card.addView(switchMode);
 
@@ -148,6 +155,27 @@ public class AuthActivity extends Activity {
                 }));
             }
         }));
+    }
+
+    private void showForgotPassword(){
+        final EditText resetEmail=field("Email address");
+        resetEmail.setText(email==null?"":email.getText().toString().trim());
+        LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL); box.setPadding(dp(20),dp(8),dp(20),0);
+        box.addView(resetEmail);
+        final android.app.AlertDialog dialog=new android.app.AlertDialog.Builder(this)
+            .setTitle("Reset password")
+            .setMessage("Email address eka danna. Password reset link ekak email ekata yawannam.")
+            .setView(box).setNegativeButton("Cancel",null).setPositiveButton("Send link",null).create();
+        dialog.setOnShowListener(x->dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            String em=resetEmail.getText().toString().trim();
+            if(em.isEmpty()||!em.contains("@")){toast("Valid email ekak danna.");return;}
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            SupabaseAccountManager.sendPasswordReset(this,em,(ok,msg)->runOnUiThread(()->{
+                dialog.dismiss();
+                new android.app.AlertDialog.Builder(this).setTitle(ok?"Email sent":"Reset failed").setMessage(msg).setPositiveButton("OK",null).show();
+            }));
+        }));
+        dialog.show();
     }
 
     private void setBusy(boolean busy){
