@@ -39,6 +39,13 @@ public class MayaAssistantService extends Service {
     private boolean listening=false;
 private boolean fallbackListening=false;
     private boolean ttsSpeaking=false;
+    private final BroadcastReceiver screenStateReceiver=new BroadcastReceiver(){
+        @Override public void onReceive(Context context,Intent intent){
+            if(Intent.ACTION_SCREEN_OFF.equals(intent.getAction())){
+                endConversationMode();
+            }
+        }
+    };
     // Lightweight in-session context for short follow-up replies.
     private String lastUserQuery="";
     private String lastMayaReply="";
@@ -59,6 +66,11 @@ private boolean fallbackListening=false;
             .setOngoing(true).setContentIntent(pi).build();
         startForeground(ID,n);
         handler=new Handler(Looper.getMainLooper());
+        try{
+            IntentFilter screenFilter=new IntentFilter();
+            screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
+            registerReceiver(screenStateReceiver,screenFilter);
+        }catch(Exception ignored){}
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
         handler.postDelayed(wakeWordRunnable,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
@@ -211,12 +223,14 @@ private boolean fallbackListening=false;
     }
 
     private void endConversationMode(){
+        boolean wasConversation=conversationMode;
         conversationMode=false;
         realWakeWordActive=false;
         wakeWordDetected=false;
+        fallbackListening=false;
         if(recognizer!=null){try{recognizer.cancel();}catch(Exception ignored){}}
         listening=false;
-        if(handler!=null && !stopping) handler.postDelayed(wakeWordRunnable,250);
+        if(handler!=null && !stopping && wasConversation) handler.postDelayed(wakeWordRunnable,250);
     }
 
     private boolean isConversationStopCommand(String q){
@@ -855,6 +869,7 @@ private boolean fallbackListening=false;
     }
     @Override public void onDestroy(){
         stopping=true;
+        try{unregisterReceiver(screenStateReceiver);}catch(Exception ignored){}
         try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
         try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}
         try{if(wakeWordAdapter!=null)wakeWordAdapter.stop();}catch(Exception ignored){}
