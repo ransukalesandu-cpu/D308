@@ -231,7 +231,9 @@ public class MayaAssistantService extends Service {
         }
         lastUserQuery=q;
 
-        if(isMemoryCommand(q)){
+        if(isNoteCommand(q)){
+            handleNoteCommand(q);
+        }else if(isMemoryCommand(q)){
             handleMemory(q);
         }else if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")){
             openApp(q);
@@ -388,6 +390,87 @@ public class MayaAssistantService extends Service {
             lastMayaReply=reply==null?"":reply;
             speak(reply);
         }));
+    }
+
+    
+    private boolean isNoteCommand(String q){
+        if(q==null)return false;
+        String l=q.toLowerCase(Locale.ROOT);
+        return l.contains("note")||l.contains("notes")||l.contains("නෝට්")||l.contains("මතක සටහන");
+    }
+
+    private void handleNoteCommand(String q){
+        String l=q==null?"":q.toLowerCase(Locale.ROOT).trim();
+        SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);
+        int count;
+        try{count=Math.max(0,Math.min(500,p.getInt("notes_count",0)));}catch(Exception e){count=0;}
+
+        if(l.contains("delete")||l.contains("remove")||l.contains("මකන්න")||l.contains("අයින් කරන්න")){
+            if(count<=0){speak("දැනට delete කරන්න note එකක් නැහැ. 📝");return;}
+            String body=q.replaceAll("(?i)maya","").replaceAll("(?i)delete note","").replaceAll("(?i)remove note","")
+                .replace("note","").replace("notes","").replace("මකන්න","").replace("අයින් කරන්න","").trim();
+            if(body.isEmpty()||body.equals("එක")||body.equals("ඒක")){
+                speak("Delete කරන්න note එකේ title එක කියන්න.");
+                return;
+            }
+            int found=-1;
+            for(int i=0;i<count;i++){
+                String title=p.getString("note_"+i+"_title","");
+                if(title!=null&&!title.isEmpty()&&title.toLowerCase(Locale.ROOT).contains(body.toLowerCase(Locale.ROOT))){found=i;break;}
+            }
+            if(found<0){speak("ඒ නමින් note එකක් හම්බවුනේ නැහැ. 📝");return;}
+            deleteVoiceNote(p,found,count);
+            speak("හරි, ""+p.getString("note_"+found+"_title","note")+"" note එක delete කළා. 🗑️");
+            return;
+        }
+
+        if(l.contains("list")||l.contains("show")||l.contains("read")||l.contains("all notes")||
+           l.contains("notes tika")||l.contains("notes ටික")||l.contains("නෝට් ටික")||l.contains("නෝට්ස්")){
+            if(count<=0){speak("දැනට notes නැහැ. 📝");return;}
+            StringBuilder out=new StringBuilder("ඔයාගේ notes මෙන්න. 📝 ");
+            int limit=Math.min(count,10);
+            for(int i=0;i<limit;i++){
+                String title=p.getString("note_"+i+"_title","Untitled note");
+                String body=p.getString("note_"+i+"_body","");
+                out.append(i+1).append(". ").append(title);
+                if(body!=null&&!body.trim().isEmpty())out.append(" — ").append(body.trim());
+                if(i<limit-1)out.append(". ");
+            }
+            if(count>limit)out.append(" තව ").append(count-limit).append(" notes තියෙනවා.");
+            speak(out.toString());
+            return;
+        }
+
+        String text=q;
+        text=text.replaceFirst("(?i)^save\\s+(a\\s+)?note\\s*", "");
+        text=text.replaceFirst("(?i)^add\\s+(a\\s+)?note\\s*", "");
+        text=text.replaceFirst("(?i)^create\\s+(a\\s+)?note\\s*", "");
+        text=text.replaceFirst("(?i)^write\\s+(a\\s+)?note\\s*", "");
+        text=text.replace("note එකක් දාන්න","").replace("note එකක් දා","").replace("නෝට් එකක් දාන්න","")
+            .replace("නෝට් එකක් දා","").replace("මතක සටහනක් දාන්න","").trim();
+        if(text.isEmpty()||text.equals("note")||text.equals("notes")){
+            speak("මොනවාද note එකට save කරන්න ඕනේ? 📝");
+            return;
+        }
+        if(count>=500){speak("Notes limit එක පිරී තියෙනවා. 📝");return;}
+        String title=text.length()>40?text.substring(0,40).trim():text;
+        String body=text;
+        p.edit().putString("note_"+count+"_title",title).putString("note_"+count+"_body",body)
+            .putLong("note_"+count+"_time",System.currentTimeMillis()).putBoolean("note_"+count+"_pinned",false)
+            .putInt("notes_count",count+1).apply();
+        speak("හරි 😄 note එක save කළා. 📝");
+    }
+
+    private void deleteVoiceNote(SharedPreferences p,int id,int n){
+        SharedPreferences.Editor e=p.edit();
+        for(int i=id;i<n-1;i++){
+            e.putString("note_"+i+"_title",p.getString("note_"+(i+1)+"_title","Untitled note"));
+            e.putString("note_"+i+"_body",p.getString("note_"+(i+1)+"_body",""));
+            e.putLong("note_"+i+"_time",p.getLong("note_"+(i+1)+"_time",0L));
+            e.putBoolean("note_"+i+"_pinned",p.getBoolean("note_"+(i+1)+"_pinned",false));
+        }
+        e.remove("note_"+(n-1)+"_title").remove("note_"+(n-1)+"_body").remove("note_"+(n-1)+"_time")
+            .remove("note_"+(n-1)+"_pinned").putInt("notes_count",n-1).apply();
     }
 
     private boolean isMemoryCommand(String q){
