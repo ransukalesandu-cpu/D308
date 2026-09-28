@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
     @Override protected void onCreate(Bundle b){super.onCreate(b);try{prefs=getSharedPreferences(PREFS,MODE_PRIVATE);ensureProgramStart();applyTheme();buildShell();showHome();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Startup error",e);showStartupFallback();}}
     private void showStartupFallback(){try{LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setGravity(Gravity.CENTER);root.setPadding(dp(24),dp(24),dp(24),dp(24));root.setBackgroundColor(BG);TextView title=label("309 DAY DISCIPLINE",26,TEXT);title.setGravity(Gravity.CENTER);root.addView(title);TextView msg=label("Startup problem එකක් හඳුනාගත්තා. App එක crash නොවී safe mode එකෙන් open වුණා.",15,MUTED);msg.setGravity(Gravity.CENTER);root.addView(msg,new LinearLayout.LayoutParams(-1,-2));Button retry=button("↻  TRY AGAIN");retry.setOnClickListener(v->{try{buildShell();showHome();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Retry startup error",e);}});root.addView(retry,new LinearLayout.LayoutParams(-1,dp(52)));setContentView(root);}catch(Throwable ignored){}}
     private void applyTheme(){String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");BG=0xFF061126;SURFACE=0xFF0B1B3A;TEXT=0xFFF5F8FF;MUTED=0xFF9CB2D9;ACCENT=0xFF2F7BFF;getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);}
-    private void buildShell(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(14),dp(18),dp(12));sc.addView(content);root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(2),dp(4),dp(2),dp(4));nav.setBackground(shape(0xFF081A36,18));String[] names={"⌂\nHome","◷\nPlan","✓\nHabits","◫\nStats","⚙\nSettings"};for(int i=0;i<5;i++){final int n=i;Button b=button(names[i]);b.setTextSize(11);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showStats();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}root.addView(nav);setContentView(root);}
+    private void buildShell(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);ScrollView sc=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(14),dp(18),dp(12));sc.addView(content);root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(2),dp(4),dp(2),dp(4));nav.setBackground(shape(0xFF081A36,18));String[] names={"⌂\nHome","◷\nPlan","✓\nHabits","📝\nNotes","◫\nStats","⚙\nSettings"};for(int i=0;i<6;i++){final int n=i;Button b=button(names[i]);b.setTextSize(11);b.setPadding(0,0,0,0);b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else if(n==4)showStats();else openSettings();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(62),1));}root.addView(nav);setContentView(root);}
     private void header(String title,String sub){content.removeAllViews();TextView t=label(title,26,TEXT);t.setTypeface(null,1);content.addView(t);content.addView(label(sub,13,MUTED));ImageView icon=new ImageView(this);icon.setImageResource(R.drawable.ic_discipline);icon.setContentDescription("Discipline");icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(64),dp(64));ip.gravity=Gravity.CENTER_HORIZONTAL;ip.topMargin=dp(5);content.addView(icon,ip);}
     private TextView title(String s){TextView t=label(s,19,TEXT);t.setTypeface(null,1);t.setPadding(dp(4),dp(14),dp(4),dp(5));return t;}
     private void addBar(LinearLayout box,int value,int max){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(Math.max(1,max));p.setProgress(Math.max(0,Math.min(max,value)));p.setProgressDrawable(getDrawable(android.R.drawable.progress_horizontal));box.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
@@ -234,6 +234,67 @@ public class MainActivity extends Activity {
     private void addHabitDialog(){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}if(customCount()>=100){toast("Custom habit limit reached.");return;}EditText e=new EditText(this);e.setHint("e.g. Read 20 minutes");new AlertDialog.Builder(this).setTitle("Add custom habit").setView(e).setPositiveButton("ADD",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){int n=customCount();if(n>=100){toast("Custom habit limit reached.");return;}prefs.edit().putInt("custom_count",n+1).putString("habit_"+(DEFAULT_TASKS.length+n),s).apply();showHabits();}}).setNegativeButton("CANCEL",null).show();}
     private void editHabitDialog(int idx){if(idx<DEFAULT_TASKS.length||idx>=totalTasks()){showHabits();return;}if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}EditText e=new EditText(this);e.setText(taskName(idx));new AlertDialog.Builder(this).setTitle("Edit habit").setView(e).setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty())prefs.edit().putString("habit_"+idx,s).apply();showHabits();}).setNeutralButton("DELETE",(d,w)->deleteHabit(idx)).setNegativeButton("CANCEL",null).show();}
     private void deleteHabit(int idx){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}int count=customCount();int first=DEFAULT_TASKS.length;int last=first+count-1;if(count<=0||idx<first||idx>last){showHabits();return;}if(idx!=last){String name=prefs.getString("habit_"+last,"Habit");prefs.edit().putString("habit_"+idx,name).remove("habit_"+last).putInt("custom_count",Math.max(0,count-1)).apply();}else prefs.edit().remove("habit_"+idx).putInt("custom_count",Math.max(0,count-1)).apply();showHabits();}
+    private int notesCount(){try{return Math.max(0,Math.min(500,prefs.getInt("notes_count",0)));}catch(Exception e){return 0;}}
+    private String noteTitle(int i){return prefs.getString("note_"+i+"_title","Untitled note");}
+    private String noteBody(int i){return prefs.getString("note_"+i+"_body","");}
+    private long noteTime(int i){return prefs.getLong("note_"+i+"_time",0L);}
+    private boolean notePinned(int i){return prefs.getBoolean("note_"+i+"_pinned",false);}
+
+    private void showNotes(){
+        header("NOTES","Write, save and find your notes in the same app. 📝");
+        Button add=button("＋  NEW NOTE");
+        add.setOnClickListener(v->noteEditor(-1));
+        content.addView(add);
+        EditText search=new EditText(this);
+        search.setSingleLine(true);search.setHint("Search notes…");search.setTextColor(TEXT);search.setHintTextColor(MUTED);search.setTextSize(15);search.setPadding(dp(14),0,dp(14),0);search.setBackground(shape(SURFACE,16));
+        content.addView(search,new LinearLayout.LayoutParams(-1,dp(50)));
+        LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
+        Runnable render=()->{
+            list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.US);
+            ArrayList<Integer> ids=new ArrayList<>();for(int i=0;i<notesCount();i++){String h=(noteTitle(i)+" "+noteBody(i)).toLowerCase(Locale.US);if(q.isEmpty()||h.contains(q))ids.add(i);}
+            Collections.sort(ids,(a,b)->{if(notePinned(a)!=notePinned(b))return notePinned(a)?-1:1;return Long.compare(noteTime(b),noteTime(a));});
+            if(ids.isEmpty()){list.addView(label(q.isEmpty()?"No notes yet. Tap NEW NOTE to write one.":"No matching notes.",14,MUTED));return;}
+            for(int id:ids){
+                LinearLayout card=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+                TextView tt=label((notePinned(id)?"📌 ":"")+noteTitle(id),18,TEXT);tt.setTypeface(null,1);row.addView(tt,new LinearLayout.LayoutParams(0,-2,1));
+                Button more=button("⋮");more.setOnClickListener(v->noteMenu(id));row.addView(more,new LinearLayout.LayoutParams(dp(48),dp(44)));card.addView(row);
+                String b=noteBody(id).trim();if(!b.isEmpty()){String p=b.replace("\\n"," ");if(p.length()>180)p=p.substring(0,180)+"…";card.addView(label(p,14,TEXT));}
+                if(noteTime(id)>0)card.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));
+                card.setOnClickListener(v->noteEditor(id));list.addView(card);
+            }
+        };
+        search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int c){}public void onTextChanged(CharSequence s,int a,int b,int c){render.run();}public void afterTextChanged(android.text.Editable e){}});
+        render.run();
+    }
+
+    private void noteEditor(int id){
+        LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
+        EditText title=new EditText(this);title.setSingleLine(true);title.setHint("Title");title.setText(id>=0?noteTitle(id):"");box.addView(title);
+        EditText body=new EditText(this);body.setHint("Write your note here…");body.setMinLines(9);body.setGravity(Gravity.TOP);body.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setText(id>=0?noteBody(id):"");box.addView(body,new LinearLayout.LayoutParams(-1,dp(230)));
+        AlertDialog d=new AlertDialog.Builder(this).setTitle(id>=0?"📝 Edit Note":"📝 New Note").setView(box).setPositiveButton("SAVE",null).setNegativeButton("CANCEL",null).create();
+        d.setOnShowListener(x->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            String t=title.getText().toString().trim(),b=body.getText().toString().trim();if(t.isEmpty()&&b.isEmpty()){toast("Write something first.");return;}if(t.isEmpty())t="Untitled note";
+            int idx=id;if(idx<0){idx=notesCount();if(idx>=500){toast("Notes limit reached.");return;}prefs.edit().putInt("notes_count",idx+1).apply();}
+            prefs.edit().putString("note_"+idx+"_title",t).putString("note_"+idx+"_body",b).putLong("note_"+idx+"_time",System.currentTimeMillis()).apply();d.dismiss();showNotes();
+        }));
+        d.show();
+    }
+
+    private void noteMenu(int id){
+        String[] a={notePinned(id)?"Unpin":"Pin","Share","Delete"};
+        new AlertDialog.Builder(this).setTitle(noteTitle(id)).setItems(a,(d,w)->{
+            if(w==0){prefs.edit().putBoolean("note_"+id+"_pinned",!notePinned(id)).apply();showNotes();}
+            else if(w==1){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"\\n\\n"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}
+            else new AlertDialog.Builder(this).setTitle("Delete note?").setMessage("This note will be removed from this device.").setPositiveButton("DELETE",(dd,ww)->deleteNote(id)).setNegativeButton("CANCEL",null).show();
+        }).show();
+    }
+
+    private void deleteNote(int id){
+        int n=notesCount();if(id<0||id>=n){showNotes();return;}SharedPreferences.Editor e=prefs.edit();
+        for(int i=id;i<n-1;i++){e.putString("note_"+i+"_title",prefs.getString("note_"+(i+1)+"_title","Untitled note"));e.putString("note_"+i+"_body",prefs.getString("note_"+(i+1)+"_body",""));e.putLong("note_"+i+"_time",prefs.getLong("note_"+(i+1)+"_time",0L));e.putBoolean("note_"+i+"_pinned",prefs.getBoolean("note_"+(i+1)+"_pinned",false));}
+        e.remove("note_"+(n-1)+"_title").remove("note_"+(n-1)+"_body").remove("note_"+(n-1)+"_time").remove("note_"+(n-1)+"_pinned").putInt("notes_count",n-1).apply();showNotes();
+    }
+
     private void showAchievements(){header("ACHIEVEMENTS","Milestones earned through consistency.");int days=completedDays(),streak=bestStreak(),missions=0;for(String k:prefs.getAll().keySet())if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&prefs.getBoolean(k,false))missions++;LinearLayout summary=card();summary.addView(label("🏆 "+days+" completed days",22,TEXT));summary.addView(label("🔥 Best streak: "+streak+" days  •  🎯 Missions: "+missions,13,MUTED));content.addView(summary);int[] milestones={1,3,7,14,30,50,100,150,200,309};String[] names={"First Step","3-Day Spark","One Week","Two Weeks","30-Day Discipline","50-Day Warrior","100-Day Mastery","150-Day Elite","200-Day Relentless","309-Day Legend"};for(int i=0;i<milestones.length;i++){int m=milestones[i];boolean u=days>=m;LinearLayout a=card();a.addView(label(u?"🏆 "+names[i]:"🔒 "+names[i],17,u?TEXT:MUTED));a.addView(label(m+" completed days",12,MUTED));content.addView(a);}int[] streaks={3,7,14,30};String[] sn={"3-Day Streak","7-Day Streak","14-Day Streak","30-Day Streak"};for(int i=0;i<streaks.length;i++){boolean u=streak>=streaks[i];LinearLayout a=card();a.addView(label(u?"🔥 "+sn[i]:"🔒 "+sn[i],17,u?TEXT:MUTED));a.addView(label(streaks[i]+" consecutive completed days",12,MUTED));content.addView(a);}LinearLayout m=card();m.addView(label("🎯 MISSION ACHIEVEMENTS",11,MUTED));int[] mm={1,7,30};for(int x:mm)m.addView(label(missions>=x?"🏆 "+x+" daily missions completed":"🔒 "+x+" daily missions",14,missions>=x?TEXT:MUTED));content.addView(m);}
     private void showStats(){header("PROGRESS & STATS","See the full picture, not just today's streak.");int completed=completedDays(),best=bestStreak(),today=countFor(key()),total=totalTasks();LinearLayout summary=card();summary.addView(label("LEVEL "+level(),11,MUTED));summary.addView(label(completed+" completed days",23,TEXT));summary.addView(label("🔥 "+currentStreak()+" current  •  🏆 "+best+" best streak",14,MUTED));summary.addView(label("⚡ "+xp()+" total XP  •  "+totalCompletedTasks()+" completed tasks",14,MUTED));content.addView(summary);LinearLayout week=card();week.addView(label("LAST 7 DAYS",11,MUTED));for(int i=6;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);int n=countFor(key(c));int pct=total==0?0:Math.round(n*100f/total);week.addView(label(new SimpleDateFormat("EEE",Locale.US).format(c.getTime())+"   "+n+"/"+total+"   "+pct+"%",13,TEXT));}content.addView(week);
         LinearLayout planWeek=card();planWeek.addView(label("SHORT PLAN • LAST 7 DAYS",11,MUTED));
