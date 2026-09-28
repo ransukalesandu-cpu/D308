@@ -635,7 +635,7 @@ private boolean fallbackListening=false;
     private String modeReply(String normal,String funny,String sweet){
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
         if(p.getBoolean("mode_sweet",false)) return sweet;
-        if(p.getBoolean("mode_cute",false)) return funny;
+        if(p.getBoolean("mode_cute",false)) return "Aww 😄 කියන්නකෝ, Maya මෙතන! ✨";
         if(p.getBoolean("mode_funny",true)) return funny;
         return normal;
     }
@@ -741,7 +741,7 @@ private boolean fallbackListening=false;
             return;
         }
         try{
-            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d{1,3})").matcher(q);
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d{1,3})").matcher(q);
             if(m.find()){
                 int pct=Math.max(1,Math.min(100,Integer.parseInt(m.group(1))));
                 int value=Math.round(255f*pct/100f);
@@ -758,7 +758,7 @@ private boolean fallbackListening=false;
             return;
         }
         try{
-            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d+)").matcher(q);
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d+)").matcher(q);
             if(m.find()){
                 int minutes=Math.max(1,Math.min(60,Integer.parseInt(m.group(1))));
                 Settings.System.putInt(getContentResolver(),Settings.System.SCREEN_OFF_TIMEOUT,minutes*60*1000);
