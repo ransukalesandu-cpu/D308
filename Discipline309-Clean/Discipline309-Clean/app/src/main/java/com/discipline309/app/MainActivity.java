@@ -49,8 +49,8 @@ public class MainActivity extends Activity {
     private boolean allowed(String permission){return !SupabaseAccountManager.loggedIn(this)||SupabaseAccountManager.can(this,permission);}
     private int countFor(String d){int n=0;for(int i=0;i<totalTasks();i++)if(checked(i,d))n++;return n;}
     private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();int guard=0;while(!c.after(now)&&!c.after(target())&&guard++<309){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
-    private int xp(){return completedDays()*100+totalCompletedTasks()*20+prefs.getInt("xp_bonus",0);}
-    private void awardXp(int amount,String reason){if(amount<=0)return;prefs.edit().putInt("xp_bonus",prefs.getInt("xp_bonus",0)+amount).apply();toast(reason+"  +"+amount+" XP");}
+    private int xp(){try{int bonus=Math.max(0,Math.min(1000000,prefs.getInt("xp_bonus",0)));long total=(long)completedDays()*100L+(long)totalCompletedTasks()*20L+bonus;return (int)Math.min(Integer.MAX_VALUE,total);}catch(Exception e){return completedDays()*100+totalCompletedTasks()*20;}}
+    private void awardXp(int amount,String reason){if(amount<=0)return;try{int current=Math.max(0,Math.min(1000000,prefs.getInt("xp_bonus",0)));int next=(int)Math.min(1000000L,(long)current+amount);prefs.edit().putInt("xp_bonus",next).apply();toast(reason+"  +"+amount+" XP");}catch(Exception ignored){}}
     private int totalCompletedTasks(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();int guard=0;while(!c.after(now)&&!c.after(target())&&guard++<309){n+=countFor(key(c));c.add(Calendar.DAY_OF_YEAR,1);}return n;}
     private int level(){return xp()/500+1;}
     private int currentStreak(){int n=0;Calendar c=Calendar.getInstance();Calendar start=startDate();Calendar end=target();if(c.after(end))c.setTimeInMillis(end.getTimeInMillis());if(!prefs.getBoolean("done_"+key(c),false))c.add(Calendar.DAY_OF_YEAR,-1);while(!c.before(start)&&n<309&&prefs.getBoolean("done_"+key(c),false)){n++;c.add(Calendar.DAY_OF_YEAR,-1);}return n;}
