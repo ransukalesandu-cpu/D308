@@ -52,14 +52,16 @@ public final class SupabaseAccountManager {
         out.putBoolean("_migration_done",true).apply();
         legacy.edit().clear().apply();
     }
-    public static boolean loggedIn(Context c){return !p(c).getString("access_token","").isEmpty()&&!p(c).getString("user_id","").isEmpty();}
+    public static boolean loggedIn(Context c){try{return !p(c).getString("access_token","").isEmpty()&&!p(c).getString("user_id","").isEmpty();}catch(Exception e){return false;}}
     public static String userId(Context c){return p(c).getString("user_id","");}
     public static String displayName(Context c){return p(c).getString("display_name","");}
-    public static String role(Context c){return p(c).getString("role","");}
+    public static String role(Context c){try{return p(c).getString("role","");}catch(Exception e){return "";}}
     public static String parentId(Context c){return p(c).getString("parent_id","");}
     public static boolean can(Context c,String permission){
-        if(!"sub".equals(role(c))) return true;
-        return p(c).getBoolean(permission,false);
+        try{
+            if(!"sub".equals(role(c))) return true;
+            return p(c).getBoolean(permission,false);
+        }catch(Exception e){return true;}
     }
 
     public static void signUp(Context c,String email,String password,Callback cb){
