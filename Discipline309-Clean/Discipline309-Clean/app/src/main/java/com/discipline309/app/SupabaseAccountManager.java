@@ -176,8 +176,8 @@ public final class SupabaseAccountManager {
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
-    public static String lastConflictSnapshot(Context c){return p(c).getString(CONFLICT_SNAPSHOT,"");}
-    public static void clearLastConflict(Context c){p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}
+    public static String lastConflictSnapshot(Context c){try{return p(c).getString(CONFLICT_SNAPSHOT,"");}catch(Exception e){return "";}}
+    public static void clearLastConflict(Context c){try{p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}catch(Exception ignored){}}
     public static void signOut(Context c){p(c).edit().clear().apply();}
 
     private static long parseIsoMillis(String value){
