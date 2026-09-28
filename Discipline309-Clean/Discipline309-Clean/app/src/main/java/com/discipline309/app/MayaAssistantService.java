@@ -115,12 +115,16 @@ private boolean fallbackListening=false;
                 error -> { handler.post(() -> {
                     realWakeWordActive=false;
                     // Keep Maya usable if the bundled ONNX engine cannot initialize.
+                    // SpeechRecognizer fallback is already listening for the command,
+                    // so it must not require the wake word a second time.
+                    fallbackListening=true;
                     listen();
                 }); return kotlin.Unit.INSTANCE; }
             );
             wakeWordAdapter.start();
         }catch(Exception e){
             realWakeWordActive=false;
+            fallbackListening=true;
             listen();
         }
     }
@@ -179,6 +183,7 @@ private boolean fallbackListening=false;
                 }else{
                     restart(1300);
                 }
+                fallbackListening=false;
             }
         });
         Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -212,9 +217,10 @@ private boolean fallbackListening=false;
         if(!mayaAllowed()){ stopSelf(); return; }
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
-        if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
-        // In fallback SpeechRecognizer mode, the recognizer itself is the trigger, so accept the command without requiring the wake word again.
-        if(realWakeWordActive || !wakeWordEnabled) wakeWordDetected=true;
+        // In fallback SpeechRecognizer mode, listening itself is the trigger.
+        // Only the real wake-word path requires "Maya" to be spoken first.
+        if(!realWakeWordActive && !fallbackListening && !(l.contains("maya")||l.contains("මායා"))) return;
+        if(realWakeWordActive || fallbackListening || !wakeWordEnabled) wakeWordDetected=true;
         String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
         q=normalizeMixedCommand(q);
         q=resolveSmartIntent(q);
