@@ -62,16 +62,58 @@ public class MainActivity extends Activity {
     @Override protected void onCreate(Bundle b){super.onCreate(b);try{prefs=getSharedPreferences(PREFS,MODE_PRIVATE);ensureProgramStart();applyTheme();buildShell();showHome();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Startup error",e);showStartupFallback();}}
     private void showStartupFallback(){try{LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setGravity(Gravity.CENTER);root.setPadding(dp(24),dp(24),dp(24),dp(24));root.setBackgroundColor(BG);TextView title=label("309 DAY DISCIPLINE",26,TEXT);title.setGravity(Gravity.CENTER);root.addView(title);TextView msg=label("Startup problem එකක් හඳුනාගත්තා. App එක crash නොවී safe mode එකෙන් open වුණා.",15,MUTED);msg.setGravity(Gravity.CENTER);root.addView(msg,new LinearLayout.LayoutParams(-1,-2));Button retry=button("↻  TRY AGAIN");retry.setOnClickListener(v->{try{buildShell();showHome();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Retry startup error",e);}});root.addView(retry,new LinearLayout.LayoutParams(-1,dp(52)));setContentView(root);}catch(Throwable ignored){}}
     private void applyTheme(){String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");BG=0xFF070B18;SURFACE=0xFF11182E;TEXT=0xFFF7F7FF;MUTED=0xFFA9A8C5;ACCENT=0xFFA78BFA;getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);}
+    private Button[] navButtons;
+    private int selectedNav=0;
+
+    private void updateNavSelection(int selected){
+        selectedNav=selected;
+        if(navButtons==null)return;
+        for(int i=0;i<navButtons.length;i++){
+            Button b=navButtons[i];
+            boolean active=i==selected;
+            b.setTextColor(active?Color.WHITE:MUTED);
+            b.setTypeface(active?Typeface.create("sans-serif-medium",Typeface.BOLD):Typeface.create("sans-serif",Typeface.NORMAL));
+            b.setBackground(shape(active?0xFF2A2256:0x00000000,14));
+            b.setElevation(active?dp(2):0);
+            b.setContentDescription(b.getText().toString().replace("\n"," ") + (active?" selected":""));
+        }
+    }
+
     private void buildShell(){
     FrameLayout root=new FrameLayout(this);root.setBackgroundColor(BG);
     ScrollView sc=new ScrollView(this);sc.setOverScrollMode(View.OVER_SCROLL_ALWAYS);sc.setSmoothScrollingEnabled(true);
     content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(28),dp(18),dp(110));sc.addView(content);
     root.addView(sc,new FrameLayout.LayoutParams(-1,-1));
-    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(4),dp(5),dp(4),dp(5));nav.setBackground(shape(0xFF0C1226,18));
+    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(shape(0xFF0C1226,18));
     String[] names={"⌂\nHome","◷\nPlan","✓\nHabits","📝\nNotes","◫\nStats"};
-    for(int i=0;i<5;i++){final int n=i;Button nb=button(names[i]);nb.setTextSize(14);nb.setPadding(0,0,0,0);nb.setMinHeight(dp(48));nb.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else showStats();});nav.addView(nb,new LinearLayout.LayoutParams(0,dp(58),1));}
-    Button settings=button("⚙\nSettings");settings.setTextSize(14);settings.setOnClickListener(v->openSettings());LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(dp(72),dp(58));sp.setMargins(dp(6),0,0,0);nav.addView(settings,sp);
-    FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);np.setMargins(dp(8),0,dp(8),dp(8));root.addView(nav,np);
+    navButtons=new Button[5];
+    for(int i=0;i<5;i++){
+        final int n=i;
+        Button nb=button(names[i]);
+        nb.setTextSize(13);
+        nb.setPadding(0,0,0,0);
+        nb.setMinHeight(dp(48));
+        nb.setGravity(Gravity.CENTER);
+        nb.setOnClickListener(v->{
+            updateNavSelection(n);
+            if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else showStats();
+        });
+        navButtons[i]=nb;
+        nav.addView(nb,new LinearLayout.LayoutParams(0,dp(58),1));
+    }
+    Button settings=button("⚙\nSettings");
+    settings.setTextSize(13);
+    settings.setTextColor(MUTED);
+    settings.setGravity(Gravity.CENTER);
+    settings.setContentDescription("Settings");
+    settings.setOnClickListener(v->openSettings());
+    LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(dp(74),dp(58));
+    sp.setMargins(dp(6),0,0,0);
+    nav.addView(settings,sp);
+    updateNavSelection(0);
+    FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);
+    np.setMargins(dp(8),0,dp(8),dp(8));
+    root.addView(nav,np);
     Button fab=button("＋");fab.setTextSize(30);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFFA78BFA,100));fab.setElevation(dp(12));fab.setContentDescription("Create note");fab.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN)v.animate().scaleX(.88f).scaleY(.88f).setDuration(90).start();else if(e.getAction()==MotionEvent.ACTION_UP){v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();noteEditor(-1);}else if(e.getAction()==MotionEvent.ACTION_CANCEL)v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();return true;});
     FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(62),dp(62),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
     setContentView(root);
