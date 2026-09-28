@@ -38,7 +38,7 @@ public class MayaAI {
                 String relevantMemory = memoryStore.relevant(userText);
                 if (relevantMemory.isEmpty()) relevantMemory = memoryText;
                 MayaToolRouter.Tool selectedTool = MayaToolRouter.route(userText);
-                if(WebSearch.enabled(context) && selectedTool == MayaToolRouter.Tool.WEB_SEARCH){
+                if(selectedTool == MayaToolRouter.Tool.WEB_SEARCH){
                     // Web search is now performed server-side by the maya-ai Edge Function.
                     webResults="SERVER_WEB_SEARCH";
                 }
