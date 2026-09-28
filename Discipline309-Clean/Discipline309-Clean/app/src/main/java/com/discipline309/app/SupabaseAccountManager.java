@@ -176,6 +176,57 @@ public final class SupabaseAccountManager {
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
+
+    public static void syncLocalNotes(Context c,Callback cb){
+        if(!loggedIn(c)){if(cb!=null)cb.done(false,"Not signed in.");return;}
+        if(!can(c,"can_sync_progress")){if(cb!=null)cb.done(false,"Primary disabled note sync.");return;}
+        IO.execute(()->{try{
+            SharedPreferences d=c.getSharedPreferences("discipline",Context.MODE_PRIVATE);
+            int n=Math.max(0,Math.min(500,d.getInt("notes_count",0)));
+            String uid=userId(c);
+            for(int i=0;i<n;i++){
+                String bodyText=d.getString("note_"+i+"_body","");
+                String title=d.getString("note_"+i+"_title","Untitled note");
+                String category=d.getString("note_"+i+"_category","Personal");
+                if(!Arrays.asList("Personal","Study","Goals").contains(category))category="Personal";
+                String rid=d.getString("note_"+i+"_remote_id","");
+                if(rid.isEmpty()){rid=UUID.randomUUID().toString();d.edit().putString("note_"+i+"_remote_id",rid).apply();}
+                long created=d.getLong("note_"+i+"_time",System.currentTimeMillis());
+                JSONObject row=new JSONObject().put("id",rid).put("owner_id",uid).put("title",title).put("body",bodyText).put("category",category)
+                    .put("created_at",new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).format(new Date(created)))
+                    .put("updated_at",new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).format(new Date()));
+                request("POST","/rest/v1/notes?on_conflict=id",row,c,"resolution=merge-duplicates,return=minimal");
+            }
+            if(cb!=null)cb.done(true,"Notes synced.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+    }
+
+    public static void deleteRemoteNote(Context c,String remoteId,Callback cb){
+        if(remoteId==null||remoteId.trim().isEmpty()){if(cb!=null)cb.done(true,"No remote note.");return;}
+        if(!loggedIn(c)||!can(c,"can_sync_progress")){if(cb!=null)cb.done(false,"Note sync unavailable.");return;}
+        IO.execute(()->{try{
+            request("DELETE","/rest/v1/notes?id=eq."+URLEncoder.encode(remoteId.trim(),"UTF-8"),null,c);
+            if(cb!=null)cb.done(true,"Remote note deleted.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+    }
+
+    public static void loadLinkedNotes(Context c,Callback cb){
+        IO.execute(()->{try{
+            if(!loggedIn(c)||!"primary".equals(role(c)))throw new IOException("Primary account required.");
+            String uid=userId(c);
+            JSONArray profiles=requestArray("GET","/rest/v1/profiles?parent_id=eq."+URLEncoder.encode(uid,"UTF-8")+"&role=eq.sub&select=id,display_name",c);
+            JSONArray out=new JSONArray();
+            for(int i=0;i<profiles.length();i++){
+                JSONObject p=profiles.getJSONObject(i);String sid=p.optString("id");
+                JSONArray rows=requestArray("GET","/rest/v1/notes?owner_id=eq."+URLEncoder.encode(sid,"UTF-8")+"&select=id,title,body,category,created_at,updated_at&order=updated_at.desc",c);
+                for(int j=0;j<rows.length();j++){
+                    JSONObject row=new JSONObject(rows.getJSONObject(j).toString());row.put("owner_name",p.optString("display_name","Sub-account"));out.put(row);
+                }
+            }
+            if(cb!=null)cb.done(true,out.toString());
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+    }
+
     public static String lastConflictSnapshot(Context c){try{return p(c).getString(CONFLICT_SNAPSHOT,"");}catch(Exception e){return "";}}
     public static void clearLastConflict(Context c){try{p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}catch(Exception ignored){}}
     public static void signOut(Context c){
