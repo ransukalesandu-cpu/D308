@@ -14,6 +14,7 @@ public class AccountsActivity extends Activity {
     private LinearLayout root;
     private LinearLayout subList;
     private final Handler refreshHandler=new Handler(Looper.getMainLooper());
+    private boolean finishing=false;
     private final Runnable refreshRunnable=new Runnable(){ @Override public void run(){ if(SupabaseAccountManager.loggedIn(AccountsActivity.this) && "primary".equals(SupabaseAccountManager.role(AccountsActivity.this))){ refreshLinked(); refreshHandler.postDelayed(this,5000); } } };
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(5),dp(4),dp(5));return v;}
@@ -66,7 +67,7 @@ public class AccountsActivity extends Activity {
         subList=card();subList.addView(label("SUB ACCOUNTS",11,MUTED));subList.addView(label("Loading…",12,MUTED));root.addView(subList);refreshLinked();
     }
     private void refreshLinked(){
-        if(subList==null)return;
+        if(finishing || isFinishing() || subList==null)return;
         SupabaseAccountManager.loadLinked(this,(ok,msg)->runOnUiThread(()->{
             if(subList==null)return;subList.removeAllViews();subList.addView(label("SUB ACCOUNTS  •  auto-refresh 5s",11,MUTED));
             if(!ok){subList.addView(label(msg,12,MUTED));return;}
@@ -102,6 +103,6 @@ public class AccountsActivity extends Activity {
     }
     @Override protected void onResume(){super.onResume();if(SupabaseAccountManager.loggedIn(this)&&"primary".equals(SupabaseAccountManager.role(this))){refreshHandler.removeCallbacks(refreshRunnable);refreshHandler.post(refreshRunnable);}}
     @Override protected void onPause(){refreshHandler.removeCallbacks(refreshRunnable);super.onPause();}
-    @Override protected void onDestroy(){refreshHandler.removeCallbacks(refreshRunnable);super.onDestroy();}
+    @Override protected void onDestroy(){finishing=true;refreshHandler.removeCallbacksAndMessages(null);super.onDestroy();}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
 }
