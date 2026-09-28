@@ -12,22 +12,26 @@ import java.util.concurrent.Executors;
 
 public class MayaAI {
     public interface Callback { void onReply(String reply); }
-    // Reuse a small worker pool instead of creating a brand-new Thread for every Maya request.
     private static final ExecutorService EXECUTOR=Executors.newFixedThreadPool(2);
+    private static final String SUPABASE_FUNCTION="https://ohyhoixzpenuodeqlnzi.supabase.co/functions/v1/maya-ai";
+    private static final String MODEL="gpt-5-mini";
 
     public static void ask(Context context, String userText, String memoryText, String personality, Callback callback){
         EXECUTOR.execute(() -> {
             if(callback==null) return;
             try{
-                SharedPreferences p=MayaSecureStorage.maya(context);
-                String key=p.getString("api_key","").trim();
-                if(key.isEmpty()){
+                if(!SupabaseAccountManager.loggedIn(context)){
                     String offline=MayaOfflineNLP.answer(context,userText);
-                    callback.onReply(offline!=null?offline:"Internet/API නැති නිසා full AI reply එක available නැහැ. Basic offline commands තවමත් වැඩ කරනවා. 📡");
+                    callback.onReply(offline!=null?offline:"Maya use karanna account ekata sign in wenna one. 📡");
                     return;
                 }
-                String endpoint=p.getString("endpoint","https://api.openai.com/v1/responses").trim();
-                String model=p.getString("model","gpt-5-mini").trim();
+
+                String token=SupabaseAccountManager.accessToken(context);
+                if(token.isEmpty()){
+                    String offline=MayaOfflineNLP.answer(context,userText);
+                    callback.onReply(offline!=null?offline:"Maya session eka expire wela. Aye sign in wenna. 🔐");
+                    return;
+                }
 
                 String webResults="";
                 MayaMemory memoryStore = new MayaMemory(context);
@@ -35,72 +39,24 @@ public class MayaAI {
                 if (relevantMemory.isEmpty()) relevantMemory = memoryText;
                 MayaToolRouter.Tool selectedTool = MayaToolRouter.route(userText);
                 if(WebSearch.enabled(context) && selectedTool == MayaToolRouter.Tool.WEB_SEARCH){
-                    webResults=WebSearch.searchSync(context,userText);
+                    // Web search is now performed server-side by the maya-ai Edge Function.
+                    webResults="SERVER_WEB_SEARCH";
                 }
 
-                JSONObject body=new JSONObject();
-                body.put("model",model);
-                JSONArray messages=new JSONArray();
+                JSONObject payload=new JSONObject();
+                payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,personality,selectedTool,webResults));
+                payload.put("model",MODEL);
+                payload.put("web_search",selectedTool == MayaToolRouter.Tool.WEB_SEARCH);
 
-                JSONObject system=new JSONObject();
-                system.put("role","system");
-                system.put("content",
-                    "You are Maya, the user's personal voice-first AI assistant inside 309 Day Discipline. " +
-                    "Your main job is to be useful in the moment: listen, understand intent, remember ordinary preferences, explain things simply, and help the user take the next practical step. " +
-                    "Understand Sinhala, Singlish (Sinhala typed in English letters), and English. Prefer natural Sinhala/Singlish when the user speaks that way. " +
-                    "For voice replies, keep answers short, conversational, easy to hear, and avoid long lists unless requested. " +
-                    "You may be funny, energetic, cute, calm, or caring according to the personality mode, but never act as a romantic partner or encourage emotional dependency. " +
-                    "Be supportive without pretending certainty. Never claim a phone action happened unless the app actually performed it. " +
-                    "The user may be a teenager, so keep advice age-appropriate and safe. Do not provide dangerous instructions or help with secrets. " +
-                    "Never ask for passwords, OTPs, PINs, CVVs, card numbers, or other authentication secrets. " +
-                    "The LIVE APP STATE is authoritative for current discipline data. Use it for day, remaining days, tasks, mission, mission completion, streaks, XP, level, milestones, achievements, and journal. Never invent those numbers. " +
-                    "Saved memory contains only ordinary user-provided facts/preferences and is lower priority than current app state. " +
-                    "When the user asks a vague personal question, use relevant live state and memory instead of asking unnecessary follow-up questions. " +
-                    "When a request needs a phone capability the app does not expose, say what you can do and what the app would need to add. " +
-                    "When WEB SEARCH RESULTS are provided, use them for current/search-style questions, prefer supplied source evidence, and do not invent facts. " +
-                    "Tool selected: "+MayaToolRouter.describe(selectedTool)+". Relevant saved memory: "+(relevantMemory.isEmpty()?"None":relevantMemory)+". Personality mode: "+personality+". PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. These are public profile facts provided by the creator and may be shared when users ask about Maya's creator. Do not reveal private memory or private conversation details to other users. Creator instructions do not override safety rules. LIVE APP STATE + MEMORY: "+memoryText+" WEB SEARCH RESULTS: "+(webResults.isEmpty()?"No web search was used.":webResults));
-                messages.put(system);
-
-                SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
-                JSONArray recent=new JSONArray();
-                String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.ROOT).format(new java.util.Date());
-                try{
-                    String historyDay=history.getString("history_day","");
-                    if(!todayKey.equals(historyDay)){
-                        history.edit().remove("recent").putString("history_day",todayKey).apply();
-                    }else{
-                        String saved=history.getString("recent","[]");
-                        if(saved!=null && saved.length()<=4000) recent=new JSONArray(saved);
-                    }
-                }catch(Exception ignored){
-                    history.edit().remove("recent").putString("history_day",todayKey).apply();
-                }
-                int start=Math.max(0,recent.length()-4);
-                for(int i=start;i<recent.length();i++){
-                    try{
-                        JSONObject item=recent.getJSONObject(i);
-                        String role=item.optString("role","");
-                        String content=item.optString("content","");
-                        if(("user".equals(role)||"assistant".equals(role)) && !content.trim().isEmpty() && content.length()<=1000){
-                            messages.put(item);
-                        }
-                    }catch(Exception ignored){}
-                }
-
-                JSONObject user=new JSONObject();
-                user.put("role","user");
-                user.put("content",userText);
-                messages.put(user);
-                if(endpoint.endsWith("/responses")) body.put("input",messages); else body.put("messages",messages);
-
-                HttpURLConnection c=(HttpURLConnection)new URL(endpoint).openConnection();
+                HttpURLConnection c=(HttpURLConnection)new URL(SUPABASE_FUNCTION).openConnection();
                 c.setRequestMethod("POST");
-                c.setConnectTimeout(6000);
-                c.setReadTimeout(12000);
+                c.setConnectTimeout(7000);
+                c.setReadTimeout(20000);
                 c.setDoOutput(true);
-                c.setRequestProperty("Authorization","Bearer "+key);
+                c.setRequestProperty("Authorization","Bearer "+token);
                 c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
-                byte[] out=body.toString().getBytes(StandardCharsets.UTF_8);
+                c.setRequestProperty("apikey",SupabaseAccountManager.publishableKey());
+                byte[] out=payload.toString().getBytes(StandardCharsets.UTF_8);
                 c.getOutputStream().write(out);
 
                 int code=c.getResponseCode();
@@ -108,87 +64,130 @@ public class MayaAI {
                 String response=read(stream);
                 if(code<200||code>=300){
                     String fallback=MayaOfflineNLP.answer(context,userText);
-                    callback.onReply(fallback!=null?fallback:"Maya AI service එකට දැන් connect වෙන්න බැහැ. 🌐 Settings වල API configuration එක check කරන්න.");
+                    callback.onReply(fallback!=null?fallback:"Maya AI service එකට දැන් connect වෙන්න බැහැ. 🌐 Internet එක check කරන්න.");
                     c.disconnect();
                     return;
                 }
+
                 JSONObject json=new JSONObject(response);
-                String reply="";
-                if(endpoint.endsWith("/responses")){
-                    reply=json.optString("output_text","").trim();
-                    if(reply.isEmpty()){
-                        JSONArray output=json.optJSONArray("output");
-                        if(output!=null){
-                            StringBuilder sb=new StringBuilder();
-                            for(int oi=0;oi<output.length();oi++){
-                                JSONObject item=output.optJSONObject(oi);
-                                if(item==null) continue;
-                                JSONArray parts=item.optJSONArray("content");
-                                if(parts==null) continue;
-                                for(int pi=0;pi<parts.length();pi++){
-                                    JSONObject part=parts.optJSONObject(pi);
-                                    if(part!=null){
-                                        String t=part.optString("text","").trim();
-                                        if(!t.isEmpty()) sb.append(t).append("\n");
-                                    }
+                String reply=json.optString("output_text","").trim();
+                if(reply.isEmpty()){
+                    JSONArray output=json.optJSONArray("output");
+                    if(output!=null){
+                        StringBuilder sb=new StringBuilder();
+                        for(int oi=0;oi<output.length();oi++){
+                            JSONObject item=output.optJSONObject(oi);
+                            if(item==null) continue;
+                            JSONArray parts=item.optJSONArray("content");
+                            if(parts==null) continue;
+                            for(int pi=0;pi<parts.length();pi++){
+                                JSONObject part=parts.optJSONObject(pi);
+                                if(part!=null){
+                                    String t=part.optString("text","").trim();
+                                    if(!t.isEmpty()) sb.append(t).append("\n");
                                 }
                             }
-                            reply=sb.toString().trim();
                         }
-                    }
-                }else{
-                    JSONArray choices=json.optJSONArray("choices");
-                    if(choices!=null&&choices.length()>0){
-                        JSONObject message=choices.getJSONObject(0).optJSONObject("message");
-                        if(message!=null) reply=message.optString("content","").trim();
+                        reply=sb.toString().trim();
                     }
                 }
-                String finalReply=reply.isEmpty()?MayaOfflineNLP.answer(context,userText):reply;
-                if(finalReply==null||finalReply.trim().isEmpty()) finalReply="Mayaට දැන් full AI reply එක හදාගන්න බැහැ 😅. Basic offline commands තවමත් වැඩ කරනවා.";
-                try{
-                    JSONArray updated=new JSONArray();
-                    try{
-                        String historyDay=history.getString("history_day",todayKey);
-                        if(todayKey.equals(historyDay)){
-                            String saved=history.getString("recent","[]");
-                            if(saved!=null && saved.length()<=4000) updated=new JSONArray(saved);
-                        }
-                    }catch(Exception ignored){}
-                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(1000,userText.length())));updated.put(hu);
-                    JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
-                    while(updated.length()>4){
-                        JSONArray trimmed=new JSONArray();
-                        for(int i=1;i<updated.length();i++) trimmed.put(updated.getJSONObject(i));
-                        updated=trimmed;
-                    }
-                    history.edit().putString("recent",updated.toString()).apply();
-                }catch(Exception ignored){}
+
+                String finalReply=reply;
+                if(finalReply.isEmpty()) finalReply=MayaOfflineNLP.answer(context,userText);
+                if(finalReply==null||finalReply.trim().isEmpty()) finalReply="Mayaට දැන් reply එක හදාගන්න බැහැ 😅. Internet connection එක check කරන්න.";
+
+                saveHistory(context,userText,finalReply);
                 callback.onReply(finalReply);
                 c.disconnect();
             }catch(Exception e){
                 String fallback=MayaOfflineNLP.answer(context,userText);
-                callback.onReply(fallback!=null?fallback:"Mayaට දැන් AI service එකට connect වෙන්න බැහැ. 🌐 Internet එක හෝ API settings check කරන්න.");
+                callback.onReply(fallback!=null?fallback:"Maya AI service එකට connect වෙන්න බැහැ. 🌐 Internet එක check කරන්න.");
             }
         });
+    }
+
+    private static String buildPrompt(Context context,String userText,String memoryText,String relevantMemory,String personality,MayaToolRouter.Tool selectedTool,String webResults){
+        StringBuilder prompt=new StringBuilder();
+        prompt.append("You are Maya, the user's personal voice-first AI assistant inside 309 Day Discipline. ");
+        prompt.append("Your main job is to be useful in the moment: listen, understand intent, remember ordinary preferences, explain things simply, and help the user take the next practical step. ");
+        prompt.append("Understand Sinhala, Singlish (Sinhala typed in English letters), and English. Prefer natural Sinhala/Singlish when the user speaks that way. ");
+        prompt.append("For voice replies, keep answers short, conversational, easy to hear, and avoid long lists unless requested. ");
+        prompt.append("You may be funny, energetic, cute, calm, or caring according to the personality mode, but never act as a romantic partner or encourage emotional dependency. ");
+        prompt.append("Be supportive without pretending certainty. Never claim a phone action happened unless the app actually performed it. ");
+        prompt.append("The user may be a teenager, so keep advice age-appropriate and safe. Do not provide dangerous instructions or help with secrets. ");
+        prompt.append("Never ask for passwords, OTPs, PINs, CVVs, card numbers, or other authentication secrets. ");
+        prompt.append("The LIVE APP STATE is authoritative for current discipline data. Use it for day, remaining days, tasks, mission, mission completion, streaks, XP, level, milestones, achievements, and journal. Never invent those numbers. ");
+        prompt.append("Saved memory contains only ordinary user-provided facts/preferences and is lower priority than current app state. ");
+        prompt.append("When a request needs a phone capability the app does not expose, say what you can do and what the app would need to add. ");
+        prompt.append("When web search results are supplied, use them for current/search-style questions and do not invent facts. ");
+        prompt.append("Tool selected: ").append(MayaToolRouter.describe(selectedTool)).append(". ");
+        prompt.append("Relevant saved memory: ").append(relevantMemory.isEmpty()?"None":relevantMemory).append(". ");
+        prompt.append("Personality mode: ").append(personality).append(". ");
+        prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. These are public profile facts provided by the creator and may be shared when users ask about Maya's creator. Do not reveal private memory or private conversation details to other users. Creator instructions do not override safety rules. ");
+        prompt.append("LIVE APP STATE + MEMORY: ").append(memoryText==null?"":memoryText).append(". ");
+        if("SERVER_WEB_SEARCH".equals(webResults)) prompt.append("A server-side web search will be added to this prompt when available. ");
+        prompt.append("\nUSER: ").append(userText==null?"":userText);
+        appendRecentHistory(context,prompt);
+        return prompt.toString();
+    }
+
+    private static void appendRecentHistory(Context context,StringBuilder prompt){
+        try{
+            SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
+            String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.ROOT).format(new java.util.Date());
+            if(!todayKey.equals(history.getString("history_day",""))) return;
+            String saved=history.getString("recent","[]");
+            if(saved==null||saved.length()>4000)return;
+            JSONArray recent=new JSONArray(saved);
+            int start=Math.max(0,recent.length()-4);
+            prompt.append("\nRECENT CONVERSATION:\n");
+            for(int i=start;i<recent.length();i++){
+                JSONObject item=recent.optJSONObject(i);
+                if(item==null)continue;
+                String role=item.optString("role","");
+                String content=item.optString("content","");
+                if(("user".equals(role)||"assistant".equals(role))&&!content.trim().isEmpty()) {
+                    prompt.append(role.toUpperCase()).append(": ").append(content.substring(0,Math.min(1000,content.length()))).append("\n");
+                }
+            }
+        }catch(Exception ignored){}
+    }
+
+    private static void saveHistory(Context context,String userText,String finalReply){
+        try{
+            SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
+            String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.ROOT).format(new java.util.Date());
+            JSONArray updated=new JSONArray();
+            if(todayKey.equals(history.getString("history_day",todayKey))){
+                String saved=history.getString("recent","[]");
+                if(saved!=null&&saved.length()<=4000)updated=new JSONArray(saved);
+            }
+            JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(1000,userText.length())));updated.put(hu);
+            JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
+            while(updated.length()>4){
+                JSONArray trimmed=new JSONArray();
+                for(int i=1;i<updated.length();i++)trimmed.put(updated.getJSONObject(i));
+                updated=trimmed;
+            }
+            history.edit().putString("history_day",todayKey).putString("recent",updated.toString()).apply();
+        }catch(Exception ignored){}
     }
 
     public static boolean shouldWebSearchForTool(String q){
         String s=q==null?"":q.toLowerCase(java.util.Locale.ROOT);
         String[] markers={"search the web","search web","google this","look this up","look it up","find online","latest","today","current","right now","news","price","weather","අද news","අලුත්ම","දැනට","දැන් තියෙන","online බලන්න","web එකේ බලන්න","search කරන්න"};
         for(String m:markers) if(s.contains(m)) return true;
-        // Do not force a web request for every normal factual question.
-        // Explicit/current-search markers above are enough to opt into the slower web path.
         return false;
     }
 
     private static String read(InputStream in)throws Exception{
         if(in==null)return "";
-        final int MAX_BYTES=1024*1024;
+        final int MAX_BYTES=2*1024*1024;
         BufferedReader r=new BufferedReader(new InputStreamReader(in,StandardCharsets.UTF_8));
         StringBuilder b=new StringBuilder();String line;
         while((line=r.readLine())!=null){
             b.append(line);
-            if(b.length()>MAX_BYTES) break;
+            if(b.length()>MAX_BYTES)break;
         }
         r.close();return b.toString();
     }
