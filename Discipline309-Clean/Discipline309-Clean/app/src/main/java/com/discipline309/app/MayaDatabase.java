@@ -20,7 +20,7 @@ public abstract class MayaDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             MayaDatabase.class,
                             "maya_memory.db"
-                    ).build();
+                    ).fallbackToDestructiveMigration().build();
                 }
             }
         }
