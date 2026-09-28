@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
     private int daysFromStart(){return(int)((System.currentTimeMillis()-startDate().getTimeInMillis())/86400000L)+1;}
     private int dayNumber(){return Math.max(0,Math.min(309,daysFromStart()));}
     private String taskName(int i){return i<DEFAULT_TASKS.length?DEFAULT_TASKS[i]:prefs.getString("habit_"+i,"Habit");}
-    private int customCount(){return prefs.getInt("custom_count",0);}
+    private int customCount(){try{return Math.max(0,Math.min(100,prefs.getInt("custom_count",0)));}catch(Exception e){return 0;}}
     private int totalTasks(){return DEFAULT_TASKS.length+customCount();}
     private boolean checked(int i,String d){return prefs.getBoolean("task_"+i+"_"+d,false);}
     private void setChecked(int i,String d,boolean v){prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}
