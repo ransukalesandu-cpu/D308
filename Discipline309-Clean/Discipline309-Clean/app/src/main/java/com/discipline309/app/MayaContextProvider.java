@@ -26,7 +26,8 @@ public final class MayaContextProvider {
         int day=Math.max(0,Math.min(PROGRAM_DAYS,daysFromStart(startMillis)));
         int remaining=Math.max(0,PROGRAM_DAYS-day);
         String todayKey=key(now);
-        int customCount=Math.max(0,Math.min(100,p.getInt("custom_count",0)));\n        int totalTasks=DEFAULT_TASKS.length+customCount;
+        int customCount=Math.max(0,Math.min(100,p.getInt("custom_count",0)));
+        int totalTasks=DEFAULT_TASKS.length+customCount;
         int todayTasks=countFor(p,todayKey,totalTasks);
         boolean missionDone=p.getBoolean("mission_"+todayKey+"_done",false);
 
@@ -44,7 +45,8 @@ public final class MayaContextProvider {
 
         int completedDays=completedDays(p,start,now,target);
         int totalCompletedTasks=totalCompletedTasks(p,start,now,target,totalTasks);
-        long xpLong=(long)completedDays*100L+(long)totalCompletedTasks*20L+Math.max(0,Math.min(1000000,p.getInt("xp_bonus",0)));\n        int xp=(int)Math.min(Integer.MAX_VALUE,xpLong);
+        long xpLong=(long)completedDays*100L+(long)totalCompletedTasks*20L+Math.max(0,Math.min(1000000,p.getInt("xp_bonus",0)));
+        int xp=(int)Math.min(Integer.MAX_VALUE,xpLong);
         int level=xp/500+1;
         int xpToNext=500-(xp%500);
         int currentStreak=currentStreak(p,start,now);
@@ -55,7 +57,9 @@ public final class MayaContextProvider {
         for(int m:milestones)if(completedDays>=m)unlocked++;
 
         int rewardedMissions=0;
-        int memoryGuard=0;\n        for(String k:p.getAll().keySet()){\n            if(memoryGuard++>=1000)break;
+        int memoryGuard=0;
+        for(String k:p.getAll().keySet()){
+            if(memoryGuard++>=1000)break;
             if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&p.getBoolean(k,false)) rewardedMissions++;
         }
 
@@ -108,7 +112,8 @@ public final class MayaContextProvider {
         int j=s.indexOf(';',i); if(j<0)j=s.length();
         return s.substring(i,j).trim();
     }
-    private static String safe(String s){if(s==null)return "";return s.replace("\\","/").replace("\"","'").replace("\n"," ").replace("\r"," ");}
+    private static String safe(String s){if(s==null)return "";return s.replace("\\","/").replace("\"","'").replace("
+"," ").replace("\r"," ");}
 
     private static int daysFromStart(long startMillis){
         long diff=System.currentTimeMillis()-startMillis;
