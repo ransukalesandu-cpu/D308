@@ -114,6 +114,16 @@ public class SettingsActivity extends Activity {
         LinearLayout p=card();p.addView(label("🔐 PERMISSIONS & PRIVACY",11,MUTED));p.addView(label("Open Android controls for permissions used by Maya.",12,MUTED));
         Button notify=buttonStyle(new Button(this));notify.setText("🔔  Notification access");notify.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});p.addView(notify);
         Button dnd=buttonStyle(new Button(this));dnd.setText("🔕  DND control access");dnd.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});p.addView(dnd);body.addView(p);
+
+        LinearLayout password=card();
+        password.addView(label("🔑 ACCOUNT PASSWORD",11,MUTED));
+        password.addView(label("Change the password directly while this account is signed in. No reset email is needed.",12,MUTED));
+        Button changePassword=buttonStyle(new Button(this));
+        changePassword.setText("🔐  Change password");
+        changePassword.setOnClickListener(v->startActivity(new Intent(this,ChangePasswordActivity.class)));
+        password.addView(changePassword);
+        body.addView(password);
+
         LinearLayout key=card();key.addView(label("🔑 API KEY SAFETY",11,MUTED));key.addView(label("OpenAI and Tavily keys are never stored in the app. They stay in Supabase backend secrets.",12,MUTED));body.addView(key);
         showCategory("🔐  SECURITY & PRIVACY","Permissions, privacy and key safety.",body);
     }
