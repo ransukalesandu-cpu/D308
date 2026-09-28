@@ -249,8 +249,7 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
                 LinearLayout card=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
                 TextView tt=label((notePinned(id)?"📌 ":"")+noteTitle(id),18,TEXT);tt.setTypeface(null,1);row.addView(tt,new LinearLayout.LayoutParams(0,-2,1));
                 Button more=button("⋮");more.setOnClickListener(v->noteMenu(id));row.addView(more,new LinearLayout.LayoutParams(dp(48),dp(44)));card.addView(row);
-                String b=noteBody(id).trim();if(!b.isEmpty()){String p=b.replace("
-"," ");if(p.length()>180)p=p.substring(0,180)+"…";card.addView(label(p,14,TEXT));}
+                String b=noteBody(id).trim();if(!b.isEmpty()){String p=b.replace("\n"," ");if(p.length()>180)p=p.substring(0,180)+"...";card.addView(label(p,14,TEXT));}
                 if(noteTime(id)>0)card.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));
                 card.setOnClickListener(v->noteEditor(id));list.addView(card);
             }
@@ -276,9 +275,7 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
         String[] a={notePinned(id)?"Unpin":"Pin","Share","Delete"};
         new AlertDialog.Builder(this).setTitle(noteTitle(id)).setItems(a,(d,w)->{
             if(w==0){prefs.edit().putBoolean("note_"+id+"_pinned",!notePinned(id)).apply();showNotes();}
-            else if(w==1){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"
-
-"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}
+            else if(w==1){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"\n\n"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}
             else new AlertDialog.Builder(this).setTitle("Delete note?").setMessage("This note will be removed from this device.").setPositiveButton("DELETE",(dd,ww)->deleteNote(id)).setNegativeButton("CANCEL",null).show();
         }).show();
     }
