@@ -59,7 +59,7 @@ public class MayaAssistantService extends Service {
         startForeground(ID,n);
         handler=new Handler(Looper.getMainLooper());
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
-        handler.postDelayed(this::startWakeWord,700);
+        handler.postDelayed(wakeWordRunnable,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
         }catch(Exception e){
             ready=false;
@@ -189,10 +189,12 @@ public class MayaAssistantService extends Service {
             restart(1500);
         }
     }
+    private final Runnable listenRunnable=new Runnable(){@Override public void run(){listen();}};
+    private final Runnable wakeWordRunnable=new Runnable(){@Override public void run(){startWakeWord();}};
     private void restart(long d){
         if(handler!=null && mayaAllowed() && !stopping){
-            handler.removeCallbacks(this::listen);
-            handler.postDelayed(this::listen,d);
+            handler.removeCallbacks(listenRunnable);
+            handler.postDelayed(listenRunnable,d);
         }
     }
 
@@ -200,7 +202,7 @@ public class MayaAssistantService extends Service {
         conversationMode=false;
         realWakeWordActive=false;
         wakeWordDetected=false;
-        if(handler!=null && !stopping) handler.postDelayed(this::startWakeWord,250);
+        if(handler!=null && !stopping) handler.postDelayed(wakeWordRunnable,250);
     }
 
     private void handle(String raw){
