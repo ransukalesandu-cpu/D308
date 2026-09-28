@@ -39,6 +39,14 @@ public class MayaAssistantService extends Service {
     private boolean listening=false;
 private boolean fallbackListening=false;
     private boolean ttsSpeaking=false;
+    private static final long CONVERSATION_SILENCE_MS=10000L;
+    private final Runnable conversationSilenceRunnable=new Runnable(){
+        @Override public void run(){
+            if(conversationMode && !stopping && !listening && !ttsSpeaking){
+                endConversationMode();
+            }
+        }
+    };
     private final BroadcastReceiver screenStateReceiver=new BroadcastReceiver(){
         @Override public void onReceive(Context context,Intent intent){
             if(Intent.ACTION_SCREEN_OFF.equals(intent.getAction())){
@@ -165,8 +173,17 @@ private boolean fallbackListening=false;
             return;
         }
         recognizer.setRecognitionListener(new RecognitionListener(){
-            public void onReadyForSpeech(Bundle b){listening=true; speechErrorCount=0;}
-            public void onBeginningOfSpeech(){}
+            public void onReadyForSpeech(Bundle b){
+                listening=true;
+                speechErrorCount=0;
+                if(conversationMode && handler!=null){
+                    handler.removeCallbacks(conversationSilenceRunnable);
+                    handler.postDelayed(conversationSilenceRunnable,CONVERSATION_SILENCE_MS);
+                }
+            }
+            public void onBeginningOfSpeech(){
+                if(conversationMode && handler!=null) handler.removeCallbacks(conversationSilenceRunnable);
+            }
             public void onRmsChanged(float r){}
             public void onBufferReceived(byte[] b){}
             public void onEndOfSpeech(){listening=false;}
@@ -174,6 +191,10 @@ private boolean fallbackListening=false;
             public void onEvent(int t,Bundle b){}
             public void onError(int e){
                 listening=false;
+                if(conversationMode && handler!=null){
+                    handler.removeCallbacks(conversationSilenceRunnable);
+                    handler.postDelayed(conversationSilenceRunnable,CONVERSATION_SILENCE_MS);
+                }
                 speechErrorCount++;
                 long delay=Math.min(5000,700L*(1L<<Math.min(3,speechErrorCount-1)));
                 if(speechErrorCount>=4){
@@ -224,6 +245,7 @@ private boolean fallbackListening=false;
 
     private void endConversationMode(){
         boolean wasConversation=conversationMode;
+        if(handler!=null) handler.removeCallbacks(conversationSilenceRunnable);
         conversationMode=false;
         realWakeWordActive=false;
         wakeWordDetected=false;
@@ -240,7 +262,13 @@ private boolean fallbackListening=false;
             l.equals("end conversation")||l.equals("exit conversation")||
             l.equals("conversation off")||l.equals("voice off")||
             l.equals("නවත්වන්න")||l.equals("කතා කරන එක නවත්වන්න")||
-            l.equals("කතාබහ නවත්වන්න")||l.equals("voice නවත්වන්න");
+            l.equals("කතාබහ නවත්වන්න")||l.equals("voice නවත්වන්න")||
+            l.equals("hari")||l.equals("hari thanks")||l.equals("hari thank you")||
+            l.equals("thanks")||l.equals("thank you")||l.equals("thankyou")||
+            l.equals("thanks maya")||l.equals("thank you maya")||
+            l.equals("ok")||l.equals("okay")||l.equals("ok bye")||
+            l.equals("okay bye")||l.equals("bye")||l.equals("goodbye")||
+            l.equals("ස්තුතියි")||l.equals("බොහොම ස්තුතියි")||l.equals("හරි ස්තුතියි");
     }
 
     private void handle(String raw){
