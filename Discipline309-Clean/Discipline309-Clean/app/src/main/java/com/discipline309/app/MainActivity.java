@@ -186,7 +186,7 @@ public class MainActivity extends Activity {
         Spinner priority=new Spinner(this);String[] ps={"High","Medium","Low"};priority.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,ps));box.addView(priority);
         new AlertDialog.Builder(this).setTitle("Create Short Plan Task").setView(box).setPositiveButton("ADD",(d,w)->{
             String n=name.getText().toString().trim();if(n.isEmpty())return;
-            int i=planCount();SharedPreferences.Editor e=prefs.edit();
+            int i=planCount();if(i>=50){toast("Plan task limit reached.");return;}SharedPreferences.Editor e=prefs.edit();
             e.putInt("plan_count_"+planDate(),i+1).putString("plan_"+planDate()+"_"+i+"_name",n)
              .putString("plan_"+planDate()+"_"+i+"_time",time.getText().toString().trim().isEmpty()?"Anytime":time.getText().toString().trim())
              .putString("plan_"+planDate()+"_"+i+"_priority",ps[priority.getSelectedItemPosition()]).apply();
