@@ -21,7 +21,7 @@ public class AccountsActivity extends Activity {
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(SURFACE);g.setCornerRadius(dp(18));g.setStroke(dp(1),0xFF173D78);l.setBackground(g);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setAllCaps(false);b.setTextColor(TEXT);b.setTextSize(14);b.setMinHeight(dp(48));android.graphics.drawable.GradientDrawable g=new android.graphics.drawable.GradientDrawable();g.setColor(0xFF102957);g.setCornerRadius(dp(16));g.setStroke(dp(1),0xFF173D78);b.setBackground(g);return b;}
 
-    @Override protected void onCreate(Bundle b){super.onCreate(b);applyTheme();build();}
+    @Override protected void onCreate(Bundle b){super.onCreate(b);try{applyTheme();build();}catch(Exception e){Toast.makeText(this,"Accounts could not open safely.",Toast.LENGTH_SHORT).show();finish();}}
     private void applyTheme(){
         String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");
         if("neon".equals(t)){BG=0xFF05050A;SURFACE=0xFF101525;TEXT=0xFFFFFFFF;MUTED=0xFF9CA8C7;ACCENT=0xFF00E5FF;}
