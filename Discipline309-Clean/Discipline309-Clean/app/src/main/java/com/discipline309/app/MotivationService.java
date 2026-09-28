@@ -71,9 +71,11 @@ public class MotivationService extends Service {
         handler.postDelayed(()->{if(ready){speak(lines[random.nextInt(lines.length)]);}scheduleNext(30*60*1000L+random.nextInt(15*60*1000));},delay);
     }
     private void speak(String s){
-        if(tts==null)return;
-        tts.setSpeechRate(.95f);
-        tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"motivation_"+System.currentTimeMillis());
+        try{
+            if(tts==null||s==null||s.isEmpty())return;
+            tts.setSpeechRate(.95f);
+            tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"motivation_"+System.currentTimeMillis());
+        }catch(Exception ignored){}
     }
     private void createChannel(){
         if(Build.VERSION.SDK_INT>=26){
@@ -84,8 +86,10 @@ public class MotivationService extends Service {
     }
     @Override public int onStartCommand(Intent intent,int flags,int startId){return START_STICKY;}
     @Override public void onDestroy(){
-        if(handler!=null)handler.removeCallbacksAndMessages(null);
-        if(tts!=null){tts.stop();tts.shutdown();}
+        ready=false;
+        try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
+        try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
+        tts=null;
         super.onDestroy();
     }
     @Override public android.os.IBinder onBind(Intent intent){return null;}
