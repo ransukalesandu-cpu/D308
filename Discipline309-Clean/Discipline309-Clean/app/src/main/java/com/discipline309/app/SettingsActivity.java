@@ -38,7 +38,7 @@ public class SettingsActivity extends Activity {
         addCategory(root,"🤖  AI ASSISTANT","Maya voice, AI brain, web search and memory.",v->showAiSettings());
         addCategory(root,"🎭  MODES","Maya personality and background motivation modes.",v->showModeSettings());
         addCategory(root,"🎨  DISPLAY","Theme and notification preferences.",v->showDisplaySettings());
-        addCategory(root,"🔐  SECURITY & PRIVACY","API keys, permissions and Maya privacy controls.",v->showSecuritySettings());
+        addCategory(root,"🔐  SECURITY & PRIVACY","Permissions and Maya privacy controls.",v->showSecuritySettings());
         addCategory(root,"📱  PHONE & BACKGROUND","Background assistant, phone controls and battery settings.",v->showPhoneSettings());
         addCategory(root,"👥  ACCOUNTS & DATA","Primary/Sub accounts and progress controls.",v->showAccountSettings());
         addCategory(root,"ℹ️  ABOUT 309","App information and version.",v->showAboutSettings());
@@ -75,19 +75,20 @@ public class SettingsActivity extends Activity {
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=buttonStyle(new Button(this));test.setText("🔊  Test AI voice");test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);body.addView(voice);
 
-        LinearLayout ai=card();ai.addView(label("🧠 MAYA AI BRAIN",11,MUTED));ai.addView(label("Connect Maya to your AI model. The key stays on this phone.",12,MUTED));
-        EditText key=new EditText(this);key.setHint("AI API key");try{key.setText(MayaSecureStorage.maya(this).getString("api_key",""));}catch(Exception ignored){}key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
-        EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");try{model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));}catch(Exception ignored){model.setText("gpt-5-mini");}model.setSingleLine(true);ai.addView(model);
-        Button save=buttonStyle(new Button(this));save.setText("💾  Save AI settings");save.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_ai",key.getText().toString());MayaSecureStorage.maya(this).edit().putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI settings saved 🧠",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not save AI settings.",Toast.LENGTH_SHORT).show();}});ai.addView(save);body.addView(ai);
+        LinearLayout ai=card();ai.addView(label("🧠 MAYA AI BRAIN",11,MUTED));
+        ai.addView(label("Maya AI is connected securely through the Supabase backend. No OpenAI API key is stored in this app.",12,MUTED));
+        ai.addView(label("Model: gpt-5-mini",13,TEXT));
+        body.addView(ai);
 
-        LinearLayout web=card();web.addView(label("🌐 WEB SEARCH",11,MUTED));web.addView(label("Real-time search for current questions.",12,MUTED));
-        EditText webKey=new EditText(this);webKey.setHint("Tavily API key");try{webKey.setText(MayaSecureStorage.web(this).getString("api_key",""));}catch(Exception ignored){}webKey.setSingleLine(true);webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);web.addView(webKey);
-        Button saveWeb=buttonStyle(new Button(this));saveWeb.setText("💾  Save Web Search key");saveWeb.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_web",webKey.getText().toString());Toast.makeText(this,"Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not save web settings.",Toast.LENGTH_SHORT).show();}});web.addView(saveWeb);body.addView(web);
+        LinearLayout web=card();web.addView(label("🌐 WEB SEARCH",11,MUTED));
+        web.addView(label("Current web searches are handled securely by the Supabase backend.",12,MUTED));
+        body.addView(web);
 
         LinearLayout mem=card();mem.addView(label("🧠 MAYA MEMORY",11,MUTED));mem.addView(label("Saved memory stays on this phone.",12,MUTED));
         Button view=buttonStyle(new Button(this));view.setText("👀  View / delete saved memory");view.setOnClickListener(v->showMemoryManager());mem.addView(view);
         Button clear=buttonStyle(new Button(this));clear.setText("🗑  Clear all Maya memory");clear.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Clear Maya memory?").setMessage("This removes all saved ordinary facts and preferences.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,w)->{try{new MayaMemory(this).clear();Toast.makeText(this,"Maya memory cleared.",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not clear memory.",Toast.LENGTH_SHORT).show();}}).show());mem.addView(clear);body.addView(mem);
-        showCategory("🤖  AI ASSISTANT","Maya AI, voice, web search and memory.",body);
+
+                showCategory("🤖  AI ASSISTANT","Maya AI, voice, web search and memory.",body);
     }
 
     private void showModeSettings(){
@@ -113,7 +114,7 @@ public class SettingsActivity extends Activity {
         LinearLayout p=card();p.addView(label("🔐 PERMISSIONS & PRIVACY",11,MUTED));p.addView(label("Open Android controls for permissions used by Maya.",12,MUTED));
         Button notify=buttonStyle(new Button(this));notify.setText("🔔  Notification access");notify.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});p.addView(notify);
         Button dnd=buttonStyle(new Button(this));dnd.setText("🔕  DND control access");dnd.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});p.addView(dnd);body.addView(p);
-        LinearLayout key=card();key.addView(label("🔑 API KEY SAFETY",11,MUTED));key.addView(label("Keys are stored locally. Never put API keys into GitHub.",12,MUTED));body.addView(key);
+        LinearLayout key=card();key.addView(label("🔑 API KEY SAFETY",11,MUTED));key.addView(label("OpenAI and Tavily keys are never stored in the app. They stay in Supabase backend secrets.",12,MUTED));body.addView(key);
         showCategory("🔐  SECURITY & PRIVACY","Permissions, privacy and key safety.",body);
     }
 
