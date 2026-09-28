@@ -176,7 +176,11 @@ private boolean fallbackListening=false;
                 ArrayList<String> m=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String s=m==null||m.isEmpty()?"":m.get(0);
                 handle(s);
-                if(realWakeWordActive){
+                // In continuous voice mode, speak() starts the next listening turn
+                // after TTS finishes. Avoid scheduling a second recognizer here.
+                if(conversationMode){
+                    if(!ttsSpeaking) restart(450);
+                }else if(realWakeWordActive){
                     realWakeWordActive=false;
                     wakeWordDetected=false;
                     restart(900);
@@ -210,7 +214,19 @@ private boolean fallbackListening=false;
         conversationMode=false;
         realWakeWordActive=false;
         wakeWordDetected=false;
+        if(recognizer!=null){try{recognizer.cancel();}catch(Exception ignored){}}
+        listening=false;
         if(handler!=null && !stopping) handler.postDelayed(wakeWordRunnable,250);
+    }
+
+    private boolean isConversationStopCommand(String q){
+        if(q==null)return false;
+        String l=q.toLowerCase(Locale.ROOT).trim();
+        return l.equals("stop")||l.equals("stop talking")||l.equals("stop listening")||
+            l.equals("end conversation")||l.equals("exit conversation")||
+            l.equals("conversation off")||l.equals("voice off")||
+            l.equals("නවත්වන්න")||l.equals("කතා කරන එක නවත්වන්න")||
+            l.equals("කතාබහ නවත්වන්න")||l.equals("voice නවත්වන්න");
     }
 
     private void handle(String raw){
@@ -223,6 +239,15 @@ private boolean fallbackListening=false;
         if(realWakeWordActive || fallbackListening || !wakeWordEnabled) wakeWordDetected=true;
         String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
         q=normalizeMixedCommand(q);
+        if(isConversationStopCommand(q)){
+            conversationMode=false;
+            speak("හරි 😄 Voice conversation එක නවත්තනවා. ආයෙත් Maya කියලා කතා කළාම මං එන්නම්.");
+            endConversationMode();
+            return;
+        }
+        // Once Maya is invoked as the system assistant, keep the microphone turn-by-turn
+        // active until the user explicitly ends the conversation.
+        if(conversationMode) wakeWordDetected=true;
         q=resolveSmartIntent(q);
         String[] steps=splitMultiStepCommand(q);
         if(steps.length>1){
@@ -769,8 +794,22 @@ private boolean fallbackListening=false;
             if(Build.VERSION.SDK_INT>=15){
                 tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener(){
                     @Override public void onStart(String utteranceId){ttsSpeaking=true;}
-                    @Override public void onDone(String utteranceId){ttsSpeaking=false;}
-                    @Override public void onError(String utteranceId){ttsSpeaking=false;}
+                    @Override public void onDone(String utteranceId){
+                        ttsSpeaking=false;
+                        if(conversationMode && !stopping && mayaAllowed() && handler!=null){
+                            handler.postDelayed(() -> {
+                                if(conversationMode && !stopping && !listening) listen();
+                            },180);
+                        }
+                    }
+                    @Override public void onError(String utteranceId){
+                        ttsSpeaking=false;
+                        if(conversationMode && !stopping && mayaAllowed() && handler!=null){
+                            handler.postDelayed(() -> {
+                                if(conversationMode && !stopping && !listening) listen();
+                            },180);
+                        }
+                    }
                 });
             }
             tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,id);
@@ -792,6 +831,7 @@ private boolean fallbackListening=false;
                     wakeWordDetected=true;
                     realWakeWordActive=true;
                     fallbackListening=true;
+                    conversationMode=true;
                     if(wakeWordAdapter!=null){
                         try{wakeWordAdapter.stop();}catch(Exception ignored){}
                     }
