@@ -14,6 +14,7 @@ import android.widget.*;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import java.util.Locale;
+import java.util.Calendar;
 
 public class SettingsActivity extends Activity {
     private SharedPreferences prefs; private TextToSpeech tts; private ToneGenerator tone;
