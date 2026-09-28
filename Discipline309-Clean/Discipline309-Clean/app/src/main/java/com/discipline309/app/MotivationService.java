@@ -79,7 +79,7 @@ public class MotivationService extends Service {
         if(Build.VERSION.SDK_INT>=26){
             NotificationChannel ch=new NotificationChannel("motivation","Motivation Coach",NotificationManager.IMPORTANCE_LOW);
             ch.setDescription("Background voice motivation");
-            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(ch);
+            NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.createNotificationChannel(ch);
         }
     }
     @Override public int onStartCommand(Intent intent,int flags,int startId){return START_STICKY;}
