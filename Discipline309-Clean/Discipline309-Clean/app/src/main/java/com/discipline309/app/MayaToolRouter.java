@@ -37,7 +37,8 @@ public final class MayaToolRouter {
         switch (tool) {
             case WEB_SEARCH: return "Use current web-search results.";
             case APP_STATE: return "Use live 309 Day Discipline app state.";
-            case NOTE: return "Use the local Notes feature to create, list, read, or delete notes.";\n            case PHONE_CONTROL: return "Use an available phone-control command; never claim success unless executed.";
+            case NOTE: return "Use the local Notes feature to create, list, read, or delete notes.";
+            case PHONE_CONTROL: return "Use an available phone-control command; never claim success unless executed.";
             default: return "Answer normally with the AI brain.";
         }
     }
