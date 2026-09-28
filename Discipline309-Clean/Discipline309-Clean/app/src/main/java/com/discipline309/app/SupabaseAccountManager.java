@@ -144,8 +144,8 @@ public final class SupabaseAccountManager {
     }
 
     public static void syncLocalProgress(Context c,Callback cb){
-        if(!loggedIn(c)){if(cb!=null)if(cb!=null)cb.done(false,"Not signed in.");return;}
-        if(!can(c,"can_sync_progress")){if(cb!=null)if(cb!=null)cb.done(false,"Primary disabled progress sync.");return;}
+        if(!loggedIn(c)){if(cb!=null)cb.done(false,"Not signed in.");return;}
+        if(!can(c,"can_sync_progress")){if(cb!=null)cb.done(false,"Primary disabled progress sync.");return;}
         IO.execute(()->{try{
             JSONObject local=buildSnapshot(c);
             String localText=local.toString();
@@ -170,15 +170,17 @@ public final class SupabaseAccountManager {
 
             prefs.edit().putString(LAST_SNAPSHOT,localText).putLong(LAST_SYNC_AT,System.currentTimeMillis()).apply();
 
-            if(cb!=null)if(cb!=null)cb.done(true,conflict
+            if(cb!=null)cb.done(true,conflict
                     ?"Progress synced. A newer remote version was detected and backed up locally before using this device's changes."
                     :"Progress synced.");
-        }catch(Exception e){if(cb!=null)if(cb!=null)cb.done(false,errorMessage(e));}});
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static String lastConflictSnapshot(Context c){try{return p(c).getString(CONFLICT_SNAPSHOT,"");}catch(Exception e){return "";}}
     public static void clearLastConflict(Context c){try{p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}catch(Exception ignored){}}
-    public static void signOut(Context c){p(c).edit().clear().apply();}
+    public static void signOut(Context c){
+        try{p(c).edit().clear().apply();}catch(Exception ignored){}
+    }
 
     private static long parseIsoMillis(String value){
         if(value==null||value.isEmpty())return 0L;
