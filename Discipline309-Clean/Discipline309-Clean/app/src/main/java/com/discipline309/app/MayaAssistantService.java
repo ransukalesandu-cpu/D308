@@ -660,32 +660,30 @@ public class MayaAssistantService extends Service {
     }
 
     private void speak(String s){
-        if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
-        SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
-        if(!p.getBoolean("auto_speak",true))return;
-        // Prevent Maya from hearing her own response through SpeechRecognizer.
-        if(recognizer!=null&&listening){
-            try{recognizer.cancel();}catch(Exception ignored){}
-            listening=false;
-        }
-        float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
-        tts.setSpeechRate(rate);
-        ttsSpeaking=true;
-        String id="maya_"+System.currentTimeMillis();
-        if(Build.VERSION.SDK_INT>=15){
-            tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener(){
-                @Override public void onStart(String utteranceId){ttsSpeaking=true;}
-                @Override public void onDone(String utteranceId){ttsSpeaking=false;}
-                @Override public void onError(String utteranceId){ttsSpeaking=false;}
-            });
-        }
-        tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,id);
+        try{
+            if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
+            SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
+            if(!p.getBoolean("auto_speak",true))return;
+            if(recognizer!=null&&listening){try{recognizer.cancel();}catch(Exception ignored){}listening=false;}
+            float rate=.65f+(Math.max(0,Math.min(100,p.getInt("speech_speed",50)))/100f)*.85f;
+            tts.setSpeechRate(rate);
+            ttsSpeaking=true;
+            String id="maya_"+System.currentTimeMillis();
+            if(Build.VERSION.SDK_INT>=15){
+                tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener(){
+                    @Override public void onStart(String utteranceId){ttsSpeaking=true;}
+                    @Override public void onDone(String utteranceId){ttsSpeaking=false;}
+                    @Override public void onError(String utteranceId){ttsSpeaking=false;}
+                });
+            }
+            tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,id);
+        }catch(Exception ignored){ttsSpeaking=false;}
     }
     private void createChannel(){
         if(Build.VERSION.SDK_INT>=26){
             NotificationChannel ch=new NotificationChannel("maya_assistant","Maya Assistant",NotificationManager.IMPORTANCE_LOW);
             ch.setDescription("Visible notification for Maya background microphone service");
-            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(ch);
+            NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.createNotificationChannel(ch);
         }
     }
     @Override public int onStartCommand(Intent i,int flags,int id){
@@ -706,10 +704,10 @@ public class MayaAssistantService extends Service {
     }
     @Override public void onDestroy(){
         stopping=true;
-        if(handler!=null)handler.removeCallbacksAndMessages(null);
-        if(recognizer!=null)recognizer.destroy();
-        if(wakeWordAdapter!=null)wakeWordAdapter.stop();
-        if(tts!=null){tts.stop();tts.shutdown();}
+        try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
+        try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}
+        try{if(wakeWordAdapter!=null)wakeWordAdapter.stop();}catch(Exception ignored){}
+        try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
         super.onDestroy();
     }
     @Override public IBinder onBind(Intent i){return null;}
