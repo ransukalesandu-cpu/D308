@@ -86,6 +86,7 @@ public class MayaAssistantService extends Service {
             if(!stopping && mayaAllowed() && ready && getSharedPreferences("settings",MODE_PRIVATE).getBoolean("auto_speak",true)){
                 if(!listening && !ttsSpeaking){
                     String suggestion=MayaPredictiveActions.nextSuggestion(this);
+                    if(suggestion==null||suggestion.trim().isEmpty()){scheduleProactiveCheckIn();return;}
                     SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
                     long now=System.currentTimeMillis();
                     long last=p.getLong("last_spoken_at",0L);
