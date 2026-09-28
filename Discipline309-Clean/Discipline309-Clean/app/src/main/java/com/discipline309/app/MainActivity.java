@@ -105,13 +105,14 @@ public class MainActivity extends Activity {
 
     private int planCount(){try{return Math.max(0,Math.min(50,prefs.getInt("plan_count_"+planDate(),0)));}catch(Exception e){return 0;}}
 
-    private String planTaskName(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_name","Task");}
+    private boolean validPlanIndex(int i){return i>=0&&i<planCount();}
+    private String planTaskName(int i){try{return validPlanIndex(i)?prefs.getString("plan_"+planDate()+"_"+i+"_name","Task"):"Task";}catch(Exception e){return "Task";}}
 
-    private String planTaskTime(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_time","Anytime");}
+    private String planTaskTime(int i){try{return validPlanIndex(i)?prefs.getString("plan_"+planDate()+"_"+i+"_time","Anytime"):"Anytime";}catch(Exception e){return "Anytime";}}
 
-    private String planTaskPriority(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_priority","Medium");}
+    private String planTaskPriority(int i){try{return validPlanIndex(i)?prefs.getString("plan_"+planDate()+"_"+i+"_priority","Medium"):"Medium";}catch(Exception e){return "Medium";}}
 
-    private boolean planTaskDone(int i){return prefs.getBoolean("plan_"+planDate()+"_"+i+"_done",false);}
+    private boolean planTaskDone(int i){try{return validPlanIndex(i)&&prefs.getBoolean("plan_"+planDate()+"_"+i+"_done",false);}catch(Exception e){return false;}}
 
     private void showShortPlan(){
         content.removeAllViews();
