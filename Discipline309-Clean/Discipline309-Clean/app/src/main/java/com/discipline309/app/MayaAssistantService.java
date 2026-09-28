@@ -37,6 +37,7 @@ public class MayaAssistantService extends Service {
     private MayaMemory memory;
     private int speechErrorCount=0;
     private boolean listening=false;
+private boolean fallbackListening=false;
     private boolean ttsSpeaking=false;
     // Lightweight in-session context for short follow-up replies.
     private String lastUserQuery="";
@@ -135,6 +136,7 @@ public class MayaAssistantService extends Service {
     }
 
     private void listen(){
+        if(stopping||!ready||listening)return;
         if(stopping || !ready || !mayaAllowed() || !SpeechRecognizer.isRecognitionAvailable(this)){ if(!mayaAllowed()) stopSelf(); return; }
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){speak("Microphone permission එක allow කරන්න.");return;}
         if(listening) return;
