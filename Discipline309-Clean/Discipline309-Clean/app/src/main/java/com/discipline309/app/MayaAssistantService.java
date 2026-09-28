@@ -45,6 +45,8 @@ public class MayaAssistantService extends Service {
     @Override public void onCreate(){
         super.onCreate();
         if(!mayaAllowed()){ stopSelf(); return; }
+        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){ stopSelf(); return; }
+        try{
         memory=new MayaMemory(this);
         createChannel();
         Intent open=new Intent(this,SettingsActivity.class);
@@ -59,6 +61,7 @@ public class MayaAssistantService extends Service {
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
         handler.postDelayed(this::startWakeWord,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
+        }catch(SecurityException e){ stopSelf(); }
     }
 
     private boolean mayaAllowed(){
