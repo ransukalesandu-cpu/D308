@@ -19,7 +19,7 @@ import java.util.*;
 public class MainActivity extends Activity {
     private static final String PREFS="discipline";
     private static final String[] DEFAULT_TASKS={"Wake up on time","Study / learning","Workout or active recovery","Eat planned meals","No-phone block","Night review + prepare tomorrow"};
-    private int BG=0xFF061126,SURFACE=0xFF0B1B3A,TEXT=0xFFF5F8FF,MUTED=0xFF9CB2D9,ACCENT=0xFF2F7BFF;
+    private int BG=0xFF050A16,SURFACE=0xFF0B1730,TEXT=0xFFF7FAFF,MUTED=0xFF91A8D0,ACCENT=0xFF3B82F6;
     private SharedPreferences prefs;
     private LinearLayout content;
     private VoiceAssistant voiceAssistant;
