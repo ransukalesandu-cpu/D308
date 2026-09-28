@@ -62,10 +62,12 @@ public class MayaMemory {
     public String all() { try{return format(dao.getAll());}catch(Exception e){return "";} }
 
     public void remove(int index) {
-        try{List<MayaMemoryEntity> all = dao.getAll(); if (index < 0 || index >= all.size()) return; dao.delete(all.get(index));}catch(Exception ignored){}
+        try{executor.execute(() -> {try{List<MayaMemoryEntity> all=dao.getAll();if(index<0||index>=all.size())return;dao.delete(all.get(index));}catch(Exception ignored){}});}catch(Exception ignored){}
     }
 
-    public void clear() { try{dao.clear();}catch(Exception ignored){} }
+    public void clear() {
+        try{executor.execute(() -> {try{dao.clear();}catch(Exception ignored){}});}catch(Exception ignored){}
+    }
 
     private String format(List<MayaMemoryEntity> items) {
         StringBuilder out = new StringBuilder();
