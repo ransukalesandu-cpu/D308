@@ -61,7 +61,15 @@ public class MayaAssistantService extends Service {
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
         handler.postDelayed(this::startWakeWord,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
-        }catch(SecurityException e){ stopSelf(); }
+        }catch(Exception e){
+            ready=false;
+            stopping=true;
+            try{ if(handler!=null) handler.removeCallbacksAndMessages(null); }catch(Exception ignored){}
+            try{ if(recognizer!=null) recognizer.destroy(); }catch(Exception ignored){}
+            try{ if(wakeWordAdapter!=null) wakeWordAdapter.stop(); }catch(Exception ignored){}
+            try{ if(tts!=null){ tts.stop(); tts.shutdown(); } }catch(Exception ignored){}
+            stopSelf();
+        }
     }
 
     private boolean mayaAllowed(){
