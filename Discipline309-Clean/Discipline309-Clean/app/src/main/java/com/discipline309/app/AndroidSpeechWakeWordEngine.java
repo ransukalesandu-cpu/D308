@@ -19,6 +19,7 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
     private SpeechRecognizer recognizer;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean running;
+    private Runnable restartRunnable;
 
     @Override public void start(Context context, Listener listener) {
         stop();
@@ -27,7 +28,8 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
             return;
         }
         running = true;
-        recognizer = SpeechRecognizer.createSpeechRecognizer(context);
+        try{ recognizer = SpeechRecognizer.createSpeechRecognizer(context); }
+        catch(Exception e){ running=false; listener.onError("Speech recognizer could not start."); return; }
         recognizer.setRecognitionListener(new RecognitionListener() {
             public void onReadyForSpeech(android.os.Bundle b) {}
             public void onBeginningOfSpeech() {}
@@ -36,7 +38,7 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
             public void onEndOfSpeech() {}
             public void onPartialResults(android.os.Bundle b) {}
             public void onEvent(int t, android.os.Bundle b) {}
-            public void onError(int e) { restart(context, listener); }
+            public void onError(int e) { if(running) restart(context, listener); }
             public void onResults(android.os.Bundle b) {
                 ArrayList<String> results = b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String text = results == null || results.isEmpty() ? "" : results.get(0);
@@ -56,12 +58,15 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
     }
 
     private void restart(Context context, Listener listener) {
-        if (running) handler.postDelayed(() -> {
-            if (running) {
+        if(!running)return;
+        if(restartRunnable!=null)handler.removeCallbacks(restartRunnable);
+        restartRunnable=()->{
+            if(running){
                 stopRecognizerOnly();
-                start(context, listener);
+                try{start(context,listener);}catch(Exception e){running=false;listener.onError("Speech recognition stopped.");}
             }
-        }, 700);
+        };
+        handler.postDelayed(restartRunnable,700);
     }
 
     private void stopRecognizerOnly() {
@@ -74,6 +79,7 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
     @Override public void stop() {
         running = false;
         handler.removeCallbacksAndMessages(null);
+        restartRunnable=null;
         stopRecognizerOnly();
     }
 
@@ -83,7 +89,7 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "si-LK");
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "si-LK");
-            recognizer.startListening(i);
+            try{recognizer.startListening(i);}catch(Exception e){throw new IllegalStateException("Speech recognition could not listen.",e);}
         }
     }
 }
