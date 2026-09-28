@@ -420,7 +420,7 @@ public class MayaAssistantService extends Service {
             }
             if(found<0){speak("ඒ නමින් note එකක් හම්බවුනේ නැහැ. 📝");return;}
             deleteVoiceNote(p,found,count);
-            speak("හරි, ""+p.getString("note_"+found+"_title","note")+"" note එක delete කළා. 🗑️");
+            speak("හරි, " + p.getString("note_"+found+"_title","note") + " note එක delete කළා. 🗑️");
             return;
         }
 
