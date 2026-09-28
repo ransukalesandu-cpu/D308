@@ -26,12 +26,16 @@ public class VoiceAssistant {
 
     public VoiceAssistant(Activity activity) {
         this.activity = activity;
-        tts = new TextToSpeech(activity, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                tts.setLanguage(new Locale("si", "LK"));
-                tts.setSpeechRate(.92f);
-            }
-        });
+        try {
+            tts = new TextToSpeech(activity, status -> {
+                try {
+                    if (status == TextToSpeech.SUCCESS && tts != null) {
+                        tts.setLanguage(new Locale("si", "LK"));
+                        tts.setSpeechRate(.92f);
+                    }
+                } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) { tts = null; }
     }
 
     public void start() {
@@ -54,6 +58,7 @@ public class VoiceAssistant {
         listening = true;
         Toast.makeText(activity, "🎙️ Say “Maya” and then talk…", Toast.LENGTH_SHORT).show();
 
+        try {
         if (recognizer != null) recognizer.destroy();
         recognizer = SpeechRecognizer.createSpeechRecognizer(activity);
         recognizer.setRecognitionListener(new RecognitionListener() {
@@ -82,7 +87,19 @@ public class VoiceAssistant {
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "si-LK");
         intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Maya, then your question");
-        recognizer.startListening(intent);
+        try { recognizer.startListening(intent); }
+        catch (Exception e) {
+            listening = false;
+            try { recognizer.destroy(); } catch (Exception ignored) {}
+            recognizer = null;
+            Toast.makeText(activity, "Maya voice start කරන්න බැරි වුණා.", Toast.LENGTH_SHORT).show();
+        }
+        } catch (Exception e) {
+            listening = false;
+            try { if (recognizer != null) recognizer.destroy(); } catch (Exception ignored) {}
+            recognizer = null;
+            Toast.makeText(activity, "Maya voice එක start කරන්න බැරි වුණා.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void handle(String spoken) {
@@ -168,11 +185,14 @@ public class VoiceAssistant {
         android.content.SharedPreferences p=activity.getSharedPreferences("settings",0);
         if(!p.getBoolean("auto_speak",true)) return;
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
+        try {
         tts.setLanguage(new Locale("si","LK"));
         tts.setSpeechRate(rate);
         String safe=naturalSinhala(text);
         if(safe.isEmpty()) return;
-        tts.speak(safe, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis());
+        try { tts.speak(safe, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis()); }
+        catch (Exception ignored) {}
+        } catch (Exception ignored) {}
     }
 
     private String naturalSinhala(String text) {
