@@ -58,7 +58,7 @@ public class WebSearch {
                 }
                 if(callback!=null) callback.onResult(out.toString().trim());
                 c.disconnect();
-            }catch(Exception e){ callback.onResult(""); }
+            }catch(Exception e){ if(callback!=null) callback.onResult(""); }
         }).start();
     }
 
@@ -98,10 +98,7 @@ public class WebSearch {
         }catch(Exception e){ return ""; }
     }
 
-    public static boolean enabled(Context context){
-        return !context.getSharedPreferences("maya_web",Context.MODE_PRIVATE)
-            .getString("api_key","").trim().isEmpty();
-    }
+    public static boolean enabled(Context context){try{return !MayaSecureStorage.getApiKey(context,"maya_web").isEmpty();}catch(Exception e){return false;}}
 
     private static String read(InputStream in)throws Exception{
         if(in==null)return "";
