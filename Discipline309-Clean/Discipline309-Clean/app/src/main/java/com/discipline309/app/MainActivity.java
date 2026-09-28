@@ -10,6 +10,7 @@ import android.graphics.Typeface;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.os.*;
+import android.speech.*;
 import android.view.*;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
@@ -20,7 +21,7 @@ import java.util.*;
 public class MainActivity extends Activity {
     private static final String PREFS="discipline";
     private static final String[] DEFAULT_TASKS={"Wake up on time","Study / learning","Workout or active recovery","Eat planned meals","No-phone block","Night review + prepare tomorrow"};
-    private int BG=0xFF050A16,SURFACE=0xFF0B1730,TEXT=0xFFF7FAFF,MUTED=0xFF91A8D0,ACCENT=0xFF3B82F6;
+    private int BG=0xFF070B18,SURFACE=0xFF11182E,TEXT=0xFFF7F7FF,MUTED=0xFFA9A8C5,ACCENT=0xFFA78BFA;
     private SharedPreferences prefs;
     private LinearLayout content;
     private VoiceAssistant voiceAssistant;
@@ -32,9 +33,9 @@ public class MainActivity extends Activity {
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private void sound(int t){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,65);tone.startTone(t,80);}catch(Exception ignored){}}
     private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setTypeface(z>=22?Typeface.create("sans-serif",Typeface.BOLD):z>=16?Typeface.create("sans-serif-medium",Typeface.NORMAL):Typeface.create("sans-serif",Typeface.NORMAL));v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
-    private GradientDrawable shape(int c,int r){GradientDrawable g=new GradientDrawable();g.setColor(c);g.setCornerRadius(dp(r));g.setStroke(dp(1),0xFF173D78);return g;}
+    private GradientDrawable shape(int c,int r){GradientDrawable g=new GradientDrawable();g.setColor(c);g.setCornerRadius(dp(r));g.setStroke(dp(1),0xFF3A315F);return g;}
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(14),dp(16),dp(14));l.setBackground(shape(SURFACE,18));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
-    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setBackground(shape(0xFF102957,16));b.setPadding(dp(10),0,dp(10),0);b.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP)sound(ToneGenerator.TONE_PROP_ACK);return false;});return b;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setBackground(shape(0xFF211B45,16));b.setPadding(dp(10),0,dp(10),0);b.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP)sound(ToneGenerator.TONE_PROP_ACK);return false;});return b;}
     private String key(){return key(Calendar.getInstance());}
     private String key(Calendar c){return new SimpleDateFormat("yyyyMMdd",Locale.US).format(c.getTime());}
     private void ensureProgramStart(){try{long saved=prefs.getLong("program_start",0L);if(saved<=0L){Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);prefs.edit().putLong("program_start",c.getTimeInMillis()).apply();}}catch(Exception e){Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,0);c.set(Calendar.MINUTE,0);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);prefs.edit().putLong("program_start",c.getTimeInMillis()).apply();}}
@@ -59,8 +60,21 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle b){super.onCreate(b);try{prefs=getSharedPreferences(PREFS,MODE_PRIVATE);ensureProgramStart();applyTheme();buildShell();showHome();if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},7);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Startup error",e);showStartupFallback();}}
     private void showStartupFallback(){try{LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setGravity(Gravity.CENTER);root.setPadding(dp(24),dp(24),dp(24),dp(24));root.setBackgroundColor(BG);TextView title=label("309 DAY DISCIPLINE",26,TEXT);title.setGravity(Gravity.CENTER);root.addView(title);TextView msg=label("Startup problem එකක් හඳුනාගත්තා. App එක crash නොවී safe mode එකෙන් open වුණා.",15,MUTED);msg.setGravity(Gravity.CENTER);root.addView(msg,new LinearLayout.LayoutParams(-1,-2));Button retry=button("↻  TRY AGAIN");retry.setOnClickListener(v->{try{buildShell();showHome();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Retry startup error",e);}});root.addView(retry,new LinearLayout.LayoutParams(-1,dp(52)));setContentView(root);}catch(Throwable ignored){}}
-    private void applyTheme(){String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");BG=0xFF061126;SURFACE=0xFF0B1B3A;TEXT=0xFFF5F8FF;MUTED=0xFF9CB2D9;ACCENT=0xFF2F7BFF;getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);}
-    private void buildShell(){LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);ScrollView sc=new ScrollView(this);sc.setOverScrollMode(View.OVER_SCROLL_ALWAYS);sc.setSmoothScrollingEnabled(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(28),dp(18),dp(18));sc.addView(content);sc.setOnTouchListener(new View.OnTouchListener(){float downY;long downT;@Override public boolean onTouch(View v,MotionEvent e){if(e.getAction()==MotionEvent.ACTION_DOWN){downY=e.getY();downT=System.currentTimeMillis();}else if(e.getAction()==MotionEvent.ACTION_UP){float dy=e.getY()-downY;long dt=Math.max(1,System.currentTimeMillis()-downT);if(Math.abs(dy)>dp(35)){float velocity=Math.abs(dy)/dt;if(velocity>.5f){content.animate().alpha(.97f).setDuration(70).withEndAction(()->content.animate().alpha(1f).setDuration(180).start()).start();}}}return false;}});root.addView(sc,new LinearLayout.LayoutParams(-1,0,1));LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(4),dp(5),dp(4),dp(5));nav.setBackground(shape(0xFF081A36,18));String[] names={"⌂\nHome","◷\nPlan","✓\nHabits","📝\nNotes","◫\nStats"};for(int i=0;i<5;i++){final int n=i;Button b=button(names[i]);b.setTextSize(14);b.setPadding(0,0,0,0);b.setMinHeight(dp(48));b.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else showStats();});nav.addView(b,new LinearLayout.LayoutParams(0,dp(58),1));}Button settings=button("⚙\nSettings");settings.setTextSize(14);settings.setOnClickListener(v->openSettings());LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(dp(72),dp(58));sp.setMargins(dp(6),0,0,0);nav.addView(settings,sp);root.addView(nav);setContentView(root);}
+    private void applyTheme(){String t=getSharedPreferences("ui_settings",MODE_PRIVATE).getString("theme","midnight");BG=0xFF070B18;SURFACE=0xFF11182E;TEXT=0xFFF7F7FF;MUTED=0xFFA9A8C5;ACCENT=0xFFA78BFA;getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(BG);}
+    private void buildShell(){
+    FrameLayout root=new FrameLayout(this);root.setBackgroundColor(BG);
+    ScrollView sc=new ScrollView(this);sc.setOverScrollMode(View.OVER_SCROLL_ALWAYS);sc.setSmoothScrollingEnabled(true);
+    content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(28),dp(18),dp(110));sc.addView(content);
+    root.addView(sc,new FrameLayout.LayoutParams(-1,-1));
+    LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(4),dp(5),dp(4),dp(5));nav.setBackground(shape(0xFF0C1226,18));
+    String[] names={"⌂\nHome","◷\nPlan","✓\nHabits","📝\nNotes","◫\nStats"};
+    for(int i=0;i<5;i++){final int n=i;Button nb=button(names[i]);nb.setTextSize(14);nb.setPadding(0,0,0,0);nb.setMinHeight(dp(48));nb.setOnClickListener(v->{if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else showStats();});nav.addView(nb,new LinearLayout.LayoutParams(0,dp(58),1));}
+    Button settings=button("⚙\nSettings");settings.setTextSize(14);settings.setOnClickListener(v->openSettings());LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(dp(72),dp(58));sp.setMargins(dp(6),0,0,0);nav.addView(settings,sp);
+    FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);np.setMargins(dp(8),0,dp(8),dp(8));root.addView(nav,np);
+    Button fab=button("＋");fab.setTextSize(30);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFFA78BFA,100));fab.setElevation(dp(12));fab.setContentDescription("Create note");fab.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN)v.animate().scaleX(.88f).scaleY(.88f).setDuration(90).start();else if(e.getAction()==MotionEvent.ACTION_UP){v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();noteEditor(-1);}else if(e.getAction()==MotionEvent.ACTION_CANCEL)v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();return true;});
+    FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(62),dp(62),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
+    setContentView(root);
+}
     private void header(String title,String sub){content.removeAllViews();TextView t=label(title,26,TEXT);t.setTypeface(null,1);content.addView(t);content.addView(label(sub,13,MUTED));ImageView icon=new ImageView(this);icon.setImageResource(R.drawable.ic_discipline);icon.setContentDescription("Discipline");icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(dp(64),dp(64));ip.gravity=Gravity.CENTER_HORIZONTAL;ip.topMargin=dp(5);content.addView(icon,ip);}
     private TextView title(String s){TextView t=label(s,19,TEXT);t.setTypeface(null,1);t.setPadding(dp(4),dp(14),dp(4),dp(5));return t;}
     private void addBar(LinearLayout box,int value,int max){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(Math.max(1,max));p.setProgress(Math.max(0,Math.min(max,value)));p.setProgressDrawable(getDrawable(android.R.drawable.progress_horizontal));box.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
@@ -231,59 +245,67 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
     private long noteTime(int i){return prefs.getLong("note_"+i+"_time",0L);}
     private boolean notePinned(int i){return prefs.getBoolean("note_"+i+"_pinned",false);}
 
+    private String noteCategory(int i){String c=prefs.getString("note_"+i+"_category","Personal");return Arrays.asList("Personal","Study","Goals").contains(c)?c:"Personal";}
+    private String noteRemoteId(int i){return prefs.getString("note_"+i+"_remote_id","");}
+
     private void showNotes(){
-        header("NOTES","Write, save and find your notes in the same app. 📝");
-        Button add=button("＋  NEW NOTE");
-        add.setOnClickListener(v->noteEditor(-1));
-        content.addView(add);
-        EditText search=new EditText(this);
-        search.setSingleLine(true);search.setHint("Search notes…");search.setTextColor(TEXT);search.setHintTextColor(MUTED);search.setTextSize(15);search.setPadding(dp(14),0,dp(14),0);search.setBackground(shape(SURFACE,16));
-        content.addView(search,new LinearLayout.LayoutParams(-1,dp(50)));
+        header("NOTES","Capture ideas fast. Maya can organize, summarize and plan. 📝");
+        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);
+        Button add=button("＋ NEW NOTE");add.setOnClickListener(v->noteEditor(-1));top.addView(add,new LinearLayout.LayoutParams(0,dp(50),1));
+        if("primary".equals(SupabaseAccountManager.role(this))){Button family=button("👥 FAMILY NOTES");family.setOnClickListener(v->showFamilyNotes());LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(dp(145),dp(50));fp.setMargins(dp(8),0,0,0);top.addView(family,fp);}
+        content.addView(top);
+        EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search notes…");search.setTextColor(TEXT);search.setHintTextColor(MUTED);search.setTextSize(15);search.setPadding(dp(14),0,dp(14),0);search.setBackground(shape(SURFACE,16));content.addView(search,new LinearLayout.LayoutParams(-1,dp(50)));
+        content.addView(label("🏷 PERSONAL  •  STUDY  •  GOALS",11,MUTED));
         LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
         Runnable render=()->{
-            list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.US);
-            ArrayList<Integer> ids=new ArrayList<>();for(int i=0;i<notesCount();i++){String h=(noteTitle(i)+" "+noteBody(i)).toLowerCase(Locale.US);if(q.isEmpty()||h.contains(q))ids.add(i);}
-            Collections.sort(ids,(a,b)->{if(notePinned(a)!=notePinned(b))return notePinned(a)?-1:1;return Long.compare(noteTime(b),noteTime(a));});
-            if(ids.isEmpty()){list.addView(label(q.isEmpty()?"No notes yet. Tap NEW NOTE to write one.":"No matching notes.",14,MUTED));return;}
-            for(int id:ids){
-                LinearLayout card=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
-                TextView tt=label((notePinned(id)?"📌 ":"")+noteTitle(id),18,TEXT);tt.setTypeface(null,1);row.addView(tt,new LinearLayout.LayoutParams(0,-2,1));
-                Button more=button("⋮");more.setOnClickListener(v->noteMenu(id));row.addView(more,new LinearLayout.LayoutParams(dp(48),dp(44)));card.addView(row);
-                String b=noteBody(id).trim();if(!b.isEmpty()){String p=b.replace("\n"," ");if(p.length()>180)p=p.substring(0,180)+"...";card.addView(label(p,14,TEXT));}
-                if(noteTime(id)>0)card.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));
-                card.setOnClickListener(v->noteEditor(id));list.addView(card);
-            }
+            list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.US);ArrayList<Integer> ids=new ArrayList<>();
+            for(int i=0;i<notesCount();i++){String h=(noteTitle(i)+" "+noteBody(i)+" "+noteCategory(i)).toLowerCase(Locale.US);if(q.isEmpty()||h.contains(q))ids.add(i);}
+            Collections.sort(ids,(x,y)->{if(notePinned(x)!=notePinned(y))return notePinned(x)?-1:1;return Long.compare(noteTime(y),noteTime(x));});
+            if(ids.isEmpty()){list.addView(label(q.isEmpty()?"No notes yet. Tap NEW NOTE or +.":"No matching notes.",14,MUTED));return;}
+            for(int id:ids){LinearLayout nc=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);TextView tt=label((notePinned(id)?"📌 ":"")+noteTitle(id),18,TEXT);tt.setTypeface(null,1);row.addView(tt,new LinearLayout.LayoutParams(0,-2,1));Button more=button("⋮");more.setOnClickListener(v->noteMenu(id));row.addView(more,new LinearLayout.LayoutParams(dp(48),dp(44)));nc.addView(row);nc.addView(label("🏷 "+noteCategory(id),11,ACCENT));String body=noteBody(id).trim();if(!body.isEmpty()){String preview=body.replace("\n"," ");if(preview.length()>180)preview=preview.substring(0,180)+"...";nc.addView(label(preview,14,TEXT));}if(noteTime(id)>0)nc.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));nc.setOnClickListener(v->noteEditor(id));list.addView(nc);}
         };
-        search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int c){}public void onTextChanged(CharSequence s,int a,int b,int c){render.run();}public void afterTextChanged(android.text.Editable e){}});
-        render.run();
+        search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int d){}public void onTextChanged(CharSequence s,int a,int b,int d){render.run();}public void afterTextChanged(android.text.Editable e){}});
+        render.run();if(SupabaseAccountManager.loggedIn(this))SupabaseAccountManager.syncLocalNotes(this,null);
     }
 
     private void noteEditor(int id){
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
         EditText title=new EditText(this);title.setSingleLine(true);title.setHint("Title");title.setText(id>=0?noteTitle(id):"");box.addView(title);
-        EditText body=new EditText(this);body.setHint("Write your note here…");body.setMinLines(9);body.setGravity(Gravity.TOP);body.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setText(id>=0?noteBody(id):"");box.addView(body,new LinearLayout.LayoutParams(-1,dp(230)));
+        Spinner category=new Spinner(this);String[] cats={"Personal","Study","Goals"};category.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,cats));if(id>=0)for(int i=0;i<cats.length;i++)if(cats[i].equals(noteCategory(id)))category.setSelection(i);box.addView(category);
+        EditText body=new EditText(this);body.setHint("Type your note here…");body.setMinLines(9);body.setGravity(Gravity.TOP);body.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setText(id>=0?noteBody(id):"");box.addView(body,new LinearLayout.LayoutParams(-1,dp(220)));
+        LinearLayout tools=new LinearLayout(this);tools.setGravity(Gravity.CENTER);Button voice=button("🎙 VOICE INPUT");voice.setOnClickListener(v->startNoteVoice(body));tools.addView(voice,new LinearLayout.LayoutParams(0,dp(50),1));Button summarize=button("🧠 SUMMARIZE");summarize.setOnClickListener(v->summarizeText(body.getText().toString()));tools.addView(summarize,new LinearLayout.LayoutParams(0,dp(50),1));box.addView(tools);
         AlertDialog d=new AlertDialog.Builder(this).setTitle(id>=0?"📝 Edit Note":"📝 New Note").setView(box).setPositiveButton("SAVE",null).setNegativeButton("CANCEL",null).create();
-        d.setOnShowListener(x->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-            String t=title.getText().toString().trim(),b=body.getText().toString().trim();if(t.isEmpty()&&b.isEmpty()){toast("Write something first.");return;}if(t.isEmpty())t="Untitled note";
-            int idx=id;if(idx<0){idx=notesCount();if(idx>=500){toast("Notes limit reached.");return;}prefs.edit().putInt("notes_count",idx+1).apply();}
-            prefs.edit().putString("note_"+idx+"_title",t).putString("note_"+idx+"_body",b).putLong("note_"+idx+"_time",System.currentTimeMillis()).apply();d.dismiss();showNotes();
-        }));
+        d.setOnShowListener(x->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{String t=title.getText().toString().trim(),b=body.getText().toString().trim();if(t.isEmpty()&&b.isEmpty()){toast("Write something first.");return;}if(t.isEmpty())t="Untitled note";int idx=id;if(idx<0){idx=notesCount();if(idx>=500){toast("Notes limit reached.");return;}prefs.edit().putInt("notes_count",idx+1).apply();}prefs.edit().putString("note_"+idx+"_title",t).putString("note_"+idx+"_body",b).putString("note_"+idx+"_category",cats[category.getSelectedItemPosition()]).putLong("note_"+idx+"_time",System.currentTimeMillis()).apply();d.dismiss();showNotes();if(SupabaseAccountManager.loggedIn(this))SupabaseAccountManager.syncLocalNotes(this,null);}));
         d.show();
     }
 
+    private void startNoteVoice(EditText target){
+        if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},44);toast("Microphone permission allow කරන්න.");return;}
+        try{if(!SpeechRecognizer.isRecognitionAvailable(this)){toast("Voice recognition available නැහැ.");return;}SpeechRecognizer sr=SpeechRecognizer.createSpeechRecognizer(this);sr.setRecognitionListener(new RecognitionListener(){public void onReadyForSpeech(Bundle b){toast("කියන්න… 🎙️");}public void onBeginningOfSpeech(){}public void onRmsChanged(float r){}public void onBufferReceived(byte[] b){}public void onEndOfSpeech(){}public void onPartialResults(Bundle b){}public void onEvent(int t,Bundle b){}public void onError(int e){try{sr.destroy();}catch(Exception ignored){}toast("Voice input එක try කරන්න.");}public void onResults(Bundle b){ArrayList<String> a=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);if(a!=null&&!a.isEmpty()){String old=target.getText().toString().trim();target.setText(old.isEmpty()?a.get(0):old+"\n"+a.get(0));target.setSelection(target.length());}try{sr.destroy();}catch(Exception ignored){}}});Intent in=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);in.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);in.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"si-LK");in.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"si-LK");sr.startListening(in);}catch(Exception e){toast("Voice input start කරන්න බැරි වුණා.");}
+    }
+
+    private void summarizeText(String text){
+        String q=text==null?"":text.trim();if(q.isEmpty()){toast("Summarize කරන්න text එකක් දාන්න.");return;}String clipped=q.length()>12000?q.substring(0,12000):q;toast("Maya summary එක හදනවා… 🧠");MayaAI.ask(this,"Summarize this note into 3-5 short bullet points. Keep only the key ideas.\n\n"+clipped,"User note","clear concise note assistant",reply->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;new AlertDialog.Builder(this).setTitle("🧠 Maya Summary").setMessage(reply==null?"No summary received.":reply).setPositiveButton("OK",null).show();}));
+    }
+
+    private void convertNoteToTask(int id){
+        String body=noteBody(id).trim();if(body.isEmpty()){toast("Task එක හදන්න note body එකක් ඕන.");return;}String clipped=body.length()>8000?body.substring(0,8000):body;toast("Maya actionable task එක හොයනවා… 🧠");MayaAI.ask(this,"From this note, identify ONE actionable task. Reply with only the task text, no bullets, no explanation. If there is no actionable task, reply with NONE.\n\n"+clipped,"User note","task extractor",reply->runOnUiThread(()->{String task=reply==null?"":reply.trim().replace("\n"," ");if(task.isEmpty()||task.equalsIgnoreCase("NONE")){toast("Actionable task එකක් හමු වුණේ නැහැ.");return;}new AlertDialog.Builder(this).setTitle("➕ Add to Daily Planner").setMessage(task).setNegativeButton("CANCEL",null).setPositiveButton("ADD TASK",(d,w)->addPlannerTaskFromNote(task)).show();}));
+    }
+
+    private void addPlannerTaskFromNote(String task){int n=planCount();if(n>=50){toast("Daily Planner task limit reached.");return;}prefs.edit().putInt("plan_count_"+planDate(),n+1).putString("plan_"+planDate()+"_"+n+"_name",task).putString("plan_"+planDate()+"_"+n+"_time","Anytime").putString("plan_"+planDate()+"_"+n+"_priority","High").apply();toast("Task added to today's planner. ✅");showShortPlan();}
+
+    private void showFamilyNotes(){
+        if(!"primary".equals(SupabaseAccountManager.role(this))){showNotes();return;}header("FAMILY NOTES","Read-only linked sub-account notes. 👥");content.addView(label("Primary can read linked notes. Editing and deleting are disabled.",12,MUTED));LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
+        SupabaseAccountManager.loadLinkedNotes(this,(ok,message)->runOnUiThread(()->{list.removeAllViews();if(!ok){list.addView(label("Could not load family notes.",14,MUTED));return;}try{org.json.JSONArray a=new org.json.JSONArray(message);if(a.length()==0){list.addView(label("No linked notes yet.",14,MUTED));return;}for(int i=0;i<a.length();i++){org.json.JSONObject n=a.getJSONObject(i);LinearLayout nc=card();nc.addView(label("👤 "+n.optString("owner_name","Sub-account"),12,ACCENT));nc.addView(label(n.optString("title","Untitled note"),18,TEXT));nc.addView(label("🏷 "+n.optString("category","Personal"),11,MUTED));nc.addView(label(n.optString("body",""),14,TEXT));list.addView(nc);}}catch(Exception e){list.addView(label("Family notes data could not be displayed.",14,MUTED));}}));
+    }
+
     private void noteMenu(int id){
-        String[] a={notePinned(id)?"Unpin":"Pin","Share","Delete"};
-        new AlertDialog.Builder(this).setTitle(noteTitle(id)).setItems(a,(d,w)->{
-            if(w==0){prefs.edit().putBoolean("note_"+id+"_pinned",!notePinned(id)).apply();showNotes();}
-            else if(w==1){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"\n\n"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}
-            else new AlertDialog.Builder(this).setTitle("Delete note?").setMessage("This note will be removed from this device.").setPositiveButton("DELETE",(dd,ww)->deleteNote(id)).setNegativeButton("CANCEL",null).show();
-        }).show();
+        String[] a={"Edit","📌 "+(notePinned(id)?"Unpin":"Pin"),"🧠 Summarize","➕ Convert to Daily Task","Share","Delete"};
+        new AlertDialog.Builder(this).setTitle(noteTitle(id)).setItems(a,(d,w)->{if(w==0)noteEditor(id);else if(w==1){prefs.edit().putBoolean("note_"+id+"_pinned",!notePinned(id)).apply();showNotes();}else if(w==2)summarizeText(noteBody(id));else if(w==3)convertNoteToTask(id);else if(w==4){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"\n\n"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}else new AlertDialog.Builder(this).setTitle("Delete note?").setMessage("This note will be removed from this device and synced storage.").setPositiveButton("DELETE",(dd,ww)->deleteNote(id)).setNegativeButton("CANCEL",null).show();}).show();
     }
 
     private void deleteNote(int id){
-        int n=notesCount();if(id<0||id>=n){showNotes();return;}SharedPreferences.Editor e=prefs.edit();
-        for(int i=id;i<n-1;i++){e.putString("note_"+i+"_title",prefs.getString("note_"+(i+1)+"_title","Untitled note"));e.putString("note_"+i+"_body",prefs.getString("note_"+(i+1)+"_body",""));e.putLong("note_"+i+"_time",prefs.getLong("note_"+(i+1)+"_time",0L));e.putBoolean("note_"+i+"_pinned",prefs.getBoolean("note_"+(i+1)+"_pinned",false));}
-        e.remove("note_"+(n-1)+"_title").remove("note_"+(n-1)+"_body").remove("note_"+(n-1)+"_time").remove("note_"+(n-1)+"_pinned").putInt("notes_count",n-1).apply();showNotes();
+        int n=notesCount();if(id<0||id>=n){showNotes();return;}String remote=noteRemoteId(id);SharedPreferences.Editor e=prefs.edit();for(int i=id;i<n-1;i++){e.putString("note_"+i+"_title",prefs.getString("note_"+(i+1)+"_title","Untitled note")).putString("note_"+i+"_body",prefs.getString("note_"+(i+1)+"_body","")).putString("note_"+i+"_category",prefs.getString("note_"+(i+1)+"_category","Personal")).putLong("note_"+i+"_time",prefs.getLong("note_"+(i+1)+"_time",0L)).putBoolean("note_"+i+"_pinned",prefs.getBoolean("note_"+(i+1)+"_pinned",false)).putString("note_"+i+"_remote_id",prefs.getString("note_"+(i+1)+"_remote_id",""));}e.remove("note_"+(n-1)+"_title").remove("note_"+(n-1)+"_body").remove("note_"+(n-1)+"_category").remove("note_"+(n-1)+"_time").remove("note_"+(n-1)+"_pinned").remove("note_"+(n-1)+"_remote_id").putInt("notes_count",n-1).apply();if(!remote.isEmpty())SupabaseAccountManager.deleteRemoteNote(this,remote,null);showNotes();
     }
 
     private void showAchievements(){header("ACHIEVEMENTS","Milestones earned through consistency.");int days=completedDays(),streak=bestStreak(),missions=0;for(String k:prefs.getAll().keySet())if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&prefs.getBoolean(k,false))missions++;LinearLayout summary=card();summary.addView(label("🏆 "+days+" completed days",22,TEXT));summary.addView(label("🔥 Best streak: "+streak+" days  •  🎯 Missions: "+missions,13,MUTED));content.addView(summary);int[] milestones={1,3,7,14,30,50,100,150,200,309};String[] names={"First Step","3-Day Spark","One Week","Two Weeks","30-Day Discipline","50-Day Warrior","100-Day Mastery","150-Day Elite","200-Day Relentless","309-Day Legend"};for(int i=0;i<milestones.length;i++){int m=milestones[i];boolean u=days>=m;LinearLayout a=card();a.addView(label(u?"🏆 "+names[i]:"🔒 "+names[i],17,u?TEXT:MUTED));a.addView(label(m+" completed days",12,MUTED));content.addView(a);}int[] streaks={3,7,14,30};String[] sn={"3-Day Streak","7-Day Streak","14-Day Streak","30-Day Streak"};for(int i=0;i<streaks.length;i++){boolean u=streak>=streaks[i];LinearLayout a=card();a.addView(label(u?"🔥 "+sn[i]:"🔒 "+sn[i],17,u?TEXT:MUTED));a.addView(label(streaks[i]+" consecutive completed days",12,MUTED));content.addView(a);}LinearLayout m=card();m.addView(label("🎯 MISSION ACHIEVEMENTS",11,MUTED));int[] mm={1,7,30};for(int x:mm)m.addView(label(missions>=x?"🏆 "+x+" daily missions completed":"🔒 "+x+" daily missions",14,missions>=x?TEXT:MUTED));content.addView(m);}
