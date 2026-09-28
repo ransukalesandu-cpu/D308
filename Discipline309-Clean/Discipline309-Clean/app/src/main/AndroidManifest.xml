@@ -29,6 +29,14 @@
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".AccountsActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".RecoveryActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="discipline309" android:host="auth" android:path="/recovery" />
+            </intent-filter>
+        </activity>
         <activity android:name=".AuthActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
