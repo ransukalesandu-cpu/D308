@@ -10,6 +10,7 @@ public class MayaNotificationListener extends NotificationListenerService {
         try {
         if(sbn==null || !"com.whatsapp".equals(sbn.getPackageName())) return;
         Notification n=sbn.getNotification();
+        if(n==null||n.extras==null)return;
         CharSequence title=n.extras.getCharSequence(Notification.EXTRA_TITLE);
         CharSequence text=n.extras.getCharSequence(Notification.EXTRA_TEXT);
         if(TextUtils.isEmpty(text)) return;
