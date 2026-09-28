@@ -48,10 +48,10 @@ public class MainActivity extends Activity {
     private void setChecked(int i,String d,boolean v){prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}
     private boolean allowed(String permission){return !SupabaseAccountManager.loggedIn(this)||SupabaseAccountManager.can(this,permission);}
     private int countFor(String d){int n=0;for(int i=0;i<totalTasks();i++)if(checked(i,d))n++;return n;}
-    private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
+    private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();int guard=0;while(!c.after(now)&&!c.after(target())&&guard++<309){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
     private int xp(){return completedDays()*100+totalCompletedTasks()*20+prefs.getInt("xp_bonus",0);}
     private void awardXp(int amount,String reason){if(amount<=0)return;prefs.edit().putInt("xp_bonus",prefs.getInt("xp_bonus",0)+amount).apply();toast(reason+"  +"+amount+" XP");}
-    private int totalCompletedTasks(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){n+=countFor(key(c));c.add(Calendar.DAY_OF_YEAR,1);}return n;}
+    private int totalCompletedTasks(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();int guard=0;while(!c.after(now)&&!c.after(target())&&guard++<309){n+=countFor(key(c));c.add(Calendar.DAY_OF_YEAR,1);}return n;}
     private int level(){return xp()/500+1;}
     private int currentStreak(){int n=0;Calendar c=Calendar.getInstance();Calendar start=startDate();Calendar end=target();if(c.after(end))c.setTimeInMillis(end.getTimeInMillis());if(!prefs.getBoolean("done_"+key(c),false))c.add(Calendar.DAY_OF_YEAR,-1);while(!c.before(start)&&n<309&&prefs.getBoolean("done_"+key(c),false)){n++;c.add(Calendar.DAY_OF_YEAR,-1);}return n;}
     private int bestStreak(){int best=0,run=0;Calendar c=startDate();Calendar now=Calendar.getInstance();while(!c.after(now)&&!c.after(target())){if(prefs.getBoolean("done_"+key(c),false))run++;else run=0;best=Math.max(best,run);c.add(Calendar.DAY_OF_YEAR,1);}return Math.max(best,prefs.getInt("best",0));}
