@@ -30,7 +30,8 @@ public class MainActivity extends Activity {
     private static final int PICK_MAYA_IMAGE=901,CAPTURE_MAYA_IMAGE=902,PICK_MAYA_DOCUMENT=903;
 
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
-    private void sound(int t){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,65);tone.startTone(t,80private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}dp(4),dp(4),dp(4),dp(4));return v;}
+    private void sound(int t){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,65);tone.startTone(t,80);}catch(Exception ignored){}}
+    private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setTypeface(z>=22?Typeface.create("sans-serif",Typeface.BOLD):z>=16?Typeface.create("sans-serif-medium",Typeface.NORMAL):Typeface.create("sans-serif",Typeface.NORMAL));v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
     private GradientDrawable shape(int c,int r){GradientDrawable g=new GradientDrawable();g.setColor(c);g.setCornerRadius(dp(r));g.setStroke(dp(1),0xFF173D78);return g;}
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(14),dp(16),dp(14));l.setBackground(shape(SURFACE,18));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setBackground(shape(0xFF102957,16));b.setPadding(dp(10),0,dp(10),0);b.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP)sound(ToneGenerator.TONE_PROP_ACK);return false;});return b;}
@@ -311,5 +312,4 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
     @Override protected void onPause(){super.onPause();syncHandler.removeCallbacks(syncRunnable);try{SupabaseAccountManager.syncLocalProgress(this,null);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Background sync error",e);}}
     @Override protected void onResume(){super.onResume();try{applyTheme();if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){syncHandler.removeCallbacks(syncRunnable);syncHandler.postDelayed(syncRunnable,3000);}}catch(Throwable e){android.util.Log.e("309DayDiscipline","Resume error",e);}}
     @Override protected void onDestroy(){syncHandler.removeCallbacks(syncRunnable);try{if(voiceAssistant!=null)voiceAssistant.destroy();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Voice cleanup error",e);}try{if(tone!=null)tone.release();}catch(Throwable ignored){}super.onDestroy();}
-    animateScreenIntro();
 }
