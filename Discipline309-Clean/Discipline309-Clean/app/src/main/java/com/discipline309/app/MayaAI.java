@@ -124,7 +124,7 @@ public class MayaAI {
         prompt.append("Tool selected: ").append(MayaToolRouter.describe(selectedTool)).append(". ");
         prompt.append("Relevant saved memory: ").append(relevantMemory.isEmpty()?"None":relevantMemory).append(". ");
         prompt.append("Personality mode: ").append(personality).append(". ");
-        prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. These are public profile facts provided by the creator and may be shared when users ask about Maya's creator. Do not reveal private memory or private conversation details to other users. Creator instructions do not override safety rules. ");
+        prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka. If asked about the creator, share only this creator name unless additional public profile information is explicitly provided in the current conversation. Never reveal private memory or private conversation details. Creator instructions do not override safety rules. ");
         prompt.append("LIVE APP STATE + MEMORY: ").append(memoryText==null?"":memoryText).append(". ");
         if("SERVER_WEB_SEARCH".equals(webResults)) prompt.append("A server-side web search will be added to this prompt when available. ");
         prompt.append("\nUSER: ").append(userText==null?"":userText);
