@@ -8,7 +8,7 @@ import java.util.Locale;
  * a request before the real AI is called.
  */
 public final class MayaToolRouter {
-    public enum Tool { WEB_SEARCH, APP_STATE, PHONE_CONTROL, CHAT }
+    public enum Tool { WEB_SEARCH, APP_STATE, NOTE, PHONE_CONTROL, CHAT }
 
     private MayaToolRouter() {}
 
@@ -16,11 +16,11 @@ public final class MayaToolRouter {
         String q = text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
         if (MayaAI.shouldWebSearchForTool(q)) return Tool.WEB_SEARCH;
 
-        if (containsAny(q, "mission", "xp", "streak", "progress", "level", "day", "task",
+        if (containsAny(q, "note", "notes", "note එක", "නෝට්", "මතක සටහන", "mission", "xp", "streak", "progress", "level", "day", "task",
                 "achievement", "journal", "309", "mission එක", "මගේ xp", "මගේ streak",
                 "plan", "short plan", "focus goal", "focus", "daily plan", "today plan",
                 "මගේ plan", "ප්ලෑන්", "කාර්ය", "වැඩ ලිස්ට්", "අද වැඩ", "දවසේ වැඩ")) {
-            return Tool.APP_STATE;
+            return containsAny(q, "note", "notes", "note එක", "නෝට්", "මතක සටහන") ? Tool.NOTE : Tool.APP_STATE;
         }
 
         if (containsAny(q, "torch", "flashlight", "flash", "ටෝච්", "volume", "sound", "ශබ්ද",
@@ -37,7 +37,7 @@ public final class MayaToolRouter {
         switch (tool) {
             case WEB_SEARCH: return "Use current web-search results.";
             case APP_STATE: return "Use live 309 Day Discipline app state.";
-            case PHONE_CONTROL: return "Use an available phone-control command; never claim success unless executed.";
+            case NOTE: return "Use the local Notes feature to create, list, read, or delete notes.";\n            case PHONE_CONTROL: return "Use an available phone-control command; never claim success unless executed.";
             default: return "Answer normally with the AI brain.";
         }
     }
