@@ -450,7 +450,7 @@ private boolean fallbackListening=false;
     private void askAI(String userText){
         String predictive = MayaPredictiveActions.nextSuggestion(this);
         if (userText == null || userText.trim().isEmpty()) { speak(predictive); return; }
-        String memoryText=memory==null?"":memory.all();
+        String memoryText=memory==null?"":memory.relevant(userText);
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
         String personality;
         if(p.getBoolean("mode_auto",false)){
