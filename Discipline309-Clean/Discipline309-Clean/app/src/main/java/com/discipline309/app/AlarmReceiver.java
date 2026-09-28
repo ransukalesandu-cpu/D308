@@ -31,10 +31,13 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationManager manager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
+        if (manager == null) return;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "Discipline alarms", NotificationManager.IMPORTANCE_HIGH);
-            manager.createNotificationChannel(channel);
+            try {
+                NotificationChannel channel = new NotificationChannel(
+                        CHANNEL_ID, "Discipline alarms", NotificationManager.IMPORTANCE_HIGH);
+                manager.createNotificationChannel(channel);
+            } catch (Exception ignored) { return; }
         }
 
         Intent open = new Intent(context, MainActivity.class);
