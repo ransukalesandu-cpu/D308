@@ -37,7 +37,7 @@ public class SettingsActivity extends Activity {
         ai.addView(label("Connect Maya to an AI model for natural conversations. The key is stored only on this phone.",12,MUTED));
         EditText key=new EditText(this);key.setHint("AI API key");try{key.setText(MayaSecureStorage.maya(this).getString("api_key",""));}catch(Exception ignored){key.setText("");}key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
         EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");try{model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));}catch(Exception ignored){model.setText("gpt-5-mini");}model.setSingleLine(true);ai.addView(model);
-        Button saveAi=new Button(this);saveAi=buttonStyle(saveAi);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{try{MayaSecureStorage.maya(this).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya AI settings could not be saved.",Toast.LENGTH_SHORT).show();}});ai.addView(saveAi);
+        Button saveAi=new Button(this);saveAi=buttonStyle(saveAi);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_ai",key.getText().toString()); MayaSecureStorage.maya(this).edit().putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya AI settings could not be saved.",Toast.LENGTH_SHORT).show();}});ai.addView(saveAi);
         ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
         root.addView(ai);
 
@@ -50,7 +50,7 @@ public class SettingsActivity extends Activity {
         webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         web.addView(webKey);
         Button saveWeb=new Button(this);saveWeb=buttonStyle(saveWeb);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
-        saveWeb.setOnClickListener(v->{try{MayaSecureStorage.web(this).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya Web Search settings could not be saved.",Toast.LENGTH_SHORT).show();}});
+        saveWeb.setOnClickListener(v->{try{MayaSecureStorage.setApiKey(this,"maya_web",webKey.getText().toString());Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya Web Search settings could not be saved.",Toast.LENGTH_SHORT).show();}});
         web.addView(saveWeb);
         Button testWeb=new Button(this);testWeb=buttonStyle(testWeb);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
         testWeb.setOnClickListener(v->{
