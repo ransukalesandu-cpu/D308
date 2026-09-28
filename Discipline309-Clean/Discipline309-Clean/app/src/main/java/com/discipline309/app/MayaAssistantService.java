@@ -130,7 +130,8 @@ public class MayaAssistantService extends Service {
         realWakeWordActive=true;
         if(wakeWordAdapter!=null) wakeWordAdapter.stop();
         speak(modeReply("ඔව්, කියන්න.","Yoo 😄 කියන්න, Maya online!","ඔව්, කියන්න. 💛"));
-        handler.postDelayed(this::listen,350);
+        // Give TTS a moment to finish before opening SpeechRecognizer; starting both together can make the first command get lost.
+        handler.postDelayed(this::listen,900);
     }
 
     private void listen(){
@@ -210,6 +211,8 @@ public class MayaAssistantService extends Service {
         String s=raw==null?"":raw.trim();
         String l=s.toLowerCase(Locale.ROOT);
         if(!realWakeWordActive && !(l.contains("maya")||l.contains("මායා"))) return;
+        // In fallback SpeechRecognizer mode, the recognizer itself is the trigger, so accept the command without requiring the wake word again.
+        if(realWakeWordActive || !wakeWordEnabled) wakeWordDetected=true;
         String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
         q=normalizeMixedCommand(q);
         q=resolveSmartIntent(q);
