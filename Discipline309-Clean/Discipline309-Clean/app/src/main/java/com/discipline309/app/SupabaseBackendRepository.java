@@ -70,7 +70,7 @@ public final class SupabaseBackendRepository {
         try{request("POST","/rest/v1/journals?on_conflict=owner_id,day",new JSONObject().put("owner_id",uid()).put("day",day).put("body",body==null?"":body).put("updated_at",now()),cb,"resolution=merge-duplicates,return=representation");}catch(Exception e){fail(cb,e);}
     }
 
-    public void getReminders(Callback cb){requestArray("GET","/rest/v1/reminders?owner_id=eq."+uid()+"&order=hour.asc,minute.asc",cb);}
+    public void getMood(String day,Callback cb){requestArray("GET","/rest/v1/moods?owner_id=eq."+uid()+"&day=eq."+enc(day)+"&select=*&limit=1",cb);}\n    public void getMoodHistory(String from,String to,Callback cb){requestArray("GET","/rest/v1/moods?owner_id=eq."+uid()+"&day=gte."+enc(from)+"&day=lte."+enc(to)+"&select=*&order=day.desc",cb);}\n    public void saveMood(String day,int score,String mood,String note,Callback cb){try{JSONObject b=new JSONObject().put("owner_id",uid()).put("day",day).put("mood_score",score).put("mood",mood).put("note",note==null?"":note).put("updated_at",now());request("POST","/rest/v1/moods?on_conflict=owner_id,day",b,cb,"resolution=merge-duplicates,return=representation");}catch(Exception e){fail(cb,e);}}\n\n    public void getReminders(Callback cb){requestArray("GET","/rest/v1/reminders?owner_id=eq."+uid()+"&order=hour.asc,minute.asc",cb);}
     public void saveReminder(String id,String title,int hour,int minute,boolean enabled,Callback cb){
         try{
             JSONObject b=new JSONObject().put("owner_id",uid()).put("title",title).put("hour",hour).put("minute",minute).put("enabled",enabled).put("updated_at",now());
