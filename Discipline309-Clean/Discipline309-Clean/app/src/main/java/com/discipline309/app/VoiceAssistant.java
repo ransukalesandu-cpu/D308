@@ -210,7 +210,10 @@ public class VoiceAssistant {
     }
 
     public void destroy() {
-        if (recognizer != null) recognizer.destroy();
-        if (tts != null) { tts.stop(); tts.shutdown(); }
+        listening=false;
+        try { if (recognizer != null) recognizer.destroy(); } catch (Exception ignored) {}
+        recognizer=null;
+        try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch (Exception ignored) {}
+        tts=null;
     }
 }
