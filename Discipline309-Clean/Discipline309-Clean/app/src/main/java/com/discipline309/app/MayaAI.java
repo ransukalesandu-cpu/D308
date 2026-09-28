@@ -22,7 +22,7 @@ public class MayaAI {
                     callback.onReply(offline!=null?offline:"Internet/API නැති නිසා full AI reply එක available නැහැ. Basic offline commands තවමත් වැඩ කරනවා. 📡");
                     return;
                 }
-                String endpoint=p.getString("endpoint","https://api.openai.com/v1/chat/completions").trim();
+                String endpoint=p.getString("endpoint","https://api.openai.com/v1/responses").trim();
                 String model=p.getString("model","gpt-5-mini").trim();
 
                 String webResults="";
@@ -36,7 +36,6 @@ public class MayaAI {
 
                 JSONObject body=new JSONObject();
                 body.put("model",model);
-                body.put("temperature",0.85);
                 JSONArray messages=new JSONArray();
 
                 JSONObject system=new JSONObject();
@@ -88,7 +87,7 @@ public class MayaAI {
                 user.put("role","user");
                 user.put("content",userText);
                 messages.put(user);
-                body.put("messages",messages);
+                if(endpoint.endsWith("/responses")) body.put("input",messages); else body.put("messages",messages);
 
                 HttpURLConnection c=(HttpURLConnection)new URL(endpoint).openConnection();
                 c.setRequestMethod("POST");
@@ -110,11 +109,35 @@ public class MayaAI {
                     return;
                 }
                 JSONObject json=new JSONObject(response);
-                JSONArray choices=json.optJSONArray("choices");
                 String reply="";
-                if(choices!=null&&choices.length()>0){
-                    JSONObject message=choices.getJSONObject(0).optJSONObject("message");
-                    if(message!=null) reply=message.optString("content","").trim();
+                if(endpoint.endsWith("/responses")){
+                    reply=json.optString("output_text","").trim();
+                    if(reply.isEmpty()){
+                        JSONArray output=json.optJSONArray("output");
+                        if(output!=null){
+                            StringBuilder sb=new StringBuilder();
+                            for(int oi=0;oi<output.length();oi++){
+                                JSONObject item=output.optJSONObject(oi);
+                                if(item==null) continue;
+                                JSONArray parts=item.optJSONArray("content");
+                                if(parts==null) continue;
+                                for(int pi=0;pi<parts.length();pi++){
+                                    JSONObject part=parts.optJSONObject(pi);
+                                    if(part!=null){
+                                        String t=part.optString("text","").trim();
+                                        if(!t.isEmpty()) sb.append(t).append("\n");
+                                    }
+                                }
+                            }
+                            reply=sb.toString().trim();
+                        }
+                    }
+                }else{
+                    JSONArray choices=json.optJSONArray("choices");
+                    if(choices!=null&&choices.length()>0){
+                        JSONObject message=choices.getJSONObject(0).optJSONObject("message");
+                        if(message!=null) reply=message.optString("content","").trim();
+                    }
                 }
                 String finalReply=reply.isEmpty()?MayaOfflineNLP.answer(context,userText):reply;
                 if(finalReply==null||finalReply.trim().isEmpty()) finalReply="Mayaට දැන් full AI reply එක හදාගන්න බැහැ 😅. Basic offline commands තවමත් වැඩ කරනවා.";
