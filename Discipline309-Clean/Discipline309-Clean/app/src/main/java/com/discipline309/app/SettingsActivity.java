@@ -35,9 +35,9 @@ public class SettingsActivity extends Activity {
         Button test=new Button(this);test=buttonStyle(test);test.setText("🔊  Test AI voice");test.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});test.setAllCaps(false);test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);root.addView(voice);
         LinearLayout ai=card();ai.addView(label("🧠 MAYA REAL AI BRAIN",11,MUTED));
         ai.addView(label("Connect Maya to an AI model for natural conversations. The key is stored only on this phone.",12,MUTED));
-        EditText key=new EditText(this);key.setHint("AI API key");key.setText(MayaSecureStorage.maya(this).getString("api_key",""));key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
-        EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));model.setSingleLine(true);ai.addView(model);
-        Button saveAi=new Button(this);saveAi=buttonStyle(saveAi);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{MayaSecureStorage.maya(this).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();});ai.addView(saveAi);
+        EditText key=new EditText(this);key.setHint("AI API key");try{key.setText(MayaSecureStorage.maya(this).getString("api_key",""));}catch(Exception ignored){key.setText("");}key.setSingleLine(true);key.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);ai.addView(key);
+        EditText model=new EditText(this);model.setHint("Model (default: gpt-5-mini)");try{model.setText(MayaSecureStorage.maya(this).getString("model","gpt-5-mini"));}catch(Exception ignored){model.setText("gpt-5-mini");}model.setSingleLine(true);ai.addView(model);
+        Button saveAi=new Button(this);saveAi=buttonStyle(saveAi);saveAi.setText("🧠  Save AI brain settings");saveAi.setAllCaps(false);saveAi.setOnClickListener(v->{try{MayaSecureStorage.maya(this).edit().putString("api_key",key.getText().toString().trim()).putString("model",model.getText().toString().trim().isEmpty()?"gpt-5-mini":model.getText().toString().trim()).apply();Toast.makeText(this,"Maya AI brain settings saved 🧠",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya AI settings could not be saved.",Toast.LENGTH_SHORT).show();}});ai.addView(saveAi);
         ai.addView(label("Default endpoint: OpenAI-compatible /v1/chat/completions. Never paste your API key into GitHub or share it with anyone.",11,MUTED));
         root.addView(ai);
 
@@ -45,12 +45,12 @@ public class SettingsActivity extends Activity {
         web.addView(label("Give Maya real-time web search for current questions, news, and facts. The key is stored only on this phone.",12,MUTED));
         EditText webKey=new EditText(this);
         webKey.setHint("Tavily API key");
-        webKey.setText(MayaSecureStorage.web(this).getString("api_key",""));
+        try{webKey.setText(MayaSecureStorage.web(this).getString("api_key",""));}catch(Exception ignored){webKey.setText("");}
         webKey.setSingleLine(true);
         webKey.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         web.addView(webKey);
         Button saveWeb=new Button(this);saveWeb=buttonStyle(saveWeb);saveWeb.setText("🌐  Save Web Search key");saveWeb.setAllCaps(false);
-        saveWeb.setOnClickListener(v->{MayaSecureStorage.web(this).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();});
+        saveWeb.setOnClickListener(v->{try{MayaSecureStorage.web(this).edit().putString("api_key",webKey.getText().toString().trim()).apply();Toast.makeText(this,"Maya Web Search settings saved 🌐",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Maya Web Search settings could not be saved.",Toast.LENGTH_SHORT).show();}});
         web.addView(saveWeb);
         Button testWeb=new Button(this);testWeb=buttonStyle(testWeb);testWeb.setText("🔎  Test Web Search");testWeb.setAllCaps(false);
         testWeb.setOnClickListener(v->{
@@ -133,7 +133,7 @@ public class SettingsActivity extends Activity {
         LinearLayout about=card();about.addView(label("ABOUT 309",11,MUTED));about.addView(label("309 Day Discipline",19,TEXT));about.addView(label("Build discipline. One day at a time.\nVersion 2.0 • Discipline + Maya",13,MUTED));root.addView(about);
         scroll.addView(root);setContentView(scroll);
     }
-    private void showMemoryManager(){try{MayaMemory m=new MayaMemory(this);String all=m.all();if(all.isEmpty()){new AlertDialog.Builder(this).setTitle("Maya memory").setMessage("No saved memory yet.").setPositiveButton("OK",null).show();return;}String[] items=all.split(String.valueOf((char)10));new AlertDialog.Builder(this).setTitle("Maya memory — tap one to delete").setItems(items,(d,which)->new AlertDialog.Builder(this).setTitle("Delete this memory?").setMessage(items[which]).setNegativeButton("Cancel",null).setPositiveButton("Delete",(x,w)->{try{m.remove(which);showMemoryManager();}catch(Exception e){Toast.makeText(this,"Could not delete memory.",Toast.LENGTH_SHORT).show();}}).show()).setNegativeButton("Close",null).show();}catch(Exception e){Toast.makeText(this,"Maya memory could not be opened.",Toast.LENGTH_SHORT).show();}}
+    private void showMemoryManager(){try{MayaMemory m=new MayaMemory(this);String all=m.all();if(all.isEmpty()){new AlertDialog.Builder(this).setTitle("Maya memory").setMessage("No saved memory yet.").setPositiveButton("OK",null).show();return;}String[] items=all.split(String.valueOf((char)10));new AlertDialog.Builder(this).setTitle("Maya memory — tap one to delete").setItems(items,(d,which)->new AlertDialog.Builder(this).setTitle("Delete this memory?").setMessage(items[which]).setNegativeButton("Cancel",null).setPositiveButton("Delete",(x,w)->{try{m.remove(which,()->runOnUiThread(()->{if(!isFinishing()&&!isDestroyed())showMemoryManager();}));}catch(Exception e){Toast.makeText(this,"Could not delete memory.",Toast.LENGTH_SHORT).show();}}).show()).setNegativeButton("Close",null).show();}catch(Exception e){Toast.makeText(this,"Maya memory could not be opened.",Toast.LENGTH_SHORT).show();}}
 
     private void speak(String s){if(tts==null)tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS)speakNow(s);});else speakNow(s);}
     private void speakNow(String s){try{if(tts==null)return;float rate=.65f+(prefs.getInt("speech_speed",50)/100f)*.85f;tts.setLanguage(Locale.US);tts.setSpeechRate(rate);tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"discipline_settings");}catch(Exception ignored){}}
