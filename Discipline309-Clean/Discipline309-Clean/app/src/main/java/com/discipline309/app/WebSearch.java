@@ -75,7 +75,7 @@ public class WebSearch {
             body.put("include_answer",true);
             body.put("max_results",5);
             HttpURLConnection c=(HttpURLConnection)new URL("https://api.tavily.com/search").openConnection();
-            c.setRequestMethod("POST"); c.setConnectTimeout(8000); c.setReadTimeout(12000); c.setDoOutput(true);
+            c.setRequestMethod("POST"); c.setConnectTimeout(5000); c.setReadTimeout(7000); c.setDoOutput(true);
             c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
             c.getOutputStream().write(body.toString().getBytes(StandardCharsets.UTF_8));
             int code=c.getResponseCode();
