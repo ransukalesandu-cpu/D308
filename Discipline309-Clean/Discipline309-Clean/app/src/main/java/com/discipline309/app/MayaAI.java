@@ -169,7 +169,7 @@ public class MayaAI {
                 String fallback=MayaOfflineNLP.answer(context,userText);
                 callback.onReply(fallback!=null?fallback:"Mayaට දැන් AI service එකට connect වෙන්න බැහැ. 🌐 Internet එක හෝ API settings check කරන්න.");
             }
-        }).start();
+        });
     }
 
     public static boolean shouldWebSearchForTool(String q){
