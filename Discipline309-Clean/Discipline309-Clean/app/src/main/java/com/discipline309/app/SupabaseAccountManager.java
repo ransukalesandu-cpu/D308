@@ -68,29 +68,29 @@ public final class SupabaseAccountManager {
         IO.execute(()->{try{
             JSONObject body=new JSONObject().put("email",email).put("password",password);
             JSONObject r=request("POST","/auth/v1/signup",body,null);
-            if(r.optString("access_token","").isEmpty()) cb.done(true,"Account created. Verify your email if required, then sign in.");
-            else {saveSession(c,r);cb.done(true,"Account created and signed in.");}
-        }catch(Exception e){cb.done(false,errorMessage(e));}});
+            if(r.optString("access_token","").isEmpty()) if(cb!=null)cb.done(true,"Account created. Verify your email if required, then sign in.");
+            else {saveSession(c,r);if(cb!=null)cb.done(true,"Account created and signed in.");}
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void signIn(Context c,String email,String password,Callback cb){
         IO.execute(()->{try{
             JSONObject body=new JSONObject().put("email",email).put("password",password);
             JSONObject r=request("POST","/auth/v1/token?grant_type=password",body,null);
-            saveSession(c,r);loadExistingProfile(c);loadPermissions(c);cb.done(true,"Signed in.");
-        }catch(Exception e){cb.done(false,errorMessage(e));}});
+            saveSession(c,r);loadExistingProfile(c);loadPermissions(c);if(cb!=null)cb.done(true,"Signed in.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void createPrimaryProfile(Context c,String name,Callback cb){
-        IO.execute(()->{try{ensureProfile(c,name,"primary",null);cb.done(true,"Primary account ready.");}catch(Exception e){cb.done(false,errorMessage(e));}});
+        IO.execute(()->{try{ensureProfile(c,name,"primary",null);if(cb!=null)cb.done(true,"Primary account ready.");}catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void joinInvite(Context c,String code,Callback cb){
         IO.execute(()->{try{
             String primaryId=rpcText("consume_account_invite",new JSONObject().put("invite_code",code.trim().toUpperCase(Locale.US)),c);
             p(c).edit().putString("role","sub").putString("parent_id",primaryId).apply();
-            loadPermissions(c);cb.done(true,"Joined the Primary account.");
-        }catch(Exception e){cb.done(false,errorMessage(e));}});
+            loadPermissions(c);if(cb!=null)cb.done(true,"Joined the Primary account.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void createInvite(Context c,Callback cb){
@@ -98,8 +98,8 @@ public final class SupabaseAccountManager {
             String uid=userId(c); if(uid.isEmpty()||!"primary".equals(role(c)))throw new IOException("Primary account required.");
             String code=randomCode();
             request("POST","/rest/v1/account_invites",new JSONObject().put("primary_id",uid).put("code",code),c);
-            cb.done(true,code);
-        }catch(Exception e){cb.done(false,errorMessage(e));}});
+            if(cb!=null)cb.done(true,code);
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void loadLinked(Context c,Callback cb){
@@ -117,18 +117,18 @@ public final class SupabaseAccountManager {
                 if(perms.length()>0)item.put("permissions",perms.getJSONObject(0));
                 out.put(item);
             }
-            cb.done(true,out.toString());
-        }catch(Exception e){cb.done(false,errorMessage(e));}});
+            if(cb!=null)cb.done(true,out.toString());
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void setPermission(Context c,String subId,String column,boolean value,Callback cb){
         final Set<String> allowed=new HashSet<>(Arrays.asList("can_view_progress","can_edit_habits","can_edit_mission","can_reset_progress","can_use_maya","can_access_settings","can_sync_progress","can_manage_account"));
-        if(!allowed.contains(column)){cb.done(false,"Invalid permission.");return;}
+        if(!allowed.contains(column)){if(cb!=null)cb.done(false,"Invalid permission.");return;}
         IO.execute(()->{try{
             JSONObject body=new JSONObject().put("sub_user_id",subId).put(column,value);
             request("POST","/rest/v1/sub_permissions?on_conflict=sub_user_id",body,c,"resolution=merge-duplicates,return=minimal");
-            cb.done(true,"Permission updated.");
-        }catch(Exception e){cb.done(false,errorMessage(e));}});
+            if(cb!=null)cb.done(true,"Permission updated.");
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void loadPermissions(Context c){
@@ -144,8 +144,8 @@ public final class SupabaseAccountManager {
     }
 
     public static void syncLocalProgress(Context c,Callback cb){
-        if(!loggedIn(c)){if(cb!=null)cb.done(false,"Not signed in.");return;}
-        if(!can(c,"can_sync_progress")){if(cb!=null)cb.done(false,"Primary disabled progress sync.");return;}
+        if(!loggedIn(c)){if(cb!=null)if(cb!=null)cb.done(false,"Not signed in.");return;}
+        if(!can(c,"can_sync_progress")){if(cb!=null)if(cb!=null)cb.done(false,"Primary disabled progress sync.");return;}
         IO.execute(()->{try{
             JSONObject local=buildSnapshot(c);
             String localText=local.toString();
@@ -170,10 +170,10 @@ public final class SupabaseAccountManager {
 
             prefs.edit().putString(LAST_SNAPSHOT,localText).putLong(LAST_SYNC_AT,System.currentTimeMillis()).apply();
 
-            if(cb!=null)cb.done(true,conflict
+            if(cb!=null)if(cb!=null)cb.done(true,conflict
                     ?"Progress synced. A newer remote version was detected and backed up locally before using this device's changes."
                     :"Progress synced.");
-        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+        }catch(Exception e){if(cb!=null)if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static String lastConflictSnapshot(Context c){try{return p(c).getString(CONFLICT_SNAPSHOT,"");}catch(Exception e){return "";}}
@@ -207,9 +207,11 @@ public final class SupabaseAccountManager {
         SharedPreferences d=c.getSharedPreferences("discipline",Context.MODE_PRIVATE);
         Calendar start=Calendar.getInstance();start.setTimeInMillis(d.getLong("program_start",System.currentTimeMillis()));
         Calendar now=Calendar.getInstance();int day=Math.max(0,Math.min(309,(int)((now.getTimeInMillis()-start.getTimeInMillis())/86400000L)+1));
+        int customCount=Math.max(0,Math.min(100,d.getInt("custom_count",0)));
         int completed=0,best=0,run=0,totalCompletedTasks=0;SimpleDateFormat fmt=new SimpleDateFormat("yyyyMMdd",Locale.US);Calendar cur=(Calendar)start.clone();
-        while(!cur.after(now)){String k=fmt.format(cur.getTime());if(d.getBoolean("done_"+k,false)){completed++;run++;best=Math.max(best,run);}else run=0;for(int i=0;i<6+d.getInt("custom_count",0);i++)if(d.getBoolean("task_"+i+"_"+k,false))totalCompletedTasks++;cur.add(Calendar.DAY_OF_YEAR,1);}
-        int totalTasks=6+d.getInt("custom_count",0),todayCount=0;String today=fmt.format(new Date());for(int i=0;i<totalTasks;i++)if(d.getBoolean("task_"+i+"_"+today,false))todayCount++;
+        int guard=0;
+        while(!cur.after(now)&&guard++<309){String k=fmt.format(cur.getTime());if(d.getBoolean("done_"+k,false)){completed++;run++;best=Math.max(best,run);}else run=0;for(int i=0;i<6+customCount;i++)if(d.getBoolean("task_"+i+"_"+k,false))totalCompletedTasks++;cur.add(Calendar.DAY_OF_YEAR,1);}
+        int totalTasks=6+customCount,todayCount=0;String today=fmt.format(new Date());for(int i=0;i<totalTasks;i++)if(d.getBoolean("task_"+i+"_"+today,false))todayCount++;
         int xp=completed*100+totalCompletedTasks*20+d.getInt("xp_bonus",0);
         return new JSONObject().put("day",day).put("completedDays",completed).put("currentStreak",d.getBoolean("done_"+today,false)?run:0).put("bestStreak",best).put("totalCompletedTasks",totalCompletedTasks).put("todayTasks",todayCount).put("totalTasks",totalTasks).put("xp",xp).put("level",xp/500+1).put("todayMission",d.getString("mission_"+today,"")).put("missionCompleted",d.getBoolean("mission_"+today+"_done",false));
     }
