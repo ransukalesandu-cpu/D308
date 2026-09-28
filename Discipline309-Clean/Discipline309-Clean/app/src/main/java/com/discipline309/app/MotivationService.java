@@ -27,6 +27,7 @@ public class MotivationService extends Service {
 
     @Override public void onCreate(){
         super.onCreate();
+        try{
         createChannel();
         Notification n=new Notification.Builder(this,"motivation")
             .setContentTitle("309 Day Discipline")
@@ -56,6 +57,12 @@ public class MotivationService extends Service {
             });
         }catch(Exception e){
             ready=false;
+        }
+        }catch(Exception e){
+            ready=false;
+            try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
+            try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
+            stopSelf();
         }
     }
 
