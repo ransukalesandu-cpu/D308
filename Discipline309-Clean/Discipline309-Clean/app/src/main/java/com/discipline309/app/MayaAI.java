@@ -7,12 +7,16 @@ import org.json.JSONObject;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MayaAI {
     public interface Callback { void onReply(String reply); }
+    // Reuse a small worker pool instead of creating a brand-new Thread for every Maya request.
+    private static final ExecutorService EXECUTOR=Executors.newFixedThreadPool(2);
 
     public static void ask(Context context, String userText, String memoryText, String personality, Callback callback){
-        new Thread(() -> {
+        EXECUTOR.execute(() -> {
             if(callback==null) return;
             try{
                 SharedPreferences p=MayaSecureStorage.maya(context);
@@ -66,18 +70,18 @@ public class MayaAI {
                         history.edit().remove("recent").putString("history_day",todayKey).apply();
                     }else{
                         String saved=history.getString("recent","[]");
-                        if(saved!=null && saved.length()<=12000) recent=new JSONArray(saved);
+                        if(saved!=null && saved.length()<=6000) recent=new JSONArray(saved);
                     }
                 }catch(Exception ignored){
                     history.edit().remove("recent").putString("history_day",todayKey).apply();
                 }
-                int start=Math.max(0,recent.length()-8);
+                int start=Math.max(0,recent.length()-4);
                 for(int i=start;i<recent.length();i++){
                     try{
                         JSONObject item=recent.getJSONObject(i);
                         String role=item.optString("role","");
                         String content=item.optString("content","");
-                        if(("user".equals(role)||"assistant".equals(role)) && !content.trim().isEmpty() && content.length()<=3000){
+                        if(("user".equals(role)||"assistant".equals(role)) && !content.trim().isEmpty() && content.length()<=1600){
                             messages.put(item);
                         }
                     }catch(Exception ignored){}
@@ -91,8 +95,8 @@ public class MayaAI {
 
                 HttpURLConnection c=(HttpURLConnection)new URL(endpoint).openConnection();
                 c.setRequestMethod("POST");
-                c.setConnectTimeout(10000);
-                c.setReadTimeout(20000);
+                c.setConnectTimeout(6000);
+                c.setReadTimeout(12000);
                 c.setDoOutput(true);
                 c.setRequestProperty("Authorization","Bearer "+key);
                 c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
@@ -147,12 +151,12 @@ public class MayaAI {
                         String historyDay=history.getString("history_day",todayKey);
                         if(todayKey.equals(historyDay)){
                             String saved=history.getString("recent","[]");
-                            if(saved!=null && saved.length()<=12000) updated=new JSONArray(saved);
+                            if(saved!=null && saved.length()<=6000) updated=new JSONArray(saved);
                         }
                     }catch(Exception ignored){}
-                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(3000,userText.length())));updated.put(hu);
+                    JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(1600,userText.length())));updated.put(hu);
                     JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
-                    while(updated.length()>8){
+                    while(updated.length()>4){
                         JSONArray trimmed=new JSONArray();
                         for(int i=1;i<updated.length();i++) trimmed.put(updated.getJSONObject(i));
                         updated=trimmed;
