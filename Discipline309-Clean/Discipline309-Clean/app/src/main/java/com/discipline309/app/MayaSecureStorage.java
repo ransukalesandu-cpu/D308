@@ -26,17 +26,8 @@ public final class MayaSecureStorage {
         else s.edit().putBoolean("_migration_done",true).apply();
         legacy.edit().remove("api_key").apply();
     }
-    public static String getApiKey(Context c,String name){
-        migrate(c,name);
-        return secure(c,name).getString("api_key","").trim();
-    }
-    public static SharedPreferences maya(Context c){
-        migrate(c,MAYA);
-        return secure(c,MAYA);
-    }
-    public static SharedPreferences web(Context c){
-        migrate(c,WEB);
-        return secure(c,WEB);
-    }
+    public static String getApiKey(Context c,String name){try{migrate(c,name);return secure(c,name).getString("api_key","").trim();}catch(Exception e){return "";} }
+    public static SharedPreferences maya(Context c){migrate(c,MAYA);return secure(c,MAYA);}
+    public static SharedPreferences web(Context c){migrate(c,WEB);return secure(c,WEB);}
     private MayaSecureStorage(){}
 }
