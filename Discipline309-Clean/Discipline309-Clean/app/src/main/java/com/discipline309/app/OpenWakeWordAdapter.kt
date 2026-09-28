@@ -44,12 +44,12 @@ class OpenWakeWordAdapter(
             engine = e
             collectionJob = scope.launch {
                 e.detections.collectLatest {
-                    onDetected()
+                    try { onDetected() } catch (_: Throwable) { }
                 }
             }
             e.start()
         } catch (t: Throwable) {
-            onError(t)
+            try { onError(t) } catch (_: Throwable) { }
         }
     }
 
