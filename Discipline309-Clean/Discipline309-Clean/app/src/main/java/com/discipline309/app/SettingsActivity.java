@@ -114,6 +114,18 @@ public class SettingsActivity extends Activity {
             }
         });
         maya.addView(bgMaya);
+        Button defaultAssistant=new Button(this);defaultAssistant=buttonStyle(defaultAssistant);defaultAssistant.setText("🤖  Set Maya as phone assistant");defaultAssistant.setAllCaps(false);
+        defaultAssistant.setOnClickListener(v->{
+            if(android.os.Build.VERSION.SDK_INT>=29){
+                try{
+                    android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(android.content.Context.ROLE_SERVICE);
+                    if(rm!=null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)){
+                        startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT),3098);
+                    }else Toast.makeText(this,"This phone does not expose the Assistant role.",Toast.LENGTH_SHORT).show();
+                }catch(Exception e){Toast.makeText(this,"Open Settings → Default apps → Digital assistant and choose Maya.",Toast.LENGTH_LONG).show();}
+            }else Toast.makeText(this,"Open Settings → Default apps → Assist app and choose Maya.",Toast.LENGTH_LONG).show();
+        });
+        maya.addView(defaultAssistant);
         maya.addView(label("Maya uses a visible Android foreground notification while listening. Voice recognition may use mobile data depending on the phone's speech engine.",12,MUTED));
         Button notifyAccess=new Button(this);notifyAccess.setText("🔔  Allow WhatsApp notification access");notifyAccess.setOnTouchListener((v,e)->{if(e.getAction()==android.view.MotionEvent.ACTION_UP)clickSound();return false;});notifyAccess.setAllCaps(false);
         notifyAccess.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});
