@@ -233,6 +233,9 @@ public final class SupabaseAccountManager {
     static JSONArray backendRequestArray(Context c,String method,String path)throws Exception{
         return requestArray(method,path,c);
     }
+    static JSONObject backendRequestObject(Context c,String method,String path,JSONObject body,String prefer)throws Exception{
+        return request(method,path,body,c,prefer);
+    }
 
     public static String lastConflictSnapshot(Context c){try{return p(c).getString(CONFLICT_SNAPSHOT,"");}catch(Exception e){return "";}}
     public static void clearLastConflict(Context c){try{p(c).edit().remove(CONFLICT_SNAPSHOT).apply();}catch(Exception ignored){}}
