@@ -26,7 +26,7 @@ public final class MayaContextProvider {
         int day=Math.max(0,Math.min(PROGRAM_DAYS,daysFromStart(startMillis)));
         int remaining=Math.max(0,PROGRAM_DAYS-day);
         String todayKey=key(now);
-        int totalTasks=DEFAULT_TASKS.length+p.getInt("custom_count",0);
+        int customCount=Math.max(0,Math.min(100,p.getInt("custom_count",0)));\n        int totalTasks=DEFAULT_TASKS.length+customCount;
         int todayTasks=countFor(p,todayKey,totalTasks);
         boolean missionDone=p.getBoolean("mission_"+todayKey+"_done",false);
 
@@ -44,7 +44,7 @@ public final class MayaContextProvider {
 
         int completedDays=completedDays(p,start,now,target);
         int totalCompletedTasks=totalCompletedTasks(p,start,now,target,totalTasks);
-        int xp=completedDays*100+totalCompletedTasks*20+p.getInt("xp_bonus",0);
+        long xpLong=(long)completedDays*100L+(long)totalCompletedTasks*20L+Math.max(0,Math.min(1000000,p.getInt("xp_bonus",0)));\n        int xp=(int)Math.min(Integer.MAX_VALUE,xpLong);
         int level=xp/500+1;
         int xpToNext=500-(xp%500);
         int currentStreak=currentStreak(p,start,now);
@@ -55,12 +55,12 @@ public final class MayaContextProvider {
         for(int m:milestones)if(completedDays>=m)unlocked++;
 
         int rewardedMissions=0;
-        for(String k:p.getAll().keySet()){
+        int memoryGuard=0;\n        for(String k:p.getAll().keySet()){\n            if(memoryGuard++>=1000)break;
             if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&p.getBoolean(k,false)) rewardedMissions++;
         }
 
         String journal=p.getString("journal_"+todayKey,"none");
-        int shortPlanCount=p.getInt("plan_count_"+todayKey,0);
+        int shortPlanCount=Math.max(0,Math.min(50,p.getInt("plan_count_"+todayKey,0)));
         int shortPlanDone=0;
         String focusGoal=p.getString("plan_"+todayKey+"_goal","");
         StringBuilder shortPlan=new StringBuilder();
