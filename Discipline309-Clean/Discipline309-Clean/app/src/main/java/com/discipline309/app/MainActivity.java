@@ -103,7 +103,7 @@ public class MainActivity extends Activity {
     private void showMilestoneCard(){int days=completedDays();String next=days<7?"7 days":days<30?"30 days":days<50?"50 days":days<100?"100 days":days<150?"150 days":days<200?"200 days":days<309?"309 days":"ALL 309 DAYS";LinearLayout m=card();m.addView(label("NEXT MILESTONE",11,MUTED));m.addView(label("🏆 "+next,20,TEXT));content.addView(m);}
     private String planDate(){return key();}
 
-    private int planCount(){return prefs.getInt("plan_count_"+planDate(),0);}
+    private int planCount(){try{return Math.max(0,Math.min(50,prefs.getInt("plan_count_"+planDate(),0)));}catch(Exception e){return 0;}}
 
     private String planTaskName(int i){return prefs.getString("plan_"+planDate()+"_"+i+"_name","Task");}
 
