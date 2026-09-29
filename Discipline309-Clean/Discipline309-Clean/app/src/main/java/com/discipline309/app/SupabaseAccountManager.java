@@ -44,11 +44,9 @@ public final class SupabaseAccountManager {
 
     private static SharedPreferences createSecurePreferences(Context c)throws Exception{
         MasterKey masterKey=new MasterKey.Builder(c).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build();
-        SharedPreferences secure=EncryptedSharedPreferences.create(c,PREF,masterKey,
+        return EncryptedSharedPreferences.create(c,PREF,masterKey,
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
-        migrateLegacySession(c,secure);
-        return secure;
     }
 
     private static void resetSecureStorage(Context c)throws Exception{
@@ -65,8 +63,6 @@ public final class SupabaseAccountManager {
         if(prefsFile.exists()&&!prefsFile.delete())throw new IOException("Unable to reset secure preferences.");
         if(backupFile.exists())backupFile.delete();
 
-        // Never reuse an old plaintext session cache after a secure-storage reset.
-        c.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit().clear().commit();
     }
 
     private static void migrateLegacySession(Context c,SharedPreferences secure){
