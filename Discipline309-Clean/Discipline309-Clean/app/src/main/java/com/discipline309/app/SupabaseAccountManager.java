@@ -253,7 +253,20 @@ public final class SupabaseAccountManager {
             boolean remoteChanged=!baseline.isEmpty()&&!remoteText.equals(baseline);
             boolean conflict=localChanged&&remoteChanged&&remoteAt>lastSync;
 
-            if(conflict)prefs.edit().putString(CONFLICT_SNAPSHOT,remoteText).apply();
+            if(conflict){
+                // A newer server snapshot and local changes both exist.
+                // Keep the newer remote data authoritative instead of overwriting
+                // it with this device's older/conflicting snapshot.
+                prefs.edit()
+                    .putString(CONFLICT_SNAPSHOT,remoteText)
+                    .putString(LAST_SNAPSHOT,remoteText)
+                    .putLong(LAST_SYNC_AT,System.currentTimeMillis())
+                    .apply();
+
+                if(cb!=null)cb.done(true,
+                        "Conflict detected. Newer cloud progress was kept; this device's version was saved locally for review.");
+                return;
+            }
 
             String now=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX",Locale.US).format(new Date());
             JSONObject body=new JSONObject().put("user_id",userId(c)).put("snapshot",local).put("updated_at",now);
@@ -261,9 +274,7 @@ public final class SupabaseAccountManager {
 
             prefs.edit().putString(LAST_SNAPSHOT,localText).putLong(LAST_SYNC_AT,System.currentTimeMillis()).apply();
 
-            if(cb!=null)cb.done(true,conflict
-                    ?"Progress synced. A newer remote version was detected and backed up locally before using this device's changes."
-                    :"Progress synced.");
+            if(cb!=null)cb.done(true,"Progress synced.");
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
