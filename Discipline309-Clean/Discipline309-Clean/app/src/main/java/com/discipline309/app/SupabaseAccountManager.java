@@ -92,7 +92,7 @@ public final class SupabaseAccountManager {
         try{
             if(!"sub".equals(role(c))) return true;
             return p(c).getBoolean(permission,false);
-        }catch(Exception e){return true;}
+        }catch(Exception e){return false;}
     }
 
     public static void sendPasswordReset(Context c,String email,Callback cb){
