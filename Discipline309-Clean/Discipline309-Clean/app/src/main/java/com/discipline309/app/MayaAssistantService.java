@@ -84,8 +84,8 @@ private boolean fallbackListening=false;
             registerReceiver(screenStateReceiver,screenFilter);
         }catch(Exception ignored){}
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){int lang=tts.setLanguage(new Locale("si","LK")); if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(new Locale("si")); } tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
-        handler.postDelayed(wakeWordRunnable,700);
-        handler.postDelayed(this::scheduleProactiveCheckIn,2500);
+        handler.postDelayed(wakeWordRunnable,1200);
+        handler.postDelayed(this::scheduleProactiveCheckIn,5000);
         }catch(Exception e){
             ready=false;
             stopping=true;
