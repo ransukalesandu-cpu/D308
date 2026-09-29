@@ -33,7 +33,12 @@ public final class SupabaseAccountManager {
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
             migrateLegacySession(c,secure);
             return secure;
-        }catch(Exception e){throw new IllegalStateException("Secure account storage unavailable",e);}
+        }catch(Exception e){
+            // Some devices can temporarily reject Android Keystore keys (for example
+            // after restore/reinstall or a broken Keystore state). Do not crash the app.
+            // Fall back to the app's private preferences so the user can log in again.
+            return c.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+        }
     }
 
     private static void migrateLegacySession(Context c,SharedPreferences secure){
