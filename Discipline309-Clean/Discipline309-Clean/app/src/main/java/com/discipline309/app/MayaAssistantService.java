@@ -476,7 +476,7 @@ private boolean fallbackListening=false;
         else personality="normal";
 
         String live=MayaContextProvider.build(this);
-        String context="Public creator profile: Maya was created by Lesandu Ransuka, born September 19, 2008. He studies A/L Science with Mathematics. His sister is Sethuli Senanga; his mother is Gayani Fernando; his father is Hemal Asiri. This is public profile information and may be shared when asked. Do not reveal private memory or private conversations. | Saved memory: "+memoryText+" | "+live+
+        String context="Public creator profile: Maya was created by Lesandu Ransuka. Share only this creator name unless additional public profile information is explicitly provided in the current conversation. Never reveal private memory or private conversations. | Saved memory: "+memoryText+" | "+live+
                 " Current app state is authoritative for discipline data. Use it naturally and don't invent values.";
         MayaAI.ask(this,userText,context,personality,reply->handler.post(()->{
             lastMayaReply=reply==null?"":reply;
@@ -840,7 +840,7 @@ private boolean fallbackListening=false;
     private void speak(String s){
         try{
             if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
-            String normalized=s.trim().replaceAll("\\\\s+"," ");
+            String normalized=s.trim().replaceAll("\\s+"," ");
             long now=System.currentTimeMillis();
             // Prevent the same response from being spoken twice within a short window.
             if(normalized.equals(lastSpokenText) && now-lastSpokenAt<4500L)return;
