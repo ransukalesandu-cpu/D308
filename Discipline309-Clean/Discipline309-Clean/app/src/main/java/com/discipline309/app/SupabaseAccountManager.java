@@ -49,7 +49,7 @@ public final class SupabaseAccountManager {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
     }
 
-    private static void resetSecureStorage(Context c)throws Exception{
+    private static void resetSecureStorage(Context c){
         try{
             KeyStore ks=KeyStore.getInstance("AndroidKeyStore");
             ks.load(null);
@@ -60,7 +60,7 @@ public final class SupabaseAccountManager {
         File prefsDir=new File(c.getApplicationInfo().dataDir,"shared_prefs");
         File prefsFile=new File(prefsDir,PREF+".xml");
         File backupFile=new File(prefsDir,PREF+".xml.bak");
-        if(prefsFile.exists()&&!prefsFile.delete())throw new IOException("Unable to reset secure preferences.");
+        if(prefsFile.exists())prefsFile.delete();
         if(backupFile.exists())backupFile.delete();
 
     }
