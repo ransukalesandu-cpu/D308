@@ -23,6 +23,8 @@ public class VoiceAssistant {
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
     private boolean listening = false;
+    private boolean ttsReady = false;
+    private String pendingSpeech = "";
 
     public VoiceAssistant(Activity activity) {
         this.activity = activity;
@@ -30,8 +32,18 @@ public class VoiceAssistant {
             tts = new TextToSpeech(activity, status -> {
                 try {
                     if (status == TextToSpeech.SUCCESS && tts != null) {
-                        tts.setLanguage(new Locale("si", "LK"));
+                        Locale si = new Locale("si", "LK");
+                        int lang = tts.setLanguage(si);
+                        if (lang == TextToSpeech.LANG_MISSING_DATA || lang == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            tts.setLanguage(Locale.ENGLISH);
+                        }
                         tts.setSpeechRate(.92f);
+                        ttsReady = true;
+                        if (!pendingSpeech.isEmpty()) {
+                            String queued = pendingSpeech;
+                            pendingSpeech = "";
+                            speak(queued);
+                        }
                     }
                 } catch (Exception ignored) {}
             });
@@ -56,7 +68,7 @@ public class VoiceAssistant {
 
         if (listening) return;
         listening = true;
-        Toast.makeText(activity, "🎙️ Say “Maya” and then talk…", Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, "🎙️ කියන්න… Maya අහගෙන ඉන්නවා.", Toast.LENGTH_SHORT).show();
 
         try {
         if (recognizer != null) recognizer.destroy();
@@ -109,14 +121,16 @@ public class VoiceAssistant {
     private void handle(String spoken) {
         String q = spoken == null ? "" : spoken.trim();
         String lower = q.toLowerCase(Locale.ROOT);
-        boolean called = lower.contains("maya") || lower.contains("මායා") || lower.contains("මායෝ") || lower.contains("මයා");
 
-        if (!called) {
-            speak("මට කතා කරන්න නම් මුලින් Maya කියලා කතා කරන්න. 😄");
-            return;
-        }
-
-        String question = lower.replace("maya", "").replace("මායා", "").trim();
+        // This class is already invoked by the "Talk to Maya" button,
+        // so do not require the user to say "Maya" a second time.
+        // Remove the wake word only when it was included.
+        String question = lower
+                .replace("maya", "")
+                .replace("මායා", "")
+                .replace("මායෝ", "")
+                .replace("මයා", "")
+                .trim();
         String reply;
         boolean funny=activity.getSharedPreferences("settings",0).getBoolean("mode_funny",true);
         boolean cute=activity.getSharedPreferences("settings",0).getBoolean("mode_cute",false);
@@ -185,12 +199,13 @@ public class VoiceAssistant {
     }
 
     private void speak(String text) {
-        if (tts == null) return;
+        if (tts == null || !ttsReady) { pendingSpeech = text == null ? "" : text; return; }
         android.content.SharedPreferences p=activity.getSharedPreferences("settings",0);
         if(!p.getBoolean("auto_speak",true)) return;
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
         try {
-        tts.setLanguage(new Locale("si","LK"));
+        int lang=tts.setLanguage(new Locale("si","LK"));
+        if(lang==TextToSpeech.LANG_MISSING_DATA||lang==TextToSpeech.LANG_NOT_SUPPORTED)tts.setLanguage(Locale.ENGLISH);
         tts.setSpeechRate(rate);
         String safe=naturalSinhala(text);
         if(safe.isEmpty()) return;
@@ -219,5 +234,7 @@ public class VoiceAssistant {
         recognizer=null;
         try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch (Exception ignored) {}
         tts=null;
+        ttsReady=false;
+        pendingSpeech="";
     }
 }
