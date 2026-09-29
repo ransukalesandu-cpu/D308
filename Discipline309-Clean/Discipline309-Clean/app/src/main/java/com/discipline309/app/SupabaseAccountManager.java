@@ -133,9 +133,21 @@ public final class SupabaseAccountManager {
 
     public static void signIn(Context c,String email,String password,Callback cb){
         IO.execute(()->{try{
+            String previousEmail=p(c).getString("session_email","");
+            boolean accountChanged=!email.trim().equalsIgnoreCase(previousEmail.trim());
+            if(accountChanged){
+                p(c).edit()
+                    .remove("role").remove("parent_id").remove("display_name")
+                    .remove("can_view_progress").remove("can_edit_habits")
+                    .remove("can_edit_mission").remove("can_reset_progress")
+                    .remove("can_use_maya").remove("can_access_settings")
+                    .remove("can_sync_progress").remove("can_manage_account")
+                    .apply();
+            }
             JSONObject body=new JSONObject().put("email",email).put("password",password);
             JSONObject r=request("POST","/auth/v1/token?grant_type=password",body,null);
             saveSession(c,r);
+            p(c).edit().putString("session_email",email.trim()).apply();
 
             // Do not make permissions loading part of the login critical path.
             // The auth token is already valid, so the UI can continue while
