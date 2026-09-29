@@ -10,6 +10,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.security.KeyStore;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -27,18 +28,45 @@ public final class SupabaseAccountManager {
 
     private static SharedPreferences p(Context c){
         try{
-            MasterKey masterKey=new MasterKey.Builder(c).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build();
-            SharedPreferences secure=EncryptedSharedPreferences.create(c,PREF,masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
-            migrateLegacySession(c,secure);
-            return secure;
-        }catch(Exception e){
-            // Some devices can temporarily reject Android Keystore keys (for example
-            // after restore/reinstall or a broken Keystore state). Do not crash the app.
-            // Fall back to the app's private preferences so the user can log in again.
-            return c.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+            return createSecurePreferences(c);
+        }catch(Exception first){
+            // Recover from a stale/corrupted Android Keystore entry or encrypted
+            // preferences file. This intentionally clears only this app's local
+            // Supabase session cache; it never deletes the remote Supabase account.
+            resetSecureStorage(c);
+            try{
+                return createSecurePreferences(c);
+            }catch(Exception second){
+                throw new IllegalStateException("Secure account storage unavailable",second);
+            }
         }
+    }
+
+    private static SharedPreferences createSecurePreferences(Context c)throws Exception{
+        MasterKey masterKey=new MasterKey.Builder(c).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build();
+        SharedPreferences secure=EncryptedSharedPreferences.create(c,PREF,masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM);
+        migrateLegacySession(c,secure);
+        return secure;
+    }
+
+    private static void resetSecureStorage(Context c)throws Exception{
+        try{
+            KeyStore ks=KeyStore.getInstance("AndroidKeyStore");
+            ks.load(null);
+            String alias="_androidx_security_master_key_";
+            if(ks.containsAlias(alias))ks.deleteEntry(alias);
+        }catch(Exception ignored){}
+
+        File prefsDir=new File(c.getApplicationInfo().dataDir,"shared_prefs");
+        File prefsFile=new File(prefsDir,PREF+".xml");
+        File backupFile=new File(prefsDir,PREF+".xml.bak");
+        if(prefsFile.exists()&&!prefsFile.delete())throw new IOException("Unable to reset secure preferences.");
+        if(backupFile.exists())backupFile.delete();
+
+        // Never reuse an old plaintext session cache after a secure-storage reset.
+        c.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit().clear().commit();
     }
 
     private static void migrateLegacySession(Context c,SharedPreferences secure){
