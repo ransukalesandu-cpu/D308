@@ -103,8 +103,13 @@ public class MainActivity extends Activity {
         nb.setMinHeight(dp(48));
         nb.setGravity(Gravity.CENTER);
         nb.setOnClickListener(v->{
-            updateNavSelection(n);
-            if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else showStats();
+            try{
+                updateNavSelection(n);
+                if(n==0)showHome();else if(n==1)showShortPlan();else if(n==2)showHabits();else if(n==3)showNotes();else showStats();
+            }catch(Throwable e){
+                android.util.Log.e("309DayDiscipline","Page navigation error",e);
+                toast("Page eka open karaddi issue ekak una. Aye try karanna.");
+            }
         });
         navButtons[i]=nb;
         nav.addView(nb,new LinearLayout.LayoutParams(0,dp(58),1));
@@ -122,7 +127,7 @@ public class MainActivity extends Activity {
     FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);
     np.setMargins(dp(8),0,dp(8),dp(8));
     root.addView(nav,np);
-    Button fab=button("＋");fab.setTextSize(30);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFFA78BFA,100));fab.setElevation(dp(12));fab.setContentDescription("Create note");fab.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN)v.animate().scaleX(.88f).scaleY(.88f).setDuration(90).start();else if(e.getAction()==MotionEvent.ACTION_UP){v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();noteEditor(-1);}else if(e.getAction()==MotionEvent.ACTION_CANCEL)v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();return true;});
+    Button fab=button("＋");fab.setTextSize(30);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFFA78BFA,100));fab.setElevation(dp(12));fab.setContentDescription("Create note");fab.setOnClickListener(v->{try{noteEditor(-1);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Note editor error",e);toast("Note editor eka open karanna bari una.");}});
     FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(62),dp(62),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
     setContentView(root);
 }
