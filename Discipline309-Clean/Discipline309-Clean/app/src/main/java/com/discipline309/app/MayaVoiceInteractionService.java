@@ -1,18 +1,22 @@
 package com.discipline309.app;
 
-import android.content.Intent;
 import android.service.voice.VoiceInteractionService;
 
+/**
+ * Android system-assistant entry point for Maya.
+ *
+ * The actual microphone foreground service is started by
+ * MayaVoiceInteractionSession only when the user invokes the assistant.
+ * Starting a microphone FGS from onReady() is unsafe on newer Android
+ * versions because the service may be initialized while the app is in the
+ * background.
+ */
 public class MayaVoiceInteractionService extends VoiceInteractionService {
     @Override public void onReady() {
         super.onReady();
-        try {
-            Intent i=new Intent(this,MayaAssistantService.class);
-            if(android.os.Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i);
-        } catch(Exception ignored) {}
     }
+
     @Override public void onShutdown() {
-        try { stopService(new Intent(this,MayaAssistantService.class)); } catch(Exception ignored) {}
         super.onShutdown();
     }
 }
