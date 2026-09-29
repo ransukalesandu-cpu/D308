@@ -135,8 +135,42 @@ public class SettingsActivity extends Activity {
         Button help=buttonStyle(new Button(this));help.setText("🎙️  Maya command guide");help.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(help);body.addView(control);
 
         LinearLayout maya=card();maya.addView(label("🎙️ BACKGROUND ASSISTANT",11,MUTED));Switch bg=new Switch(this);bg.setText("Keep Maya available in background");bg.setTextColor(TEXT);bg.setTextSize(15);bg.setChecked(getSharedPreferences("maya_settings",MODE_PRIVATE).getBoolean("enabled",false));bg.setOnCheckedChangeListener((v,on)->{getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",on).apply();if(on){if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},3101);bg.setChecked(false);return;}Intent i=new Intent(this,MayaAssistantService.class);try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Maya background assistant ON 🎙️",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",false).apply();bg.setChecked(false);}}else{stopService(new Intent(this,MayaAssistantService.class));Toast.makeText(this,"Maya background assistant OFF",Toast.LENGTH_SHORT).show();}});maya.addView(bg);
-        Button def=buttonStyle(new Button(this));def.setText("🤖  Set Maya as phone assistant");def.setOnClickListener(v->{if(Build.VERSION.SDK_INT>=29){try{android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(Context.ROLE_SERVICE);if(rm!=null&&rm.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT))startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT),3098);else Toast.makeText(this,"This phone does not expose the Assistant role.",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Open Default apps → Digital assistant and choose Maya.",Toast.LENGTH_LONG).show();}}else Toast.makeText(this,"Open Default apps → Assist app and choose Maya.",Toast.LENGTH_LONG).show();});maya.addView(def);body.addView(maya);
+        Button def=buttonStyle(new Button(this)); def.setText("🤖  Set Maya as phone assistant"); def.setOnClickListener(v->{ requestMayaAssistantRole(); }); maya.addView(def);body.addView(maya);
         showCategory("📱  PHONE & BACKGROUND","Background assistant, phone controls and battery settings.",body);
+    }
+
+    private void requestMayaAssistantRole(){
+        try{
+            if(Build.VERSION.SDK_INT>=29){
+                android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(Context.ROLE_SERVICE);
+                if(rm!=null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)){
+                    if(rm.isRoleHeld(android.app.role.RoleManager.ROLE_ASSISTANT)){
+                        Toast.makeText(this,"Maya is already the phone assistant. 🤖",Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT),3098);
+                    return;
+                }
+            }
+            Intent i;
+            if(Build.VERSION.SDK_INT>=29) i=new Intent("android.settings.VOICE_INPUT_SETTINGS");
+            else i=new Intent("android.settings.VOICE_INPUT_SETTINGS");
+            startActivity(i);
+        }catch(Exception e){
+            try{ startActivity(new Intent(Settings.ACTION_SETTINGS)); }
+            catch(Exception ignored){ Toast.makeText(this,"Open Default apps → Digital assistant and choose Maya.",Toast.LENGTH_LONG).show(); }
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==3098 && Build.VERSION.SDK_INT>=29){
+            try{
+                android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(Context.ROLE_SERVICE);
+                boolean held=rm!=null && rm.isRoleHeld(android.app.role.RoleManager.ROLE_ASSISTANT);
+                Toast.makeText(this,held?"Maya is now your phone assistant. 🤖":"Maya was not selected as the phone assistant.",Toast.LENGTH_SHORT).show();
+            }catch(Exception ignored){}
+        }
     }
 
     private void showAccountSettings(){
