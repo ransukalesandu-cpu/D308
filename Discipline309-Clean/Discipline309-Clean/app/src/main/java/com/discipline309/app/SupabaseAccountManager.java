@@ -149,22 +149,25 @@ public final class SupabaseAccountManager {
             saveSession(c,r);
             p(c).edit().putString("session_email",email.trim()).apply();
 
-            // Do not make permissions loading part of the login critical path.
-            // The auth token is already valid, so the UI can continue while
-            // optional profile/permission data refreshes in the background.
-            loadPermissions(c);
-
-            // Refresh the profile only when needed for routing. If a previous
-            // role is already cached, let the user enter immediately and update
-            // the cached profile in the background.
+            // Keep the auth request fast, but refresh profile/permissions after
+            // the session is saved. Previously loadPermissions() ran before the
+            // profile role was known, so sub-account permissions could stay stale.
             String cachedRole=role(c);
             if(!cachedRole.isEmpty()){
-                IO.execute(()->{try{loadExistingProfile(c);}catch(Exception ignored){}});
                 if(cb!=null)cb.done(true,"Signed in.");
+                IO.execute(()->{
+                    try{
+                        loadExistingProfile(c);
+                        loadPermissions(c);
+                    }catch(Exception ignored){}
+                });
                 return;
             }
 
+            // A first login still needs the profile to decide Primary/Sub routing.
+            // Do only this required request before returning to the UI.
             loadExistingProfile(c);
+            loadPermissions(c);
             if(cb!=null)cb.done(true,"Signed in.");
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
