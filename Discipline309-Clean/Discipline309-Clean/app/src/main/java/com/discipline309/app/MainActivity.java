@@ -127,7 +127,7 @@ public class MainActivity extends Activity {
     FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);
     np.setMargins(dp(8),0,dp(8),dp(8));
     root.addView(nav,np);
-    Button fab=button("＋");fab.setTextSize(30);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFFA78BFA,100));fab.setElevation(dp(12));fab.setContentDescription("Create note");fab.setOnClickListener(v->{if(!allowed("can_use_maya")&&false){}try{noteEditor(-1);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Note editor error",e);toast("Note editor eka open karanna bari una.");}});
+    Button fab=button("＋");fab.setTextSize(30);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFFA78BFA,100));fab.setElevation(dp(12));fab.setContentDescription("Create note");fab.setOnClickListener(v->{try{noteEditor(-1);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Note editor error",e);toast("Note editor eka open karanna bari una.");}});
     FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(62),dp(62),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
     setContentView(root);
 }
