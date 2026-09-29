@@ -25,6 +25,8 @@ public class VoiceAssistant {
     private boolean listening = false;
     private boolean ttsReady = false;
     private String pendingSpeech = "";
+    private int recognitionRetryCount = 0;
+    private final Handler voiceHandler = new Handler(Looper.getMainLooper());
 
     public VoiceAssistant(Activity activity) {
         this.activity = activity;
@@ -85,13 +87,20 @@ public class VoiceAssistant {
                 listening = false;
                 if (e == SpeechRecognizer.ERROR_NO_MATCH ||
                     e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                    Toast.makeText(activity, "Maya අහගෙන ඉන්නවා. ආයෙත් කියන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                    if (recognitionRetryCount < 1) {
+                        recognitionRetryCount++;
+                        voiceHandler.postDelayed(() -> { if (!listening) start(); }, 350);
+                    } else {
+                        recognitionRetryCount = 0;
+                        Toast.makeText(activity, "Maya අහගෙන ඉන්නවා. ආයෙත් කියන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                    }
                     return;
                 }
                 Toast.makeText(activity, "Maya voice එකට පොඩි issue එකක්. ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_SHORT).show();
             }
             public void onResults(Bundle results) {
                 listening = false;
+                recognitionRetryCount = 0;
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String text = (matches == null || matches.isEmpty()) ? "" : matches.get(0);
                 handle(text);
@@ -231,6 +240,8 @@ public class VoiceAssistant {
 
     public void destroy() {
         listening=false;
+        voiceHandler.removeCallbacksAndMessages(null);
+        recognitionRetryCount=0;
         try { if (recognizer != null) recognizer.destroy(); } catch (Exception ignored) {}
         recognizer=null;
         try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch (Exception ignored) {}
