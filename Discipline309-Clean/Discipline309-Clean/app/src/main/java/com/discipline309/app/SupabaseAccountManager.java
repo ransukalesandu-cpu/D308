@@ -24,20 +24,31 @@ public final class SupabaseAccountManager {
     private static final String LAST_SYNC_AT="progress_last_sync_at";
     private static final String CONFLICT_SNAPSHOT="progress_last_conflict_snapshot";
     private static final ExecutorService IO=Executors.newCachedThreadPool();
+    private static volatile SharedPreferences SECURE_PREFS;
     public interface Callback { void done(boolean ok,String message); }
 
     private static SharedPreferences p(Context c){
-        try{
-            return createSecurePreferences(c);
-        }catch(Exception first){
-            // Recover from a stale/corrupted Android Keystore entry or encrypted
-            // preferences file. This intentionally clears only this app's local
-            // Supabase session cache; it never deletes the remote Supabase account.
-            resetSecureStorage(c);
+        SharedPreferences cached=SECURE_PREFS;
+        if(cached!=null)return cached;
+        synchronized(SupabaseAccountManager.class){
+            cached=SECURE_PREFS;
+            if(cached!=null)return cached;
             try{
-                return createSecurePreferences(c);
-            }catch(Exception second){
-                throw new IllegalStateException("Secure account storage unavailable",second);
+                cached=createSecurePreferences(c.getApplicationContext());
+                SECURE_PREFS=cached;
+                return cached;
+            }catch(Exception first){
+                // Recover from a stale/corrupted Android Keystore entry or encrypted
+                // preferences file. This clears only this app's local session cache.
+                SECURE_PREFS=null;
+                resetSecureStorage(c);
+                try{
+                    cached=createSecurePreferences(c.getApplicationContext());
+                    SECURE_PREFS=cached;
+                    return cached;
+                }catch(Exception second){
+                    throw new IllegalStateException("Secure account storage unavailable",second);
+                }
             }
         }
     }
@@ -81,7 +92,7 @@ public final class SupabaseAccountManager {
         out.putBoolean("_migration_done",true).apply();
         legacy.edit().clear().apply();
     }
-    public static boolean loggedIn(Context c){try{return !p(c).getString("access_token","").isEmpty()&&!p(c).getString("user_id","").isEmpty();}catch(Exception e){return false;}}
+    public static boolean loggedIn(Context c){try{SharedPreferences sp=p(c);return !sp.getString("access_token","").isEmpty()&&!sp.getString("user_id","").isEmpty();}catch(Exception e){return false;}}
     public static String userId(Context c){try{return p(c).getString("user_id","");}catch(Exception e){return "";}}
     public static String accessToken(Context c){try{return p(c).getString("access_token","");}catch(Exception e){return "";}}
     public static String publishableKey(){return KEY;}
