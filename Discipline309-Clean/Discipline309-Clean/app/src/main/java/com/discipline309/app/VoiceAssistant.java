@@ -112,6 +112,7 @@ public class VoiceAssistant {
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "si-LK");
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "si-LK");
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Maya, then your question");
         try { recognizer.startListening(intent); }
         catch (Exception e) {
