@@ -149,27 +149,10 @@ public final class SupabaseAccountManager {
             saveSession(c,r);
             p(c).edit().putString("session_email",email.trim()).apply();
 
-            // Keep the auth request fast, but refresh profile/permissions after
-            // the session is saved. Previously loadPermissions() ran before the
-            // profile role was known, so sub-account permissions could stay stale.
-            String cachedRole=role(c);
-            if(!cachedRole.isEmpty()){
-                if(cb!=null)cb.done(true,"Signed in.");
-                IO.execute(()->{
-                    try{
-                        loadExistingProfile(c);
-                        loadPermissions(c);
-                    }catch(Exception ignored){}
-                });
-                return;
-            }
-
-            // A first login still needs the profile to decide Primary/Sub routing.
-            // Do only this required request before returning to the UI.
             loadExistingProfile(c);
-            loadPermissions(c);
+            loadPermissionsNow(c);
             if(cb!=null)cb.done(true,"Signed in.");
-        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}
     }
 
     public static void createPrimaryProfile(Context c,String name,Callback cb){
@@ -180,7 +163,8 @@ public final class SupabaseAccountManager {
         IO.execute(()->{try{
             String primaryId=rpcText("consume_account_invite",new JSONObject().put("invite_code",code.trim().toUpperCase(Locale.US)),c);
             p(c).edit().putString("role","sub").putString("parent_id",primaryId).apply();
-            loadPermissions(c);if(cb!=null)cb.done(true,"Joined the Primary account.");
+            loadPermissionsNow(c);
+            if(cb!=null)cb.done(true,"Joined the Primary account.");
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
@@ -222,16 +206,34 @@ public final class SupabaseAccountManager {
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
+    private static boolean loadPermissionsNow(Context c){
+        if(!loggedIn(c)||!"sub".equals(role(c)))return false;
+        try{
+            JSONArray a=requestArray("GET","/rest/v1/sub_permissions?sub_user_id=eq."+URLEncoder.encode(userId(c),"UTF-8")+
+                "&select=can_view_progress,can_edit_habits,can_edit_mission,can_reset_progress,can_use_maya,can_access_settings,can_sync_progress,can_manage_account",c);
+            if(a.length()==0)return false;
+            JSONObject x=a.getJSONObject(0);
+            SharedPreferences.Editor e=p(c).edit();
+            Iterator<String> it=x.keys();
+            while(it.hasNext()){
+                String k=it.next();
+                if(x.opt(k) instanceof Boolean)e.putBoolean(k,x.optBoolean(k));
+            }
+            e.apply();
+            return true;
+        }catch(Exception ignored){return false;}
+    }
+
     public static void loadPermissions(Context c){
         if(!loggedIn(c)||!"sub".equals(role(c)))return;
-        IO.execute(()->{try{
-            JSONArray a=requestArray("GET","/rest/v1/sub_permissions?sub_user_id=eq."+URLEncoder.encode(userId(c),"UTF-8")+"&select=can_view_progress,can_edit_habits,can_edit_mission,can_reset_progress,can_use_maya,can_access_settings,can_sync_progress,can_manage_account",c);
-            if(a.length()>0){
-                JSONObject x=a.getJSONObject(0);SharedPreferences.Editor e=p(c).edit();
-                Iterator<String> it=x.keys();while(it.hasNext()){String k=it.next();if(x.opt(k) instanceof Boolean)e.putBoolean(k,x.optBoolean(k));}e.apply();
-            }
-        }catch(Exception ignored){}
-    });
+        IO.execute(()->loadPermissionsNow(c));
+    }
+
+    public static void refreshPermissions(Context c,Callback cb){
+        IO.execute(()->{
+            boolean ok=loadPermissionsNow(c);
+            if(cb!=null)cb.done(ok,ok?"Permissions refreshed.":"Permissions could not be refreshed.");
+        });
     }
 
     public static void syncLocalProgress(Context c,Callback cb){
