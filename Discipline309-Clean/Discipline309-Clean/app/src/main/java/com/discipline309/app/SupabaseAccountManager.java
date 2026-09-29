@@ -152,7 +152,7 @@ public final class SupabaseAccountManager {
             loadExistingProfile(c);
             loadPermissionsNow(c);
             if(cb!=null)cb.done(true,"Signed in.");
-        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}
+        }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
     public static void createPrimaryProfile(Context c,String name,Callback cb){
