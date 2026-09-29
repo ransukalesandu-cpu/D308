@@ -400,6 +400,13 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
     private void openSettings(){try{startActivity(new Intent(this,SettingsActivity.class));overridePendingTransition(0,0);}catch(Exception e){new AlertDialog.Builder(this).setTitle("Settings").setMessage("Open Settings from the app menu.").setPositiveButton("OK",null).show();}}
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();sound(ToneGenerator.TONE_PROP_BEEP);}
     @Override protected void onPause(){super.onPause();try{syncHandler.removeCallbacks(syncRunnable);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Background sync cleanup error",e);}}
-    @Override protected void onResume(){super.onResume();try{applyTheme();if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){syncHandler.removeCallbacks(syncRunnable);syncHandler.postDelayed(syncRunnable,3000);}}catch(Throwable e){android.util.Log.e("309DayDiscipline","Resume error",e);}}
+    @Override protected void onResume(){super.onResume();try{
+        applyTheme();
+        if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){
+            SupabaseAccountManager.refreshPermissions(this,null);
+            syncHandler.removeCallbacks(syncRunnable);
+            syncHandler.postDelayed(syncRunnable,3000);
+        }
+    }catch(Throwable e){android.util.Log.e("309DayDiscipline","Resume error",e);}}
     @Override protected void onDestroy(){destroyed=true;syncHandler.removeCallbacksAndMessages(null);try{if(voiceAssistant!=null)voiceAssistant.destroy();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Voice cleanup error",e);}try{if(tone!=null)tone.release();}catch(Throwable ignored){}super.onDestroy();}
 }
