@@ -124,7 +124,25 @@ public final class SupabaseAccountManager {
         IO.execute(()->{try{
             JSONObject body=new JSONObject().put("email",email).put("password",password);
             JSONObject r=request("POST","/auth/v1/token?grant_type=password",body,null);
-            saveSession(c,r);loadExistingProfile(c);loadPermissions(c);if(cb!=null)cb.done(true,"Signed in.");
+            saveSession(c,r);
+
+            // Do not make permissions loading part of the login critical path.
+            // The auth token is already valid, so the UI can continue while
+            // optional profile/permission data refreshes in the background.
+            loadPermissions(c);
+
+            // Refresh the profile only when needed for routing. If a previous
+            // role is already cached, let the user enter immediately and update
+            // the cached profile in the background.
+            String cachedRole=role(c);
+            if(!cachedRole.isEmpty()){
+                IO.execute(()->{try{loadExistingProfile(c);}catch(Exception ignored){}});
+                if(cb!=null)cb.done(true,"Signed in.");
+                return;
+            }
+
+            loadExistingProfile(c);
+            if(cb!=null)cb.done(true,"Signed in.");
         }catch(Exception e){if(cb!=null)cb.done(false,errorMessage(e));}});
     }
 
