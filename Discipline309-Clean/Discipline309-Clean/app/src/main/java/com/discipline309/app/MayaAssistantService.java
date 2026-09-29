@@ -39,6 +39,7 @@ public class MayaAssistantService extends Service {
     private boolean listening=false;
 private boolean fallbackListening=false;
     private boolean ttsSpeaking=false;
+    private boolean pendingWakeWordResponse=false;
     private static final long CONVERSATION_SILENCE_MS=10000L;
     private final Runnable conversationSilenceRunnable=new Runnable(){
         @Override public void run(){
@@ -79,7 +80,7 @@ private boolean fallbackListening=false;
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
             registerReceiver(screenStateReceiver,screenFilter);
         }catch(Exception ignored){}
-        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true;}});
+        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); }}});
         handler.postDelayed(wakeWordRunnable,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
         }catch(Exception e){
@@ -155,7 +156,17 @@ private boolean fallbackListening=false;
         realWakeWordActive=true;
         conversationMode=true;
         if(wakeWordAdapter!=null) wakeWordAdapter.stop();
-        // TTS completion now opens the next listening turn, just like a continuous voice chat.
+        // The wake word can arrive before TextToSpeech finishes initializing.
+        // Queue the response instead of silently dropping it.
+        if(!ready){
+            pendingWakeWordResponse=true;
+            return;
+        }
+        respondToWakeWord();
+    }
+
+    private void respondToWakeWord(){
+        if(stopping || !mayaAllowed() || !conversationMode) return;
         speak(modeReply("ඔව්, කියන්න.","Yoo 😄 කියන්න, Maya online!","ඔව්, කියන්න. 💛"));
     }
 
