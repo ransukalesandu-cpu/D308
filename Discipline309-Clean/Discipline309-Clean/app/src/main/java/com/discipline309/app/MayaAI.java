@@ -58,11 +58,12 @@ public class MayaAI {
                 c.setRequestProperty("Content-Type","application/json; charset=UTF-8");
                 c.setRequestProperty("apikey",SupabaseAccountManager.publishableKey());
                 byte[] out=payload.toString().getBytes(StandardCharsets.UTF_8);
-                c.getOutputStream().write(out);
+                try(OutputStream os=c.getOutputStream()){os.write(out);}
 
                 int code=c.getResponseCode();
                 InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
                 String response=read(stream);
+                if(stream!=null) try{stream.close();}catch(Exception ignored){}
                 if(code<200||code>=300){
                     String fallback=MayaOfflineNLP.answer(context,userText);
                     callback.onReply(fallback!=null?fallback:"Maya AI service එකට දැන් connect වෙන්න බැහැ. 🌐 Internet එක check කරන්න.");
