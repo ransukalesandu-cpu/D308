@@ -40,6 +40,7 @@ public class MayaAssistantService extends Service {
 private boolean fallbackListening=false;
     private boolean ttsSpeaking=false;
     private boolean pendingWakeWordResponse=false;
+    private boolean pendingAssistantInvocation=false;
     private String lastSpokenText="";
     private long lastSpokenAt=0L;
     private static final long CONVERSATION_SILENCE_MS=10000L;
@@ -82,7 +83,7 @@ private boolean fallbackListening=false;
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
             registerReceiver(screenStateReceiver,screenFilter);
         }catch(Exception ignored){}
-        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){int lang=tts.setLanguage(new Locale("si","LK")); if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(new Locale("si")); } tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); }}});
+        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){int lang=tts.setLanguage(new Locale("si","LK")); if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(new Locale("si")); } tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
         handler.postDelayed(wakeWordRunnable,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
         }catch(Exception e){
@@ -886,20 +887,29 @@ private boolean fallbackListening=false;
             NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.createNotificationChannel(ch);
         }
     }
+    private void handleAssistantInvocation(){
+        if(stopping || !mayaAllowed()) return;
+        wakeWordDetected=true;
+        realWakeWordActive=true;
+        fallbackListening=true;
+        conversationMode=true;
+        if(wakeWordAdapter!=null){
+            try{wakeWordAdapter.stop();}catch(Exception ignored){}
+        }
+        listen();
+    }
+
     @Override public int onStartCommand(Intent i,int flags,int id){
         if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
         if(i!=null && "com.discipline309.app.MAYA_ASSISTANT_INVOCATION".equals(i.getAction())){
             if(handler!=null){
                 handler.post(() -> {
-                    if(stopping || !ready) return;
-                    wakeWordDetected=true;
-                    realWakeWordActive=true;
-                    fallbackListening=true;
-                    conversationMode=true;
-                    if(wakeWordAdapter!=null){
-                        try{wakeWordAdapter.stop();}catch(Exception ignored){}
+                    if(stopping) return;
+                    if(!ready){
+                        pendingAssistantInvocation=true;
+                        return;
                     }
-                    listen();
+                    handleAssistantInvocation();
                 });
             }
         }
