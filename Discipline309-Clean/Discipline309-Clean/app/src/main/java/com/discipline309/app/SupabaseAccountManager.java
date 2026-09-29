@@ -380,20 +380,20 @@ public final class SupabaseAccountManager {
     }
 
     private static JSONObject requestRawWithToken(String method,String path,JSONObject body,String token)throws Exception{
-        HttpURLConnection h=(HttpURLConnection)new URL(URL+path).openConnection();h.setRequestMethod(method);h.setConnectTimeout(15000);h.setReadTimeout(20000);h.setRequestProperty("apikey",KEY);h.setRequestProperty("Authorization","Bearer "+token);h.setRequestProperty("Accept","application/json");
+        HttpURLConnection h=(HttpURLConnection)new URL(URL+path).openConnection();h.setRequestMethod(method);h.setConnectTimeout(8000);h.setReadTimeout(12000);h.setRequestProperty("apikey",KEY);h.setRequestProperty("Authorization","Bearer "+token);h.setRequestProperty("Accept","application/json");
         if(body!=null){h.setDoOutput(true);h.setRequestProperty("Content-Type","application/json");try(OutputStream o=h.getOutputStream()){o.write(body.toString().getBytes(StandardCharsets.UTF_8));}}
         int code=h.getResponseCode();String txt=read(h,code);if(code<200||code>=300)throw new IOException(txt.isEmpty()?"HTTP "+code:txt);return txt.isEmpty()?new JSONObject():new JSONObject(txt);
     }
 
     private static JSONObject request(String method,String path,JSONObject body,Context c)throws Exception{return request(method,path,body,c,null);}
     private static JSONObject request(String method,String path,JSONObject body,Context c,String prefer)throws Exception{
-        if(c!=null&&!p(c).getString("access_token","").isEmpty()&&p(c).getLong("expires_at",0)<System.currentTimeMillis()+60000)refresh(c);
+        if(c!=null){SharedPreferences sp=p(c);String token=sp.getString("access_token","");if(!token.isEmpty()&&sp.getLong("expires_at",0)<System.currentTimeMillis()+60000)refresh(c);}
         return requestRaw(method,path,body,c,true,prefer);
     }
     private static JSONObject requestRaw(String method,String path,JSONObject body,Context c,boolean auth)throws Exception{return requestRaw(method,path,body,c,auth,null);}
     private static JSONObject requestRaw(String method,String path,JSONObject body,Context c,boolean auth,String prefer)throws Exception{
         HttpURLConnection h=(HttpURLConnection)new URL(URL+path).openConnection();h.setRequestMethod(method);h.setConnectTimeout(15000);h.setReadTimeout(20000);h.setRequestProperty("apikey",KEY);h.setRequestProperty("Accept","application/json");
-        if(auth&&c!=null&&!p(c).getString("access_token","").isEmpty())h.setRequestProperty("Authorization","Bearer "+p(c).getString("access_token",""));
+        if(auth&&c!=null){String token=p(c).getString("access_token","");if(!token.isEmpty())h.setRequestProperty("Authorization","Bearer "+token);}
         if(prefer!=null)h.setRequestProperty("Prefer",prefer);
         if(body!=null){h.setDoOutput(true);h.setRequestProperty("Content-Type","application/json");try(OutputStream o=h.getOutputStream()){o.write(body.toString().getBytes(StandardCharsets.UTF_8));}}
         int code=h.getResponseCode();String txt=read(h,code);if(code<200||code>=300)throw new IOException(txt.isEmpty()?"HTTP "+code:txt);return txt.isEmpty()?new JSONObject():new JSONObject(txt);
