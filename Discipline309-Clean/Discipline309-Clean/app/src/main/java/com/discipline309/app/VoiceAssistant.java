@@ -71,7 +71,12 @@ public class VoiceAssistant {
             public void onEvent(int t, Bundle p) {}
             public void onError(int e) {
                 listening = false;
-                Toast.makeText(activity, "I didn't catch that. Tap Maya and try again.", Toast.LENGTH_SHORT).show();
+                if (e == SpeechRecognizer.ERROR_NO_MATCH ||
+                    e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                    Toast.makeText(activity, "Maya අහගෙන ඉන්නවා. ආයෙත් කියන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Toast.makeText(activity, "Maya voice එකට පොඩි issue එකක්. ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_SHORT).show();
             }
             public void onResults(Bundle results) {
                 listening = false;
@@ -85,7 +90,6 @@ public class VoiceAssistant {
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "si-LK");
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "si-LK");
-        intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Maya, then your question");
         try { recognizer.startListening(intent); }
         catch (Exception e) {
