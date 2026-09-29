@@ -80,7 +80,7 @@ private boolean fallbackListening=false;
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
             registerReceiver(screenStateReceiver,screenFilter);
         }catch(Exception ignored){}
-        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){tts.setLanguage(new Locale("si","LK"));tts.setSpeechRate(.92f);ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); }}});
+        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){int lang=tts.setLanguage(new Locale("si","LK")); if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(new Locale("si")); } tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); }}});
         handler.postDelayed(wakeWordRunnable,700);
         handler.postDelayed(this::scheduleProactiveCheckIn,2500);
         }catch(Exception e){
@@ -840,8 +840,11 @@ private boolean fallbackListening=false;
             SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
             if(!p.getBoolean("auto_speak",true))return;
             if(recognizer!=null&&listening){try{recognizer.cancel();}catch(Exception ignored){}listening=false;}
-            float rate=.65f+(Math.max(0,Math.min(100,p.getInt("speech_speed",50)))/100f)*.85f;
+            float speed=Math.max(0,Math.min(100,p.getInt("speech_speed",45)));
+            // Slightly slower default speech and a neutral pitch make Sinhala words easier to understand.
+            float rate=.68f+(speed/100f)*.62f;
             tts.setSpeechRate(rate);
+            tts.setPitch(1.02f);
             ttsSpeaking=true;
             String id="maya_"+System.currentTimeMillis();
             if(Build.VERSION.SDK_INT>=15){
