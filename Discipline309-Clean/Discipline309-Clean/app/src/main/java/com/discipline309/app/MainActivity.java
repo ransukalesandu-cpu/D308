@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
     private final Typeface FONT_NORMAL=Typeface.create("sans-serif",Typeface.NORMAL);
     private final Typeface FONT_MEDIUM=Typeface.create("sans-serif-medium",Typeface.NORMAL);
     private final Typeface FONT_BOLD=Typeface.create("sans-serif",Typeface.BOLD);
+    private boolean destroyed=false;
     private final Runnable syncRunnable=new Runnable(){@Override public void run(){try{if(isFinishing()||isDestroyed())return;if(SupabaseAccountManager.loggedIn(MainActivity.this)&&"sub".equals(SupabaseAccountManager.role(MainActivity.this))){SupabaseAccountManager.syncLocalProgress(MainActivity.this,null);syncHandler.postDelayed(this,60000);}}catch(Exception e){android.util.Log.e("309DayDiscipline","Periodic sync error",e);try{if(!isFinishing()&&!isDestroyed())syncHandler.postDelayed(this,60000);}catch(Exception ignored){}}}};
     private static final int PICK_MAYA_IMAGE=901,CAPTURE_MAYA_IMAGE=902,PICK_MAYA_DOCUMENT=903;
 
@@ -395,5 +396,5 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
     private void toast(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();sound(ToneGenerator.TONE_PROP_BEEP);}
     @Override protected void onPause(){super.onPause();try{syncHandler.removeCallbacks(syncRunnable);}catch(Throwable e){android.util.Log.e("309DayDiscipline","Background sync cleanup error",e);}}
     @Override protected void onResume(){super.onResume();try{applyTheme();if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){syncHandler.removeCallbacks(syncRunnable);syncHandler.postDelayed(syncRunnable,3000);}}catch(Throwable e){android.util.Log.e("309DayDiscipline","Resume error",e);}}
-    @Override protected void onDestroy(){syncHandler.removeCallbacks(syncRunnable);try{if(voiceAssistant!=null)voiceAssistant.destroy();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Voice cleanup error",e);}try{if(tone!=null)tone.release();}catch(Throwable ignored){}super.onDestroy();}
+    @Override protected void onDestroy(){destroyed=true;syncHandler.removeCallbacksAndMessages(null);try{if(voiceAssistant!=null)voiceAssistant.destroy();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Voice cleanup error",e);}try{if(tone!=null)tone.release();}catch(Throwable ignored){}super.onDestroy();}
 }
