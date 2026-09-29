@@ -402,7 +402,7 @@ public final class SupabaseAccountManager {
         int code=h.getResponseCode();String txt=read(h,code);if(code<200||code>=300)throw new IOException(txt.isEmpty()?"HTTP "+code:txt);return txt.isEmpty()?new JSONObject():new JSONObject(txt);
     }
     private static JSONArray requestArray(String method,String path,Context c)throws Exception{
-        if(c!=null&&!p(c).getString("access_token","").isEmpty()&&p(c).getLong("expires_at",0)<System.currentTimeMillis()+60000)refresh(c);
+        if(c!=null){SharedPreferences sp=p(c);String token=sp.getString("access_token","");if(!token.isEmpty()&&sp.getLong("expires_at",0)<System.currentTimeMillis()+60000)refresh(c);}
         HttpURLConnection h=(HttpURLConnection)new URL(URL+path).openConnection();h.setRequestMethod(method);h.setConnectTimeout(15000);h.setReadTimeout(20000);h.setRequestProperty("apikey",KEY);h.setRequestProperty("Accept","application/json");if(c!=null)h.setRequestProperty("Authorization","Bearer "+p(c).getString("access_token",""));
         int code=h.getResponseCode();String txt=read(h,code);if(code<200||code>=300)throw new IOException(txt.isEmpty()?"HTTP "+code:txt);return new JSONArray(txt);
     }
