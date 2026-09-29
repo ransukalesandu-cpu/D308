@@ -27,13 +27,16 @@ public class MainActivity extends Activity {
     private VoiceAssistant voiceAssistant;
     private ToneGenerator tone;
     private final Handler syncHandler=new Handler(Looper.getMainLooper());
-    private boolean screenIntroDone=false;
+    private boolean screenIntroDone=true;
+    private final Typeface FONT_NORMAL=Typeface.create("sans-serif",Typeface.NORMAL);
+    private final Typeface FONT_MEDIUM=Typeface.create("sans-serif-medium",Typeface.NORMAL);
+    private final Typeface FONT_BOLD=Typeface.create("sans-serif",Typeface.BOLD);
     private final Runnable syncRunnable=new Runnable(){@Override public void run(){try{if(isFinishing()||isDestroyed())return;if(SupabaseAccountManager.loggedIn(MainActivity.this)&&"sub".equals(SupabaseAccountManager.role(MainActivity.this))){SupabaseAccountManager.syncLocalProgress(MainActivity.this,null);syncHandler.postDelayed(this,60000);}}catch(Exception e){android.util.Log.e("309DayDiscipline","Periodic sync error",e);try{if(!isFinishing()&&!isDestroyed())syncHandler.postDelayed(this,60000);}catch(Exception ignored){}}}};
     private static final int PICK_MAYA_IMAGE=901,CAPTURE_MAYA_IMAGE=902,PICK_MAYA_DOCUMENT=903;
 
     private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
     private void sound(int t){try{if(tone==null)tone=new ToneGenerator(AudioManager.STREAM_NOTIFICATION,65);tone.startTone(t,80);}catch(Exception ignored){}}
-    private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setTypeface(z>=22?Typeface.create("sans-serif",Typeface.BOLD):z>=16?Typeface.create("sans-serif-medium",Typeface.NORMAL):Typeface.create("sans-serif",Typeface.NORMAL));v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
+    private TextView label(String s,float z,int c){TextView v=new TextView(this);v.setText(s);v.setTextSize(z);v.setTextColor(c);v.setTypeface(z>=22?FONT_BOLD:z>=16?FONT_MEDIUM:FONT_NORMAL);v.setPadding(dp(4),dp(4),dp(4),dp(4));return v;}
     private GradientDrawable shape(int c,int r){GradientDrawable g=new GradientDrawable();g.setColor(c);g.setCornerRadius(dp(r));g.setStroke(dp(1),0xFF3A315F);return g;}
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(14),dp(16),dp(14));l.setBackground(shape(SURFACE,18));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setBackground(shape(0xFF211B45,16));b.setPadding(dp(10),0,dp(10),0);b.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_UP)sound(ToneGenerator.TONE_PROP_ACK);return false;});return b;}
@@ -72,12 +75,12 @@ public class MainActivity extends Activity {
             Button b=navButtons[i];
             boolean active=i==selected;
             b.setTextColor(active?Color.WHITE:MUTED);
-            b.setTypeface(active?Typeface.create("sans-serif-medium",Typeface.BOLD):Typeface.create("sans-serif",Typeface.NORMAL));
+            b.setTypeface(active?FONT_BOLD:FONT_NORMAL);
             b.setBackground(shape(active?0xFF2A2256:0x00000000,14));
             b.setElevation(active?dp(3):0);
             b.setScaleX(active?1.16f:0.90f);
             b.setScaleY(active?1.16f:0.90f);
-            b.animate().scaleX(active?1.16f:0.90f).scaleY(active?1.16f:0.90f).setDuration(180).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
+            b.setScaleX(active?1.0f:0.92f);b.setScaleY(active?1.0f:0.92f);
             String[] navLabels={"Home","Plan","Habits","Notes","Stats"};
             b.setContentDescription(navLabels[i] + (active?" selected":""));
         }
@@ -85,7 +88,7 @@ public class MainActivity extends Activity {
 
     private void buildShell(){
     FrameLayout root=new FrameLayout(this);root.setBackgroundColor(BG);
-    ScrollView sc=new ScrollView(this);sc.setOverScrollMode(View.OVER_SCROLL_ALWAYS);sc.setSmoothScrollingEnabled(true);
+    ScrollView sc=new ScrollView(this);sc.setOverScrollMode(View.OVER_SCROLL_NEVER);sc.setSmoothScrollingEnabled(false);
     content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(18),dp(28),dp(18),dp(110));sc.addView(content);
     root.addView(sc,new FrameLayout.LayoutParams(-1,-1));
     LinearLayout nav=new LinearLayout(this);nav.setGravity(Gravity.CENTER);nav.setPadding(dp(5),dp(5),dp(5),dp(5));nav.setBackground(shape(0xFF0C1226,18));
@@ -162,8 +165,7 @@ public class MainActivity extends Activity {
         content.addView(planSummary);
 content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.addView(label("🎯 DAILY CHALLENGE",11,MUTED));String missionKey="mission_"+key();String[] missions={"Complete every planned task today","Finish one focused study session","Do your routine before entertainment","Write a 3-line evening reflection","Complete today without skipping a habit"};int missionIndex=(key().hashCode()&0x7fffffff)%missions.length;String missionText=prefs.getString(missionKey,missions[missionIndex]);if(missionText==null||missionText.trim().isEmpty())missionText=missions[missionIndex];mission.addView(label(missionText,18,TEXT));mission.addView(label("Reward: +50 XP  •  Resets tomorrow",12,MUTED));CheckBox missionDone=new CheckBox(this);missionDone.setText("Mission complete");missionDone.setTextColor(TEXT);missionDone.setChecked(prefs.getBoolean(missionKey+"_done",false));missionDone.setEnabled(allowed("can_edit_mission"));missionDone.setOnCheckedChangeListener((v,checked)->{if(!allowed("can_edit_mission")){v.setChecked(!checked);toast("Primary account has disabled mission editing.");return;}prefs.edit().putBoolean(missionKey+"_done",checked).apply();if(checked&&!prefs.getBoolean(missionKey+"_rewarded",false)){prefs.edit().putBoolean(missionKey+"_rewarded",true).apply();awardXp(50,"Mission complete! 🎯");}});mission.addView(missionDone);content.addView(mission);addMoodCard();content.addView(title("TODAY'S HABITS"));for(int i=0;i<total;i++)addTaskRow(i,key());Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);Button maya=button("🎙️");maya.setTextSize(30);maya.setTypeface(null,1);maya.setGravity(Gravity.CENTER);maya.setPadding(0,0,0,0);maya.setMinWidth(0);maya.setMinHeight(0);maya.setBackground(shape(0xFF1769FF,100));maya.setElevation(dp(12));maya.setContentDescription("Talk to Maya");maya.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){v.animate().scaleX(.90f).scaleY(.90f).setDuration(90).start();}else if(e.getAction()==MotionEvent.ACTION_UP){v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180).start();if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();}else if(e.getAction()==MotionEvent.ACTION_CANCEL){v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180).start();}return true;});LinearLayout.LayoutParams mayaLp=new LinearLayout.LayoutParams(dp(82),dp(82));mayaLp.gravity=Gravity.CENTER_HORIZONTAL;mayaLp.setMargins(0,dp(4),0,dp(4));content.addView(maya,mayaLp);TextView mayaLabel=label("Talk to Maya",13,MUTED);mayaLabel.setGravity(Gravity.CENTER);content.addView(mayaLabel);animateScreenIntro();}
 
-    private void animateScreenIntro(){
-        if(screenIntroDone){return;} screenIntroDone=true; for(int i=0;i<content.getChildCount();i++){ View v=content.getChildAt(i); v.setAlpha(0f); v.setTranslationY(dp(18)); v.setScaleX(.98f); v.setScaleY(.98f); v.animate().alpha(1f).translationY(0f).scaleX(1f).scaleY(1f).setStartDelay(Math.min(i*35,280)).setDuration(360).setInterpolator(new android.view.animation.DecelerateInterpolator()).start(); } }
+    private void animateScreenIntro(){ /* Animations disabled for instant page rendering. */ }
     private void addTaskRow(int i,String d){LinearLayout row=card();row.setPadding(dp(10),dp(8),dp(10),dp(8));CheckBox cb=new CheckBox(this);cb.setText(taskName(i));cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(checked(i,d));cb.setEnabled(allowed("can_edit_habits"));cb.setOnCheckedChangeListener((v,c)->{if(allowed("can_edit_habits")){setChecked(i,d,c);if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){syncHandler.removeCallbacks(syncRunnable);syncHandler.postDelayed(syncRunnable,1500);}}else v.setChecked(!c);});row.addView(cb);content.addView(row);}
     public void editTodayMissionFromMaya(String requested){final EditText e=new EditText(this);e.setHint("e.g. Study for 30 minutes");e.setSingleLine(false);if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}String current=prefs.getString("mission_"+key(),"");if(requested!=null&&!requested.trim().isEmpty())e.setText(requested.trim());else if(!current.isEmpty())e.setText(current);new AlertDialog.Builder(this).setTitle("🎯 Edit Today's Mission").setMessage("Maya can change today's mission. The new mission will be saved for today.").setView(e).setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){prefs.edit().putString("mission_"+key(),s).apply();toast("Today's mission updated by Maya 🎯");showHome();}}).setNegativeButton("CANCEL",null).show();}
     public void resetTodayMissionFromMaya(){if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}String k="mission_"+key();prefs.edit().remove(k).remove(k+"_done").apply();toast("Today's mission reset 🎯");showHome();}
