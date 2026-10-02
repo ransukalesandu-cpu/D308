@@ -36,6 +36,12 @@ public class MayaAI {
 
                 String webResults="";
                 MayaMemory memoryStore=new MayaMemory(context);
+
+                String memoryCommand=handleMemoryCommand(context,userText,memoryStore);
+                if(memoryCommand!=null){
+                    callback.onReply(memoryCommand);
+                    return;
+                }
                 String relevantMemory=memoryStore.relevant(userText);
                 if(relevantMemory.isEmpty())relevantMemory=memoryText;
                 MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
@@ -118,6 +124,35 @@ public class MayaAI {
                 if(c!=null)c.disconnect();
             }
         });
+    }
+
+    private static String handleMemoryCommand(Context context,String userText,MayaMemory memoryStore){
+        String raw=userText==null?"":userText.trim();
+        String q=raw.toLowerCase(Locale.ROOT);
+        if(q.equals("forget everything")||q.equals("forget all")||q.equals("clear memory")||q.contains("මතක ඔක්කොම අමතක")||q.contains("මතක ඔක්කොම මකන්න")){
+            memoryStore.clear();
+            return preferredLanguage(context).equals("Sinhala")?"හරි. Mayaගේ saved memory එක clear කළා. 🧠":"Okay. I cleared Maya's saved memory. 🧠";
+        }
+        if(q.contains("what do you remember")||q.contains("what do you know about me")||q.contains("මොනවාද මතක")||q.contains("මාව මතකද")){
+            String all=memoryStore.all();
+            if(all.isEmpty()) return preferredLanguage(context).equals("Sinhala")?"දැනට save කරලා තියෙන memory එකක් නැහැ.":"I don't have any saved memories yet.";
+            return preferredLanguage(context).equals("Sinhala")?"මට මතක තියෙන්නේ මේවායි:\n"+all:"Here are the things I have saved:\n"+all;
+        }
+        String fact=null;
+        String[] prefixes={"remember that ","remember this:","remember this ","මතක තියාගන්න ","මතක තියාගන්න:","මතක තියාගන්න කියන එක ","මාව මතක තියාගන්න "};
+        for(String prefix:prefixes){
+            if(q.startsWith(prefix)){
+                int start=prefix.length();
+                fact=raw.substring(Math.min(start,raw.length())).trim();
+                break;
+            }
+        }
+        if(fact!=null&&!fact.isEmpty()){
+            if(fact.length()>300) fact=fact.substring(0,300).trim();
+            memoryStore.remember(fact);
+            return preferredLanguage(context).equals("Sinhala")?"හරි, ඒක මතක තියාගන්නම්. 🧠":"Got it. I'll remember that. 🧠";
+        }
+        return null;
     }
 
     private static String preferredLanguage(Context context){
