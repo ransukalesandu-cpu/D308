@@ -12,10 +12,30 @@ public final class StrictModeManager {
     static SharedPreferences p(Context c){return c.getSharedPreferences(PREF,Context.MODE_PRIVATE);}
     public static boolean isEnabled(Context c){return p(c).getBoolean("enabled",false);}
     public static void setEnabled(Context c,boolean on){
-        p(c).edit().putBoolean("enabled",on).apply();
-        if(on && p(c).getBoolean("auto_dnd",false)) setDnd(c,true);
+        SharedPreferences sp=p(c);
+        if(on){
+            if(!sp.contains("saved_maya_voice")){
+                sp.edit().putInt("saved_maya_voice",c.getSharedPreferences("settings",Context.MODE_PRIVATE).getInt("maya_voice",0))
+                  .putString("saved_maya_mode",c.getSharedPreferences("settings",Context.MODE_PRIVATE).getString("maya_mode","motivative")).apply();
+            }
+            sp.edit().putBoolean("enabled",true).apply();
+            c.getSharedPreferences("settings",Context.MODE_PRIVATE).edit().putInt("maya_voice",0).apply();
+        }else{
+            sp.edit().putBoolean("enabled",false).apply();
+            SharedPreferences settings=c.getSharedPreferences("settings",Context.MODE_PRIVATE);
+            int voice=sp.getInt("saved_maya_voice",settings.getInt("maya_voice",0));
+            String mode=sp.getString("saved_maya_mode",settings.getString("maya_mode","motivative"));
+            settings.edit().putInt("maya_voice",voice).putString("maya_mode",mode).apply();
+            sp.edit().remove("saved_maya_voice").remove("saved_maya_mode").apply();
+        }
+        if(on && sp.getBoolean("auto_dnd",false)) setDnd(c,true);
         if(on) StrictAlarmManager.rescheduleAll(c);
         if(!on) { setDnd(c,false); StrictAlarmManager.rescheduleAll(c); }
+    }
+    public static String strictMayaMode(Context c){
+        if(!isEnabled(c)) return null;
+        long slot=System.currentTimeMillis()/120000L;
+        return (slot%2L==0L) ? "angry" : "motivative";
     }
     public static int limitMinutes(Context c){return Math.max(1,p(c).getInt("limit_minutes",30));}
     public static Set<String> blocked(Context c){return new HashSet<>(p(c).getStringSet("blocked",new HashSet<>()));}
