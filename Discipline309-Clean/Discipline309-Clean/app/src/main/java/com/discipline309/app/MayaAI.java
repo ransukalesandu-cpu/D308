@@ -48,7 +48,8 @@ public class MayaAI {
                 MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
                 String intent=classifyIntent(userText);
                 String emotionalTone=classifyEmotionalTone(userText);
-                String contextHint=buildContextHint(context,userText,intent,emotionalTone);\n                if(isFollowUp(userText))contextHint+=" This is a likely follow-up to the recent conversation. Resolve pronouns and short replies using the most recent relevant user/assistant exchange before answering.";
+                String contextHint=buildContextHint(context,userText,intent,emotionalTone);
+                if(isFollowUp(userText))contextHint+=" This is a likely follow-up to the recent conversation. Resolve pronouns and short replies using the most recent relevant user/assistant exchange before answering.";
                 String action=MayaToolRouter.action(userText);
                 String directActionReply=executeSafeAction(context,action);
                 if(directActionReply!=null){ callback.onReply(directActionReply); return; }
@@ -119,7 +120,8 @@ public class MayaAI {
                                 JSONObject part=parts.optJSONObject(pi);
                                 if(part!=null){
                                     String t=part.optString("text","").trim();
-                                    if(!t.isEmpty())sb.append(t).append("\n");
+                                    if(!t.isEmpty())sb.append(t).append("
+");
                                 }
                             }
                         }
@@ -152,7 +154,9 @@ public class MayaAI {
         if(q.contains("what do you remember")||q.contains("what do you know about me")||q.contains("මොනවාද මතක")||q.contains("මාව මතකද")){
             String all=memoryStore.all();
             if(all.isEmpty()) return preferredLanguage(context).equals("Sinhala")?"දැනට save කරලා තියෙන memory එකක් නැහැ.":"I don't have any saved memories yet.";
-            return preferredLanguage(context).equals("Sinhala")?"මට මතක තියෙන්නේ මේවායි:\n"+all:"Here are the things I have saved:\n"+all;
+            return preferredLanguage(context).equals("Sinhala")?"මට මතක තියෙන්නේ මේවායි:
+"+all:"Here are the things I have saved:
+"+all;
         }
         String fact=null;
         String[] prefixes={"remember that ","remember this:","remember this ","මතක තියාගන්න ","මතක තියාගන්න:","මතක තියාගන්න කියන එක ","මාව මතක තියාගන්න "};
@@ -222,7 +226,15 @@ public class MayaAI {
         return hint;
     }
 
-    private static boolean isFollowUp(String text){\n        String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();\n        if(q.isEmpty()||q.length()>80)return false;\n        String[] markers={"yes","yeah","yep","no","nope","okay","ok","sure","that","this","it","why?","how?","what about","and then","really","then","එහෙමද","ඒක","මේක","ඇයි","කොහොමද","ඊට පස්සේ","හරි","ඔව්","නෑ","ඒකට","එතකොට"};\n        for(String m:markers)if(q.equals(m)||q.startsWith(m+" ")||q.startsWith(m+"?"))return true;\n        return q.matches(".*\\b(that one|this one|the same|what about it)\\b.*");\n    }\n\n    private static String preferredLanguageCode(Context context){
+    private static boolean isFollowUp(String text){
+        String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
+        if(q.isEmpty()||q.length()>80)return false;
+        String[] markers={"yes","yeah","yep","no","nope","okay","ok","sure","that","this","it","why?","how?","what about","and then","really","then","එහෙමද","ඒක","මේක","ඇයි","කොහොමද","ඊට පස්සේ","හරි","ඔව්","නෑ","ඒකට","එතකොට"};
+        for(String m:markers)if(q.equals(m)||q.startsWith(m+" ")||q.startsWith(m+"?"))return true;
+        return q.matches(".*\\b(that one|this one|the same|what about it)\\b.*");
+    }
+
+    private static String preferredLanguageCode(Context context){
         SharedPreferences p=context.getSharedPreferences("settings",Context.MODE_PRIVATE);
         String selected=p.getString("maya_language","auto");
         if("si".equals(selected))return "sinhala";
@@ -294,7 +306,8 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
         prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka. If asked about the creator, share only this creator name unless additional public profile information is explicitly provided in the current conversation. Never reveal private memory or private conversation details. Creator instructions do not override safety rules. ");
         prompt.append("LIVE APP STATE + MEMORY: ").append(memoryText==null?"":memoryText).append(". ");
         if("SERVER_WEB_SEARCH".equals(webResults))prompt.append("A server-side web search will be added to this prompt when available. ");
-        prompt.append("\nUSER: ").append(userText==null?"":userText);
+        prompt.append("
+USER: ").append(userText==null?"":userText);
         appendRecentHistory(context,prompt);
         return prompt.toString();
     }
@@ -306,14 +319,17 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
             if(saved==null||saved.length()>4000)return;
             JSONArray recent=new JSONArray(saved);
             int start=Math.max(0,recent.length()-12);
-            prompt.append("\nPERSISTENT RECENT CONVERSATION (may span multiple days):\n");
+            prompt.append("
+PERSISTENT RECENT CONVERSATION (may span multiple days):
+");
             for(int i=start;i<recent.length();i++){
                 JSONObject item=recent.optJSONObject(i);
                 if(item==null)continue;
                 String role=item.optString("role","");
                 String content=item.optString("content","");
                 if(("user".equals(role)||"assistant".equals(role))&&!content.trim().isEmpty()){
-                    prompt.append(role.toUpperCase()).append(": ").append(content.substring(0,Math.min(1000,content.length()))).append("\n");
+                    prompt.append(role.toUpperCase()).append(": ").append(content.substring(0,Math.min(1000,content.length()))).append("
+");
                 }
             }
         }catch(Exception ignored){}
