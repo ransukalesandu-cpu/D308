@@ -225,6 +225,17 @@ public class VoiceAssistant {
         return true;
     }
 
+    public void stopLiveConversation() {
+        continuousConversation = false;
+        listening = false;
+        recognitionRetryCount = 0;
+        voiceHandler.removeCallbacksAndMessages(null);
+        try { if (recognizer != null) recognizer.cancel(); } catch (Exception ignored) {}
+        try { if (recognizer != null) recognizer.destroy(); } catch (Exception ignored) {}
+        recognizer = null;
+        notifyVoiceEnded();
+    }
+
     private void handle(String spoken) {
         String q = spoken == null ? "" : spoken.trim();
         String lower = q.toLowerCase(Locale.ROOT);
@@ -239,13 +250,12 @@ public class VoiceAssistant {
                 .replace("මයා", "")
                 .trim();
         String reply;
-        if(question.equals("maya stop") || question.equals("stop maya") || question.equals("maya pause") || question.equals("live stop")){
-            try{
-                Intent i=new Intent(activity,MayaAssistantService.class);
-                i.setAction(MayaAssistantService.ACTION_STOP_WORKOUT_LIVE);
-                if(android.os.Build.VERSION.SDK_INT>=26) activity.startForegroundService(i); else activity.startService(i);
-            }catch(Exception ignored){}
-            speak("හරි 😄 Maya Live Conversation OFF.");
+        if(question.equals("stop") || question.equals("stop maya") || question.equals("maya stop")
+                || question.equals("pause") || question.equals("pause maya")
+                || question.equals("live stop") || question.equals("නවත්තන්න")
+                || question.equals("නවත්වන්න") || question.equals("මායා නවත්තන්න")){
+            stopLiveConversation();
+            Toast.makeText(activity, "Maya Live Conversation OFF. 🎙️", Toast.LENGTH_SHORT).show();
             return;
         }
         // Maya can create planned tasks for today, tomorrow, or a requested date.
