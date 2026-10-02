@@ -44,6 +44,8 @@ public class MayaAssistantService extends Service {
     private volatile boolean bargeInStopRequested=false;
     private long ttsStartedAt=0L;
     private long lastBargeInAt=0L;
+    private long microphoneReleaseAt=0L;
+    private static final long MIC_RELEASE_GUARD_MS=900L;
     private TextToSpeech tts;
     private boolean ready=false, stopping=false;
     private Handler handler;
@@ -213,6 +215,11 @@ private boolean fallbackListening=false;
 
     private void listen(){
         if(stopping||!ready||listening)return;
+        long wait=Math.max(0L,microphoneReleaseAt-System.currentTimeMillis());
+        if(wait>0L){
+            restart(wait);
+            return;
+        }
         if(stopping || !ready || !mayaAllowed() || !SpeechRecognizer.isRecognitionAvailable(this)){ if(!mayaAllowed()) stopSelf(); return; }
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){speak("Microphone permission එක allow කරන්න.");return;}
         if(listening) return;
@@ -221,6 +228,7 @@ private boolean fallbackListening=false;
             try{ recognizer.cancel(); }catch(Exception ignored){}
             try{ recognizer.destroy(); }catch(Exception ignored){}
             recognizer=null;
+            microphoneReleaseAt=System.currentTimeMillis()+MIC_RELEASE_GUARD_MS;
         }
         recognizer=SpeechRecognizer.createSpeechRecognizer(this);
         }catch(Exception e){
@@ -257,7 +265,12 @@ private boolean fallbackListening=false;
                 // recognizer with bounded backoff instead of leaving Maya stuck.
                 long delay=Math.min(5000,700L*(1L<<Math.min(3,speechErrorCount-1)));
                 if(e==SpeechRecognizer.ERROR_RECOGNIZER_BUSY || e==SpeechRecognizer.ERROR_TOO_MANY_REQUESTS){
-                    delay=Math.max(delay,1400L);
+                    delay=Math.max(delay,2800L);
+                    microphoneReleaseAt=System.currentTimeMillis()+2200L;
+                }
+                if(e==SpeechRecognizer.ERROR_AUDIO){
+                    delay=Math.max(delay,1800L);
+                    microphoneReleaseAt=System.currentTimeMillis()+1400L;
                 }
                 if(speechErrorCount>=4){
                     speechErrorCount=0;
@@ -299,7 +312,7 @@ private boolean fallbackListening=false;
             handler.postDelayed(() -> {
                 if(!stopping && conversationMode && !listening && recognizer!=null){
                     try{ recognizer.startListening(i); }
-                    catch(Exception ex){ listening=false; restart(1800); }
+                    catch(Exception ex){ listening=false; microphoneReleaseAt=System.currentTimeMillis()+1600L; restart(1800); }
                 }
             }, 350L);
         }catch(Exception e){
@@ -383,7 +396,7 @@ private boolean fallbackListening=false;
             handler.removeCallbacks(listenRunnable);
             handler.postDelayed(() -> {
                 if(conversationMode && !stopping && !listening) listen();
-            },220L);
+            },950L);
         }
     }
 
@@ -400,14 +413,20 @@ private boolean fallbackListening=false;
 
     private void endConversationMode(){
         boolean wasConversation=conversationMode;
+        stopBargeInListening();
         if(handler!=null) handler.removeCallbacks(conversationSilenceRunnable);
         conversationMode=false;
         realWakeWordActive=false;
         wakeWordDetected=false;
         fallbackListening=false;
-        if(recognizer!=null){try{recognizer.cancel();}catch(Exception ignored){}}
-        listening=false;
-        if(handler!=null && !stopping && wasConversation) handler.postDelayed(wakeWordRunnable,250);
+        if(recognizer!=null){
+            try{recognizer.cancel();}catch(Exception ignored){}
+            try{recognizer.destroy();}catch(Exception ignored){}
+            recognizer=null;
+            listening=false;
+            microphoneReleaseAt=System.currentTimeMillis()+MIC_RELEASE_GUARD_MS;
+        }else listening=false;
+        if(handler!=null && !stopping && wasConversation) handler.postDelayed(wakeWordRunnable,1200);
     }
 
     private boolean isWaitCommand(String q){
@@ -1098,23 +1117,3 @@ private boolean fallbackListening=false;
         }
         return START_STICKY;
     }
-    @Override public void onTaskRemoved(Intent rootIntent){
-        // START_STICKY already lets Android recreate this foreground service.
-        // Do not call startForegroundService() from onTaskRemoved(): on Android 12+
-        // that background start can be rejected even though this service is valid.
-        super.onTaskRemoved(rootIntent);
-    }
-
-    @Override public void onDestroy(){
-        stopping=true;
-        try{unregisterReceiver(screenStateReceiver);}catch(Exception ignored){}
-        try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
-        try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}
-        try{stopBargeInListening();}catch(Exception ignored){}
-        try{stopBargeInListening();}catch(Exception ignored){}
-        try{if(wakeWordAdapter!=null)wakeWordAdapter.stop();}catch(Exception ignored){}
-        try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
-        super.onDestroy();
-    }
-    @Override public IBinder onBind(Intent i){return null;}
-}
