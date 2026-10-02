@@ -1,6 +1,6 @@
 name: Build APK
 # APK build trigger
-# Full validation build - newline fixes
+# Full validation build - final Java newline fix
 
 on:
   workflow_dispatch:
