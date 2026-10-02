@@ -75,18 +75,6 @@ public class SettingsActivity extends Activity {
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=buttonStyle(new Button(this));test.setText("🔊  Test AI voice");test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);
 
-        LinearLayout workoutLive=card();
-        workoutLive.addView(label("🏋️ WORKOUT LIVE CONVERSATION",11,MUTED));
-        workoutLive.addView(label("When enabled, Maya stays in live conversation mode during your workout. You can turn it off anytime.",12,MUTED));
-        Switch live=new Switch(this);
-        live.setText("Keep Maya Live Conversation ON during workouts");
-        live.setTextColor(TEXT); live.setTextSize(15);
-        live.setChecked(prefs.getBoolean("workout_live_conversation",false));
-        live.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean("workout_live_conversation",on).apply());
-        workoutLive.addView(live);
-        body.addView(workoutLive);
-        body.addView(voice);
-
         LinearLayout mayaVoice=card();
         mayaVoice.addView(label("👩  MAYA VOICE",11,MUTED));
         mayaVoice.addView(label("Choose the voice style Maya uses for spoken replies. Available voices depend on the TTS voices installed on your phone.",12,MUTED));
