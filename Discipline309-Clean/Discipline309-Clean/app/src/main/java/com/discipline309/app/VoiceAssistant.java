@@ -216,7 +216,7 @@ public class VoiceAssistant {
                 .replace("මයා", "")
                 .trim();
         String reply;
-        String mode=activity.getSharedPreferences("settings",0).getString("maya_mode","motivative");
+        String mode=activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getString("maya_mode","motivative");
         if("auto".equals(mode)) mode=resolveAutoMode(question);
         boolean romance="romance".equals(mode);
         boolean caring="caring".equals(mode);
@@ -296,7 +296,7 @@ public class VoiceAssistant {
 
     private void speak(String text) {
         if (tts == null || !ttsReady) { pendingSpeech = text == null ? "" : text; return; }
-        android.content.SharedPreferences p=activity.getSharedPreferences("settings",0);
+        android.content.SharedPreferences p=activity.getSharedPreferences("settings",Context.MODE_PRIVATE);
         if(!p.getBoolean("auto_speak",true)) return;
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
         try {
@@ -318,7 +318,7 @@ public class VoiceAssistant {
     private void selectMayaVoice(Locale target) {
         if(tts==null)return;
         try{
-            int choice=Math.max(0,Math.min(2,activity.getSharedPreferences("settings",0).getInt("maya_voice",0)));
+            int choice=Math.max(0,Math.min(2,activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getInt("maya_voice",0)));
             java.util.ArrayList<TextToSpeech.Voice> female=new java.util.ArrayList<>();
             java.util.ArrayList<TextToSpeech.Voice> all=new java.util.ArrayList<>();
             java.util.Set<TextToSpeech.Voice> voices=tts.getVoices();
