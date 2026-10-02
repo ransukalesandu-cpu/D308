@@ -49,10 +49,10 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
                 restart(context, listener);
             }
         });
-        listen();
+        listen(context);
     }
 
-    private void listen() {
+    private void listen(Context context) {
         if (!running || recognizer == null) return;
         IntentFactory.start(recognizer, context);
     }
