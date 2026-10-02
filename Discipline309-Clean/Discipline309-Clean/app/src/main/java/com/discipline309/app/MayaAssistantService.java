@@ -296,6 +296,9 @@ private boolean fallbackListening=false;
         if(!realWakeWordActive && !fallbackListening && !(l.contains("maya")||l.contains("මායා"))) return;
         if(realWakeWordActive || fallbackListening || !wakeWordEnabled) wakeWordDetected=true;
         String q=l.replace("maya","").replace("මායා","").replace("මයා","").trim();
+        // Also accept the phrase "Hey Maya" when it reaches speech recognition.
+        if(q.equals("hey")) q="";
+        else if(q.startsWith("hey ")) q=q.substring(4).trim();
         q=normalizeMixedCommand(q);
         if(isConversationStopCommand(q)){
             conversationMode=false;
