@@ -1,6 +1,9 @@
 package com.discipline309.app;
 
 import android.service.voice.VoiceInteractionService;
+import android.content.Intent;
+import android.app.role.RoleManager;
+import android.os.Build;
 
 /**
  * Android system-assistant entry point for Maya.
