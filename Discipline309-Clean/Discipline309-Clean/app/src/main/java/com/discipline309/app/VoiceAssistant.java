@@ -417,7 +417,7 @@ public class VoiceAssistant {
                     if("COMPLETE_TASK".equals(action)){
                         ap.edit().putString("pending",action)
                                 .putString("pending_task_query",question).apply();
-                        speak("හරි 😄 ""+question+"" task එක complete කරන්නද? Yes කියන්න.");
+                        speak("හරි 😄 \""+question+"\" task එක complete කරන්නද? Yes කියන්න.");
                     }else{
                         ap.edit().putString("pending",action).apply();
                         speak("හරි 😄 "+("START_WORKOUT".equals(action) ? "workout එක start කරන්නද?" : "task එක complete කරන්නද?")+" Yes කියන්න.");
