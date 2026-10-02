@@ -328,15 +328,6 @@ public class MainActivity extends Activity {
 
     private void showShortPlan(){
         content.removeAllViews();
-        TextView top=label("Short Planning",26,TEXT);top.setTypeface(null,1);content.addView(top);
-        content.addView(label("Quick plan. Big results. Stay focused.",13,MUTED));
-
-        int count=planCount(),done=0;        for(int i=0;i<count;i++)if(planTaskDone(i))done++;
-        int pct=count==0?0:Math.round(done*100f/count);
-
-        LinearLayout progress=card();
-      private void showShortPlan(){
-        content.removeAllViews();
         header("TODAY'S PLAN","Keep it short. Keep it focused.");
         int count=planCount(),done=0;
         for(int i=0;i<count;i++)if(planTaskDone(i))done++;
@@ -366,7 +357,7 @@ public class MainActivity extends Activity {
             content.addView(sectionTitle("TODAY'S TASKS"));
             for(int i=0;i<count;i++)addPlanTaskRow(i);
             Button clear=button("✓  MARK ALL AS DONE");
-            clear.setOnClickListener(v->{haptic(v);for(int i=0;i<count;i++)prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",true).apply();showShortPlan();});
+            clear.setOnClickListener(v->{haptic(v);SharedPreferences.Editor ed=prefs.edit();for(int i=0;i<count;i++)ed.putBoolean("plan_"+planDate()+"_"+i+"_done",true);ed.apply();showShortPlan();});
             content.addView(clear);
         }
 
@@ -384,13 +375,29 @@ public class MainActivity extends Activity {
         content.addView(journey);
     }
 
-+"_done",x).apply();});
+    private void addPlanTaskRow(int i){
+        if(!validPlanIndex(i))return;
+        LinearLayout row=card();
+        LinearLayout line=new LinearLayout(this);
+        line.setGravity(Gravity.CENTER_VERTICAL);
+        CheckBox cb=new CheckBox(this);
+        cb.setChecked(planTaskDone(i));
+        cb.setEnabled(allowed("can_edit_habits"));
+        cb.setOnCheckedChangeListener((v,checked)->{
+            if(!allowed("can_edit_habits")){v.setChecked(!checked);return;}
+            prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",checked).apply();
+            if(checked){haptic(v);sound(ToneGenerator.TONE_PROP_ACK);v.setTextColor(GOLD);}
+            showShortPlan();
+        });
         line.addView(cb,new LinearLayout.LayoutParams(dp(42),dp(48)));
-        LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout info=new LinearLayout(this);
+        info.setOrientation(LinearLayout.VERTICAL);
         TextView name=label(planTaskName(i),16,TEXT);name.setTypeface(null,1);info.addView(name);
         info.addView(label(planTaskTime(i)+"   •   "+planTaskPriority(i),12,MUTED));
         line.addView(info,new LinearLayout.LayoutParams(0,-2,1));
-        Button edit=button("⋮");edit.setMinWidth(dp(44));edit.setOnClickListener(v->editPlanTaskDialog(i));
+        Button edit=button("⋮");
+        edit.setMinWidth(dp(44));
+        edit.setOnClickListener(v->editPlanTaskDialog(i));
         line.addView(edit);
         row.addView(line);
         content.addView(row);
