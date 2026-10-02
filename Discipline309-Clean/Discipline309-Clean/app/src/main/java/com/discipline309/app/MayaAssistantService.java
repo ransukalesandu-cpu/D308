@@ -219,10 +219,13 @@ private boolean fallbackListening=false;
                     handler.postDelayed(conversationSilenceRunnable,CONVERSATION_SILENCE_MS);
                 }
                 speechErrorCount++;
+                // Android speech errors such as network timeout, temporary server
+                // failures and recognizer-busy states are transient. Recreate the
+                // recognizer with bounded backoff instead of leaving Maya stuck.
                 long delay=Math.min(5000,700L*(1L<<Math.min(3,speechErrorCount-1)));
                 if(speechErrorCount>=4){
                     speechErrorCount=0;
-                    speak("Voice listening එකට පොඩි issue එකක්. Maya ආයෙත් try කරනවා. 🎙️");
+                    speak("Voice connection එකට පොඩි issue එකක්. Maya ආයෙත් try කරනවා. 🎙️");
                     restart(2500);
                 }else restart(delay);
             }
@@ -248,8 +251,14 @@ private boolean fallbackListening=false;
         });
         Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"si-LK");
-        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"si-LK");
+        SharedPreferences lp=getSharedPreferences("settings",MODE_PRIVATE);
+        String selectedLanguage=lp.getString("maya_language","auto");
+        String country=Locale.getDefault().getCountry();
+        boolean sinhala="si".equals(selectedLanguage)
+                || ("auto".equals(selectedLanguage) && "LK".equalsIgnoreCase(country));
+        String recognitionLocale=sinhala ? "si-LK" : "en-LK";
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,recognitionLocale);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,recognitionLocale);
         try{
             recognizer.startListening(i);
         }catch(Exception e){
