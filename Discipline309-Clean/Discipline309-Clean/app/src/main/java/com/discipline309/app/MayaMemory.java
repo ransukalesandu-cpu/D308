@@ -39,20 +39,29 @@ public class MayaMemory {
         if (all.isEmpty()) return "";
         if (q.isEmpty()) return format(all);
 
-        StringBuilder out = new StringBuilder();
+        List<ScoredMemory> scored = new ArrayList<>();
+        String[] tokens = q.split("\\s+");
         for (MayaMemoryEntity item : all) {
-            String fact = item.fact == null ? "" : item.fact;
-            boolean hit = false;
-            for (String token : q.split("\\s+")) {
-                if (token.length() >= 3 && fact.toLowerCase(Locale.ROOT).contains(token)) {
-                    hit = true;
-                    break;
-                }
+            String fact = item.fact == null ? "" : item.fact.trim();
+            String lower = fact.toLowerCase(Locale.ROOT);
+            int score = 0;
+            for (String token : tokens) {
+                String clean = token.replaceAll("[^\\p{L}\\p{Nd}]+", "");
+                if (clean.length() < 3) continue;
+                if (lower.contains(clean)) score += clean.length() >= 5 ? 3 : 1;
             }
-            if (hit) {
-                if (out.length() > 0) out.append("\n");
-                out.append("• ").append(fact);
-            }
+            if (lower.contains(q) && q.length() >= 4) score += 6;
+            if (score > 0) scored.add(new ScoredMemory(fact, score, item.createdAt));
+        }
+        scored.sort((a,b) -> {
+            int c = Integer.compare(b.score, a.score);
+            return c != 0 ? c : Long.compare(b.createdAt, a.createdAt);
+        });
+        StringBuilder out = new StringBuilder();
+        int limit = Math.min(6, scored.size());
+        for (int i=0;i<limit;i++) {
+            if (out.length() > 0) out.append("\n");
+            out.append("• ").append(scored.get(i).fact);
         }
         return out.toString();
     }
