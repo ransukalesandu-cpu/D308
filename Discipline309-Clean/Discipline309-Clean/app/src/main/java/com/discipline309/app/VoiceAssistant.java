@@ -24,6 +24,7 @@ public class VoiceAssistant {
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
     private boolean listening = false;
+    public boolean isListening() { return listening; }
     private boolean ttsReady = false;
     private String pendingSpeech = "";
     private int recognitionRetryCount = 0;
@@ -54,6 +55,15 @@ public class VoiceAssistant {
                 } catch (Exception ignored) {}
             });
         } catch (Exception ignored) { tts = null; }
+    }
+
+    public void stopListening() {
+        listening=false;
+        recognitionRetryCount=0;
+        voiceHandler.removeCallbacksAndMessages(null);
+        try { if(recognizer!=null) recognizer.cancel(); } catch(Exception ignored) {}
+        try { if(recognizer!=null) recognizer.destroy(); } catch(Exception ignored) {}
+        recognizer=null;
     }
 
     public void start() {
