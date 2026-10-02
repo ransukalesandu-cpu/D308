@@ -24,6 +24,8 @@ public class VoiceAssistant {
     private SpeechRecognizer recognizer;
     private TextToSpeech tts;
     private boolean listening = false;
+    // One Maya button press keeps a live conversation alive across follow-up questions.
+    private boolean continuousConversation = false;
     public boolean isListening() { return listening; }
     private boolean ttsReady = false;
     private String pendingSpeech = "";
@@ -62,6 +64,7 @@ public class VoiceAssistant {
     }
 
     public void stopListening() {
+        continuousConversation=false;
         listening=false;
         notifyVoiceEnded();
         recognitionRetryCount=0;
@@ -88,6 +91,7 @@ public class VoiceAssistant {
         }
 
         if (listening) return true;
+        continuousConversation = true;
         listening = true;
         Toast.makeText(activity, "🎙️ කියන්න… Maya අහගෙන ඉන්නවා.", Toast.LENGTH_SHORT).show();
 
@@ -157,7 +161,8 @@ public class VoiceAssistant {
             public void onResults(Bundle results) {
                 listening = false;
                 recognitionRetryCount = 0;
-                notifyVoiceEnded();
+                // Do not end the Maya button session after one answer. The TTS
+                // completion callback below starts the next recognition cycle.
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String text = (matches == null || matches.isEmpty()) ? "" : matches.get(0);
                 handle(text);
@@ -536,6 +541,25 @@ public class VoiceAssistant {
         tts.setSpeechRate(rate);
         String safe=naturalSinhala(text);
         if(safe.isEmpty()) return;
+        if (android.os.Build.VERSION.SDK_INT >= 15) {
+            tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
+                @Override public void onStart(String utteranceId) {}
+                @Override public void onDone(String utteranceId) {
+                    if (continuousConversation && !listening) {
+                        voiceHandler.postDelayed(() -> {
+                            if (continuousConversation && !listening) start();
+                        }, 280L);
+                    }
+                }
+                @Override public void onError(String utteranceId) {
+                    if (continuousConversation && !listening) {
+                        voiceHandler.postDelayed(() -> {
+                            if (continuousConversation && !listening) start();
+                        }, 400L);
+                    }
+                }
+            });
+        }
         try { tts.speak(safe, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis()); }
         catch (Exception ignored) {}
         } catch (Exception ignored) {}
