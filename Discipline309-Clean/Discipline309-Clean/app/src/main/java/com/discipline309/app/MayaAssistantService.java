@@ -18,7 +18,7 @@ import android.speech.*;
 import android.speech.tts.TextToSpeech;
 import java.util.*;
 
-public class MayaAssistantService extends Service {
+public class MayaAssistantService extends Service {\n    public static final String ACTION_PAUSE_LIVE_MIC = "com.discipline309.app.PAUSE_LIVE_MIC";\n    public static final String ACTION_RESUME_LIVE_MIC = "com.discipline309.app.RESUME_LIVE_MIC";
     // Wake-word architecture:
     // This service currently uses Android SpeechRecognizer for command capture.
     // A provider-independent WakeWordEngine hook lets us add Porcupine/openWakeWord
@@ -104,7 +104,7 @@ private boolean fallbackListening=false;
         }
     }
 
-    private boolean mayaAllowed(){
+    private void pauseForLiveButton(){\n        try{\n            if(handler!=null){ handler.removeCallbacks(wakeWordRunnable); handler.removeCallbacks(listenRunnable); handler.removeCallbacks(conversationSilenceRunnable); }\n            conversationMode=false; realWakeWordActive=false; wakeWordDetected=false; fallbackListening=false; listening=false;\n            if(recognizer!=null){ try{recognizer.cancel();}catch(Exception ignored){} try{recognizer.destroy();}catch(Exception ignored){} recognizer=null; }\n            if(wakeWordAdapter!=null){ try{wakeWordAdapter.stop();}catch(Exception ignored){} wakeWordAdapter=null; }\n            if(tts!=null && ttsSpeaking){ try{tts.stop();}catch(Exception ignored){} ttsSpeaking=false; }\n        }catch(Exception ignored){}\n    }\n    private void resumeAfterLiveButton(){\n        if(stopping || !mayaAllowed() || handler==null)return;\n        handler.removeCallbacks(wakeWordRunnable); handler.postDelayed(wakeWordRunnable,700L);\n    }\n\n    private boolean mayaAllowed(){
         return !SupabaseAccountManager.loggedIn(this) || SupabaseAccountManager.can(this,"can_use_maya");
     }
 
@@ -967,7 +967,7 @@ private boolean fallbackListening=false;
 
     @Override public int onStartCommand(Intent i,int flags,int id){
         if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
-        if(i!=null && "com.discipline309.app.MAYA_ASSISTANT_INVOCATION".equals(i.getAction())){
+        if(i!=null && ACTION_PAUSE_LIVE_MIC.equals(i.getAction())){\n            if(handler!=null) handler.post(this::pauseForLiveButton);\n            return START_STICKY;\n        }\n        if(i!=null && ACTION_RESUME_LIVE_MIC.equals(i.getAction())){\n            if(handler!=null) handler.post(this::resumeAfterLiveButton);\n            return START_STICKY;\n        }\n        if(i!=null && "com.discipline309.app.MAYA_ASSISTANT_INVOCATION".equals(i.getAction())){
             if(handler!=null){
                 handler.post(() -> {
                     if(stopping) return;
