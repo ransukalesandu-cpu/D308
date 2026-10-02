@@ -24,6 +24,8 @@ import java.util.*;
 public class MayaAssistantService extends Service {
     public static final String ACTION_PAUSE_LIVE_MIC = "com.discipline309.app.PAUSE_LIVE_MIC";
     public static final String ACTION_RESUME_LIVE_MIC = "com.discipline309.app.RESUME_LIVE_MIC";
+    public static final String ACTION_START_WORKOUT_LIVE = "com.discipline309.app.START_WORKOUT_LIVE";
+    public static final String ACTION_STOP_WORKOUT_LIVE = "com.discipline309.app.STOP_WORKOUT_LIVE";
     // Wake-word architecture:
     // This service currently uses Android SpeechRecognizer for command capture.
     // A provider-independent WakeWordEngine hook lets us add Porcupine/openWakeWord
@@ -32,6 +34,7 @@ public class MayaAssistantService extends Service {
     private boolean wakeWordDetected = false;
     private boolean realWakeWordActive = false;
     private boolean conversationMode = false;
+    private boolean workoutLiveMode = false;
     private OpenWakeWordAdapter wakeWordAdapter;
 
     private static final int ID=3099;
@@ -61,7 +64,7 @@ private boolean fallbackListening=false;
     private static final long CONVERSATION_SILENCE_MS=5000L;
     private final Runnable conversationSilenceRunnable=new Runnable(){
         @Override public void run(){
-            if(conversationMode && !stopping && !listening && !ttsSpeaking){
+            if(conversationMode && !workoutLiveMode && !stopping && !listening && !ttsSpeaking){
                 endConversationMode();
             }
         }
@@ -119,10 +122,27 @@ private boolean fallbackListening=false;
         }
     }
 
+    private void startWorkoutLiveConversation(){
+        if(stopping || !mayaAllowed()) return;
+        workoutLiveMode=true;
+        conversationMode=true;
+        wakeWordDetected=false;
+        realWakeWordActive=false;
+        try{ if(wakeWordAdapter!=null) wakeWordAdapter.stop(); }catch(Exception ignored){}
+        if(handler!=null){ handler.removeCallbacks(wakeWordRunnable); handler.removeCallbacks(conversationSilenceRunnable); }
+        speak("හරි 🔥 Workout Live Conversation ON. Workout කරන ගමන් මට කතා කරන්න. ඕන වෙලාවක 'Maya stop' කියන්න.");
+    }
+
+    private void stopWorkoutLiveConversation(){
+        workoutLiveMode=false;
+        endConversationMode();
+        speak("හරි 😄 Workout Live Conversation OFF.");
+    }
+
     private void pauseForLiveButton(){
         try{
             if(handler!=null){ handler.removeCallbacks(wakeWordRunnable); handler.removeCallbacks(listenRunnable); handler.removeCallbacks(conversationSilenceRunnable); }
-            conversationMode=false; realWakeWordActive=false; wakeWordDetected=false; fallbackListening=false; listening=false;
+            conversationMode=false; workoutLiveMode=false; realWakeWordActive=false; wakeWordDetected=false; fallbackListening=false; listening=false;
             if(recognizer!=null){ try{recognizer.cancel();}catch(Exception ignored){} try{recognizer.destroy();}catch(Exception ignored){} recognizer=null; }
             if(wakeWordAdapter!=null){ try{wakeWordAdapter.stop();}catch(Exception ignored){} wakeWordAdapter=null; }
             if(tts!=null && ttsSpeaking){ try{tts.stop();}catch(Exception ignored){} ttsSpeaking=false; }
@@ -1097,6 +1117,14 @@ private boolean fallbackListening=false;
         if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
         if(i!=null && ACTION_PAUSE_LIVE_MIC.equals(i.getAction())){
             if(handler!=null) handler.post(this::pauseForLiveButton);
+            return START_STICKY;
+        }
+        if(i!=null && ACTION_START_WORKOUT_LIVE.equals(i.getAction())){
+            if(handler!=null) handler.post(this::startWorkoutLiveConversation);
+            return START_STICKY;
+        }
+        if(i!=null && ACTION_STOP_WORKOUT_LIVE.equals(i.getAction())){
+            if(handler!=null) handler.post(this::stopWorkoutLiveConversation);
             return START_STICKY;
         }
         if(i!=null && ACTION_RESUME_LIVE_MIC.equals(i.getAction())){
