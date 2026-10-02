@@ -27,6 +27,14 @@ public class BootReceiver extends BroadcastReceiver {
 
             if (enabled && SupabaseAccountManager.loggedIn(c) &&
                 SupabaseAccountManager.can(c, "can_use_maya")) {
+                // Background spoken check-ins do not need microphone access.
+                // Try to restore the background-only service after reboot; if Android blocks
+                // the foreground-service start, keep the notification fallback.
+                try {
+                    Intent maya=new Intent(c,MayaAssistantService.class);
+                    maya.putExtra("background_voice_only",true);
+                    if(Build.VERSION.SDK_INT>=26) c.startForegroundService(maya); else c.startService(maya);
+                } catch(Exception ignored) {}
                 showMayaBootNotification(c);
             }
         } catch (Exception ignored) {}
