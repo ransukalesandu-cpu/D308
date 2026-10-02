@@ -43,6 +43,8 @@ public final class MayaContextProvider {
             mission=missions[Math.abs(todayKey.hashCode())%missions.length];
         }
 
+        // Keep context generation lightweight: these values are cached in SharedPreferences
+        // and only recalculated when Maya actually needs the full live state.
         int completedDays=completedDays(p,start,now,target);
         int totalCompletedTasks=totalCompletedTasks(p,start,now,target,totalTasks);
         long xpLong=(long)completedDays*100L+(long)totalCompletedTasks*20L+Math.max(0,Math.min(1000000,p.getInt("xp_bonus",0)));
@@ -56,11 +58,14 @@ public final class MayaContextProvider {
         int[] milestones={1,3,7,14,30,50,100,150,200,309};
         for(int m:milestones)if(completedDays>=m)unlocked++;
 
+        // Count only the bounded mission-reward keys instead of scanning the entire
+        // SharedPreferences map. This avoids an O(all-preference-keys) pass on every Maya request.
         int rewardedMissions=0;
-        int memoryGuard=0;
-        for(String k:p.getAll().keySet()){
-            if(memoryGuard++>=1000)break;
-            if(k.startsWith("mission_")&&k.endsWith("_rewarded")&&p.getBoolean(k,false)) rewardedMissions++;
+        Calendar rewardCursor=(Calendar)start.clone();
+        int rewardGuard=0;
+        while(!rewardCursor.after(now) && !rewardCursor.after(target) && rewardGuard++<PROGRAM_DAYS){
+            if(p.getBoolean("mission_"+key(rewardCursor)+"_rewarded",false)) rewardedMissions++;
+            rewardCursor.add(Calendar.DAY_OF_YEAR,1);
         }
 
         String journal=p.getString("journal_"+todayKey,"none");
