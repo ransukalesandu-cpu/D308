@@ -85,7 +85,7 @@ private boolean fallbackListening=false;
         }catch(Exception ignored){}
         tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){int lang=tts.setLanguage(new Locale("si","LK")); if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(new Locale("si")); } tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
         handler.postDelayed(wakeWordRunnable,1200);
-        // Keep background mode silent until the wake word "Maya" is detected.
+        handler.postDelayed(this::scheduleProactiveCheckIn,5000);
         }catch(Exception e){
             ready=false;
             stopping=true;
@@ -101,7 +101,32 @@ private boolean fallbackListening=false;
         return !SupabaseAccountManager.loggedIn(this) || SupabaseAccountManager.can(this,"can_use_maya");
     }
 
-    // Maya stays silent until the real wake word is detected.\n    // No periodic/proactive TTS is scheduled while waiting for the wake word.\n\n    private void startWakeWord(){
+    private static final long PROACTIVE_INTERVAL_MS=2L*60L*60L*1000L;
+    private final Object PROACTIVE_TOKEN=new Object();
+
+    private void scheduleProactiveCheckIn(){
+        if(stopping || handler==null) return;
+        handler.removeCallbacksAndMessages(PROACTIVE_TOKEN);
+        handler.postDelayed(() -> {
+            if(!stopping && mayaAllowed() && ready && getSharedPreferences("settings",MODE_PRIVATE).getBoolean("auto_speak",true)){
+                if(!listening && !ttsSpeaking){
+                    String suggestion=MayaPredictiveActions.nextSuggestion(this);
+                    if(suggestion==null||suggestion.trim().isEmpty()){scheduleProactiveCheckIn();return;}
+                    SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
+                    long now=System.currentTimeMillis();
+                    long last=p.getLong("last_spoken_at",0L);
+                    String lastText=p.getString("last_text","");
+                    if(!suggestion.equals(lastText) || now-last>=6L*60L*60L*1000L){
+                        speak(suggestion);
+                        p.edit().putLong("last_spoken_at",now).putString("last_text",suggestion).apply();
+                    }
+                }
+            }
+            scheduleProactiveCheckIn();
+        }, PROACTIVE_INTERVAL_MS);
+    }
+
+    private void startWakeWord(){
         if(stopping || !wakeWordEnabled || !mayaAllowed()){ if(!mayaAllowed()) stopSelf(); return; }
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
             speak("Microphone permission එක allow කරන්න.");
@@ -673,3 +698,245 @@ private boolean fallbackListening=false;
         if(name==null||name.trim().isEmpty()){speak("කාට call කරන්නද කියන්න.");return;}
         if(checkSelfPermission(Manifest.permission.READ_CONTACTS)!=PackageManager.PERMISSION_GRANTED){
             speak("Contacts permission එක app එකේ Settings වලින් allow කරන්න.");
+            return;
+        }
+        Cursor c=getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER,ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME},
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" LIKE ?",new String[]{"%"+name.trim()+"%"},
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" ASC");
+        String number=null,display=null;
+        if(c!=null){if(c.moveToFirst()){number=c.getString(0);display=c.getString(1);}c.close();}
+        if(number==null){speak(name+" කියන contact එක හම්බවුනේ නැහැ.");return;}
+        try{
+            Intent i=new Intent(Intent.ACTION_DIAL,Uri.parse("tel:"+Uri.encode(number)));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak(display+" ගේ call screen එක open කළා.");
+        }catch(Exception e){speak("Call screen එක open කරන්න බැරි වුණා.");}
+    }
+
+    private void setDnd(boolean on){
+        NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+        if(Build.VERSION.SDK_INT>=23 && !nm.isNotificationPolicyAccessGranted()){
+            speak("DND permission එක දෙන්න. Settings වල Maya DND access enable කරන්න.");
+            try{Intent i=new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(i);}catch(Exception ignored){}
+            return;
+        }
+        if(Build.VERSION.SDK_INT>=23){
+            nm.setInterruptionFilter(on?NotificationManager.INTERRUPTION_FILTER_NONE:NotificationManager.INTERRUPTION_FILTER_ALL);
+            speak(on?"Do Not Disturb ON කළා. 🔕":"Do Not Disturb OFF කළා. 🔔");
+        }
+    }
+
+    private void readLatestNotification(){
+        String text=getSharedPreferences("maya_notifications",MODE_PRIVATE).getString("latest","");
+        if(text.isEmpty()) speak("අලුත් notification එකක් මට read කරන්න ලැබිලා නැහැ.");
+        else speak(text);
+    }
+
+    private void openSystemSettings(String action,String label){
+        try{
+            Intent i=new Intent(action);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak(label+" open කළා. ⚙️");
+        }catch(Exception e){speak(label+" open කරන්න බැරි වුණා.");}
+    }
+
+    private void batteryStatus(){
+        try{
+            BatteryManager bm=(BatteryManager)getSystemService(BATTERY_SERVICE);
+            int level=bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+            IntentFilter f=new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent b=registerReceiver(null,f);
+            boolean charging=false;
+            if(b!=null){int status=b.getIntExtra(BatteryManager.EXTRA_STATUS,-1); charging=status==BatteryManager.BATTERY_STATUS_CHARGING||status==BatteryManager.BATTERY_STATUS_FULL;}
+            speak("Battery එක "+level+"%. "+(charging?"දැනට charge වෙනවා. 🔋":"දැනට charge වෙන්නේ නැහැ. 🔋"));
+        }catch(Exception e){speak("Battery status එක ගන්න බැරි වුණා.");}
+    }
+
+    private void setBrightness(String q){
+        if(!Settings.System.canWrite(this)){
+            speak("Screen brightness control කරන්න WRITE SETTINGS permission එක allow කරන්න.");
+            try{Intent i=new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,Uri.parse("package:"+getPackageName()));i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(i);}catch(Exception ignored){}
+            return;
+        }
+        try{
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d{1,3})").matcher(q);
+            if(m.find()){
+                int pct=Math.max(1,Math.min(100,Integer.parseInt(m.group(1))));
+                int value=Math.round(255f*pct/100f);
+                Settings.System.putInt(getContentResolver(),Settings.System.SCREEN_BRIGHTNESS,value);
+                speak("Brightness "+pct+"% කළා. ☀️");
+            }else openSystemSettings(Settings.ACTION_DISPLAY_SETTINGS,"Display settings");
+        }catch(Exception e){speak("Brightness change කරන්න බැරි වුණා.");}
+    }
+
+    private void setScreenTimeout(String q){
+        if(!Settings.System.canWrite(this)){
+            speak("Screen timeout change කරන්න WRITE SETTINGS permission එක allow කරන්න.");
+            try{Intent i=new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS,Uri.parse("package:"+getPackageName()));i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);startActivity(i);}catch(Exception ignored){}
+            return;
+        }
+        try{
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d+)").matcher(q);
+            if(m.find()){
+                int minutes=Math.max(1,Math.min(60,Integer.parseInt(m.group(1))));
+                Settings.System.putInt(getContentResolver(),Settings.System.SCREEN_OFF_TIMEOUT,minutes*60*1000);
+                speak("Screen timeout "+minutes+" minutes කළා. 💤");
+            }else openSystemSettings(Settings.ACTION_DISPLAY_SETTINGS,"Display settings");
+        }catch(Exception e){speak("Screen timeout change කරන්න බැරි වුණා.");}
+    }
+
+    private void openAlarm(){
+        try{
+            Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_ALARM);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak("Alarm screen එක open කළා. ⏰");
+        }catch(Exception e){speak("Alarm app එක open කරන්න බැරි වුණා.");}
+    }
+
+    private void openTimer(String q){
+        try{
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d+)").matcher(q);
+            Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
+            if(m.find()) i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,Integer.parseInt(m.group(1))*60)));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak(m.find()?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
+        }catch(Exception e){speak("Timer app එක open කරන්න බැරි වුණා.");}
+    }
+
+    private void calendarEvent(String q){
+        try{
+            Intent i=new Intent(Intent.ACTION_INSERT);
+            i.setData(CalendarContract.Events.CONTENT_URI);
+            i.putExtra(CalendarContract.Events.TITLE, extractEventTitle(q));
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak("Calendar event එක add කරන්න screen එක open කළා. 📅");
+        }catch(Exception e){speak("Calendar එක open කරන්න බැරි වුණා.");}
+    }
+
+    private String extractEventTitle(String q){
+        String s=q.replace("add calendar event","").replace("calendar event","")
+            .replace("add event","").replace("schedule","").replace("event","").trim();
+        return s.isEmpty()?"Maya event":s;
+    }
+
+    private void reminder(String q){
+        try{
+            String text=q.replace("remind me","").replace("set reminder","")
+                .replace("reminder","").replace("මතක් කරන්න","").trim();
+            Intent i=new Intent(Intent.ACTION_INSERT);
+            i.setData(CalendarContract.Events.CONTENT_URI);
+            i.putExtra(CalendarContract.Events.TITLE,text.isEmpty()?"Maya reminder":text);
+            i.putExtra(CalendarContract.Events.DESCRIPTION,"Created by Maya");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            speak("Reminder එක save කරන්න calendar screen එක open කළා. 🔔");
+        }catch(Exception e){speak("Reminder එක create කරන්න බැරි වුණා.");}
+    }
+
+    private void deviceInfo(){
+        String model=Build.MANUFACTURER+" "+Build.MODEL;
+        speak("Phone එක "+model+". Android "+Build.VERSION.RELEASE+". API "+Build.VERSION.SDK_INT+".");
+    }
+
+    private void speak(String s){
+        try{
+            if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
+            String normalized=s.trim().replaceAll("\\s+"," ");
+            long now=System.currentTimeMillis();
+            // Prevent the same response from being spoken twice within a short window.
+            if(normalized.equals(lastSpokenText) && now-lastSpokenAt<4500L)return;
+            lastSpokenText=normalized;
+            lastSpokenAt=now;
+            SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
+            if(!p.getBoolean("auto_speak",true))return;
+            if(recognizer!=null&&listening){try{recognizer.cancel();}catch(Exception ignored){}listening=false;}
+            float speed=Math.max(0,Math.min(100,p.getInt("speech_speed",45)));
+            // Slightly slower default speech and a neutral pitch make Sinhala words easier to understand.
+            float rate=.68f+(speed/100f)*.62f;
+            tts.setSpeechRate(rate);
+            tts.setPitch(1.02f);
+            ttsSpeaking=true;
+            String id="maya_"+System.currentTimeMillis();
+            if(Build.VERSION.SDK_INT>=15){
+                tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener(){
+                    @Override public void onStart(String utteranceId){ttsSpeaking=true;}
+                    @Override public void onDone(String utteranceId){
+                        ttsSpeaking=false;
+                        if(conversationMode && !stopping && mayaAllowed() && handler!=null){
+                            handler.postDelayed(() -> {
+                                if(conversationMode && !stopping && !listening) listen();
+                            },180);
+                        }
+                    }
+                    @Override public void onError(String utteranceId){
+                        ttsSpeaking=false;
+                        if(conversationMode && !stopping && mayaAllowed() && handler!=null){
+                            handler.postDelayed(() -> {
+                                if(conversationMode && !stopping && !listening) listen();
+                            },180);
+                        }
+                    }
+                });
+            }
+            tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,id);
+        }catch(Exception ignored){ttsSpeaking=false;}
+    }
+    private void createChannel(){
+        if(Build.VERSION.SDK_INT>=26){
+            NotificationChannel ch=new NotificationChannel("maya_assistant","Maya Assistant",NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription("Visible notification for Maya background microphone service");
+            NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.createNotificationChannel(ch);
+        }
+    }
+    private void handleAssistantInvocation(){
+        if(stopping || !mayaAllowed()) return;
+        wakeWordDetected=true;
+        realWakeWordActive=true;
+        fallbackListening=true;
+        conversationMode=true;
+        if(wakeWordAdapter!=null){
+            try{wakeWordAdapter.stop();}catch(Exception ignored){}
+        }
+        listen();
+    }
+
+    @Override public int onStartCommand(Intent i,int flags,int id){
+        if(!mayaAllowed()){stopSelf();return START_NOT_STICKY;}
+        if(i!=null && "com.discipline309.app.MAYA_ASSISTANT_INVOCATION".equals(i.getAction())){
+            if(handler!=null){
+                handler.post(() -> {
+                    if(stopping) return;
+                    if(!ready){
+                        pendingAssistantInvocation=true;
+                        return;
+                    }
+                    handleAssistantInvocation();
+                });
+            }
+        }
+        return START_STICKY;
+    }
+    @Override public void onTaskRemoved(Intent rootIntent){
+        // START_STICKY already lets Android recreate this foreground service.
+        // Do not call startForegroundService() from onTaskRemoved(): on Android 12+
+        // that background start can be rejected even though this service is valid.
+        super.onTaskRemoved(rootIntent);
+    }
+
+    @Override public void onDestroy(){
+        stopping=true;
+        try{unregisterReceiver(screenStateReceiver);}catch(Exception ignored){}
+        try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
+        try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}
+        try{if(wakeWordAdapter!=null)wakeWordAdapter.stop();}catch(Exception ignored){}
+        try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
+        super.onDestroy();
+    }
+    @Override public IBinder onBind(Intent i){return null;}
+}
