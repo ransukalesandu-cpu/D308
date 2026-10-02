@@ -43,7 +43,7 @@ private boolean fallbackListening=false;
     private boolean pendingAssistantInvocation=false;
     private String lastSpokenText="";
     private long lastSpokenAt=0L;
-    private static final long CONVERSATION_SILENCE_MS=10000L;
+    private static final long CONVERSATION_SILENCE_MS=5000L;
     private final Runnable conversationSilenceRunnable=new Runnable(){
         @Override public void run(){
             if(conversationMode && !stopping && !listening && !ttsSpeaking){
