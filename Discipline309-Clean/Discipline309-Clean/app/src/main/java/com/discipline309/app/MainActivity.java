@@ -161,19 +161,152 @@ public class MainActivity extends Activity {
     private String todayMoodEmoji(){return todayMoodEmojiFor(todayMoodScore());}
     private void moodDialog(){String[] names={"Very Low","Low","Okay","Good","Great"};String[] emojis={"😞","😕","😐","🙂","😄"};LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(6),0,dp(6),0);TextView selected=label(todayMood().isEmpty()?"How are you feeling today?":todayMoodEmoji()+"  "+todayMood(),17,TEXT);selected.setGravity(Gravity.CENTER);box.addView(selected,new LinearLayout.LayoutParams(-1,dp(54)));LinearLayout moods=new LinearLayout(this);moods.setGravity(Gravity.CENTER);Button[] bs=new Button[5];final int[] choice={todayMoodScore()>0?todayMoodScore()-1:2};for(int i=0;i<5;i++){final int n=i;Button b=button(emojis[i]);b.setTextSize(25);b.setPadding(0,0,0,0);b.setBackground(shape(i==choice[0]?0xFF3A2D6B:0xFF171D32,50));b.setOnClickListener(v->{choice[0]=n;selected.setText(emojis[n]+"  "+names[n]);for(int j=0;j<5;j++)bs[j].setBackground(shape(j==choice[0]?0xFF3A2D6B:0xFF171D32,50));});bs[i]=b;moods.addView(b,new LinearLayout.LayoutParams(0,dp(54),1));}box.addView(moods);EditText note=new EditText(this);note.setHint("Optional note — what affected your mood?");note.setMinLines(2);note.setText(prefs.getString("mood_note_"+key(),""));box.addView(note);new AlertDialog.Builder(this).setTitle("🧠 Today's Mood").setView(box).setPositiveButton("SAVE",(d,w)->{int score=choice[0]+1;String name=names[choice[0]],day=key(),n=note.getText().toString().trim();prefs.edit().putInt("mood_score_"+day,score).putString("mood_name_"+day,name).putString("mood_note_"+day,n).apply();if(SupabaseAccountManager.loggedIn(this)){String iso=new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());new SupabaseBackendRepository(this).saveMood(iso,score,name,n,(ok,msg,data)->{if(!ok)toast("Mood saved locally; cloud sync failed.");});}showHome();}).setNegativeButton("CANCEL",null).show();}
     private void addMoodCard(){LinearLayout mood=card();int score=todayMoodScore();int moodAccent=score>=4?0xFFFFD700:score==3?0xFFB388FF:score>0?0xFF6C63FF:ACCENT;mood.setBackground(glassShape(moodAccent));mood.addView(label("🧠 MOOD TRACKING",11,moodAccent));mood.addView(label(score==0?"How are you feeling today?":todayMoodEmoji()+"  "+todayMood()+"  •  "+score+"/5",18,TEXT));String note=prefs.getString("mood_note_"+key(),"");if(!note.isEmpty())mood.addView(label(note.length()>120?note.substring(0,120)+"…":note,12,MUTED));Button edit=button(score==0?"＋  Log Today's Mood":"✎  Update Today's Mood");edit.setOnClickListener(v->moodDialog());mood.addView(edit);content.addView(mood);}
-    private void showHome(){header("309 DAY DISCIPLINE","Build discipline. One day at a time. 🔥");int day=dayNumber(),done=countFor(key()),total=totalTasks(),pct=total==0?0:Math.round(done*100f/total);LinearLayout hero=card();hero.addView(label(day==0?"PROGRAM STARTS SOON":"DAY "+day+" / 309",12,MUTED));hero.addView(label(day==0?formatDate(startDate()):"Keep moving. "+Math.max(0,309-day)+" days remaining.",24,TEXT));addBar(hero,Math.max(0,day),309);hero.addView(label("Today  "+pct+"%   •   "+done+"/"+total+" tasks   •   🔥 "+currentStreak()+" day streak",13,MUTED));content.addView(hero);        int planTotal=planCount(), planDone=0;
-        for(int i=0;i<planTotal;i++) if(planTaskDone(i)) planDone++;
+    private TextView sectionTitle(String text){
+        TextView v=label(text,12,MUTED);
+        v.setTypeface(FONT_BOLD);
+        v.setLetterSpacing(.08f);
+        v.setPadding(dp(6),dp(14),dp(6),dp(6));
+        return v;
+    }
+
+    private LinearLayout progressRingCard(int day,int done,int total,int pct){
+        LinearLayout box=card();
+        box.setPadding(dp(18),dp(18),dp(18),dp(18));
+        LinearLayout top=new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        TextView ring=new TextView(this);
+        ring.setText(pct+"%");
+        ring.setTextColor(Color.WHITE);
+        ring.setTextSize(23);
+        ring.setTypeface(FONT_BOLD);
+        ring.setGravity(Gravity.CENTER);
+        GradientDrawable rg=new GradientDrawable();
+        rg.setShape(GradientDrawable.OVAL);
+        rg.setColor(0xFF151022);
+        rg.setStroke(dp(5),pct>=80?GOLD:ACCENT);
+        ring.setBackground(rg);
+        top.addView(ring,new LinearLayout.LayoutParams(dp(82),dp(82)));
+        LinearLayout info=new LinearLayout(this);
+        info.setOrientation(LinearLayout.VERTICAL);
+        info.setPadding(dp(16),0,0,0);
+        info.addView(label(day==0?"PROGRAM READY":"DAY "+day+" / 309",12,MUTED));
+        info.addView(label(day==0?formatDate(startDate()):Math.max(0,309-day)+" DAYS REMAINING",21,TEXT));
+        info.addView(label(done+"/"+total+" tasks complete today",13,MUTED));
+        top.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+        box.addView(top);
+        addBar(box,Math.max(0,day),309);
+        box.addView(label("309-DAY JOURNEY",11,ACCENT));
+        return box;
+    }
+
+    private void addQuickActions(){
+        content.addView(sectionTitle("QUICK ACTIONS"));
+        LinearLayout row=new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        String[] names={"📋\\nPlan","✓\\nHabits","📝\\nNotes","◫\\nStats"};
+        for(int i=0;i<names.length;i++){
+            final int n=i;
+            Button b=button(names[i]);
+            b.setTextSize(13);
+            b.setTextColor(TEXT);
+            b.setGravity(Gravity.CENTER);
+            b.setBackground(glassShape(ACCENT));
+            b.setMinHeight(dp(68));
+            b.setOnClickListener(v->{haptic(v);pulse(v);if(n==0)showShortPlan();else if(n==1)showHabits();else if(n==2)showNotes();else showStats();});
+            LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(68),1);
+            lp.setMargins(dp(3),dp(3),dp(3),dp(3));
+            row.addView(b,lp);
+        }
+        content.addView(row);
+    }
+
+    private void addMayaHero(){
+        LinearLayout mayaCard=card();
+        mayaCard.setBackground(glassShape(ACCENT));
+        LinearLayout row=new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        TextView avatar=label("M",22,Color.WHITE);
+        avatar.setGravity(Gravity.CENTER);
+        avatar.setBackground(shape(0xFF8A2BE2,100));
+        row.addView(avatar,new LinearLayout.LayoutParams(dp(58),dp(58)));
+        LinearLayout info=new LinearLayout(this);
+        info.setOrientation(LinearLayout.VERTICAL);
+        info.setPadding(dp(14),0,dp(8),0);
+        info.addView(label("MAYA",12,ACCENT));
+        info.addView(label("Voice Coach",19,TEXT));
+        info.addView(label("Discipline • Fitness • Focus",12,MUTED));
+        row.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+        Button talk=button("🎙 TALK");
+        talk.setTextSize(12);
+        talk.setTextColor(Color.WHITE);
+        talk.setBackground(shape(0xFF8A2BE2,18));
+        talk.setOnClickListener(v->{haptic(v);pulse(v);if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();});
+        row.addView(talk,new LinearLayout.LayoutParams(dp(92),dp(48)));
+        mayaCard.addView(row);
+        content.addView(mayaCard);
+    }
+
+    private void showHome(){
+        header("MAYA • DISCIPLINE","Build discipline. One day at a time.");
+        int day=dayNumber(),done=countFor(key()),total=totalTasks();
+        int pct=total==0?0:Math.round(done*100f/total);
+
+        content.addView(progressRingCard(day,done,total,pct));
+        addQuickActions();
+        addMayaHero();
+
+        content.addView(sectionTitle("TODAY'S PLAN"));
+        int planTotal=planCount(),planDone=0;
+        for(int i=0;i<planTotal;i++)if(planTaskDone(i))planDone++;
         String focus=prefs.getString("plan_"+key()+"_goal","");
         LinearLayout planSummary=card();
-        planSummary.addView(label("📋 SHORT PLAN",11,MUTED));
         planSummary.addView(label(planTotal==0?"No short plan yet":planDone+"/"+planTotal+" planned tasks complete",18,TEXT));
-        if(!focus.isEmpty()) planSummary.addView(label("🎯 "+focus,13,MUTED));
-        if(planTotal>0) addBar(planSummary,planDone,planTotal);
-        Button openPlan=button(planTotal==0?"＋  Create Today's Plan":"📋  Open Today's Plan");
-        openPlan.setOnClickListener(v->showShortPlan());
+        if(!focus.isEmpty())planSummary.addView(label("🎯 "+focus,13,MUTED));
+        if(planTotal>0)addBar(planSummary,planDone,planTotal);
+        Button openPlan=button(planTotal==0?"＋  CREATE TODAY'S PLAN":"📋  OPEN TODAY'S PLAN");
+        openPlan.setOnClickListener(v->{haptic(v);showShortPlan();});
         planSummary.addView(openPlan);
         content.addView(planSummary);
-content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.addView(label("🎯 DAILY CHALLENGE",11,MUTED));String missionKey="mission_"+key();String[] missions={"Complete every planned task today","Finish one focused study session","Do your routine before entertainment","Write a 3-line evening reflection","Complete today without skipping a habit"};int missionIndex=(key().hashCode()&0x7fffffff)%missions.length;String missionText=prefs.getString(missionKey,missions[missionIndex]);if(missionText==null||missionText.trim().isEmpty())missionText=missions[missionIndex];mission.addView(label(missionText,18,TEXT));mission.addView(label("Reward: +50 XP  •  Resets tomorrow",12,MUTED));CheckBox missionDone=new CheckBox(this);missionDone.setText("Mission complete");missionDone.setTextColor(TEXT);missionDone.setChecked(prefs.getBoolean(missionKey+"_done",false));missionDone.setEnabled(allowed("can_edit_mission"));missionDone.setOnCheckedChangeListener((v,checked)->{if(!allowed("can_edit_mission")){v.setChecked(!checked);toast("Primary account has disabled mission editing.");return;}prefs.edit().putBoolean(missionKey+"_done",checked).apply();if(checked&&!prefs.getBoolean(missionKey+"_rewarded",false)){prefs.edit().putBoolean(missionKey+"_rewarded",true).apply();awardXp(50,"Mission complete! 🎯");}});mission.addView(missionDone);content.addView(mission);addMoodCard();content.addView(title("TODAY'S HABITS"));for(int i=0;i<total;i++)addTaskRow(i,key());Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");complete.setOnClickListener(v->completeDay());content.addView(complete);Button maya=button("🎙️");maya.setTextSize(30);maya.setTypeface(null,1);maya.setGravity(Gravity.CENTER);maya.setPadding(0,0,0,0);maya.setMinWidth(0);maya.setMinHeight(0);maya.setBackground(shape(0xFF1769FF,100));maya.setElevation(dp(12));maya.setContentDescription("Talk to Maya");maya.setOnTouchListener((v,e)->{if(!allowed("can_use_maya")){if(e.getAction()==MotionEvent.ACTION_UP)toast("Primary account has disabled Maya.");return true;}if(e.getAction()==MotionEvent.ACTION_DOWN){v.animate().scaleX(.90f).scaleY(.90f).setDuration(90).start();}else if(e.getAction()==MotionEvent.ACTION_UP){v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180).start();if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();}else if(e.getAction()==MotionEvent.ACTION_CANCEL){v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(180).start();}return true;});LinearLayout.LayoutParams mayaLp=new LinearLayout.LayoutParams(dp(82),dp(82));mayaLp.gravity=Gravity.CENTER_HORIZONTAL;mayaLp.setMargins(0,dp(4),0,dp(4));content.addView(maya,mayaLp);TextView mayaLabel=label("Maya • Voice Assistant",13,MUTED);mayaLabel.setGravity(Gravity.CENTER);content.addView(mayaLabel);animateScreenIntro();}
+
+        content.addView(sectionTitle("TODAY'S MISSION"));
+        LinearLayout mission=card();
+        mission.addView(label("🎯 DAILY CHALLENGE",11,ACCENT));
+        String missionKey="mission_"+key();
+        String[] missions={"Complete every planned task today","Finish one focused study session","Do your routine before entertainment","Write a 3-line evening reflection","Complete today without skipping a habit"};
+        int missionIndex=(key().hashCode()&0x7fffffff)%missions.length;
+        String missionText=prefs.getString(missionKey,missions[missionIndex]);
+        if(missionText==null||missionText.trim().isEmpty())missionText=missions[missionIndex];
+        mission.addView(label(missionText,18,TEXT));
+        mission.addView(label("Reward: +50 XP  •  Resets tomorrow",12,MUTED));
+        CheckBox missionDone=new CheckBox(this);
+        missionDone.setText("Mission complete");
+        missionDone.setTextColor(TEXT);
+        missionDone.setChecked(prefs.getBoolean(missionKey+"_done",false));
+        missionDone.setEnabled(allowed("can_edit_mission"));
+        missionDone.setOnCheckedChangeListener((v,checked)->{
+            if(!allowed("can_edit_mission")){v.setChecked(!checked);toast("Primary account has disabled mission editing.");return;}
+            if(checked)haptic(v);
+            prefs.edit().putBoolean(missionKey+"_done",checked).apply();
+            if(checked&&!prefs.getBoolean(missionKey+"_rewarded",false)){
+                prefs.edit().putBoolean(missionKey+"_rewarded",true).apply();
+                awardXp(50,"Mission complete! 🎯");
+            }
+        });
+        mission.addView(missionDone);
+        content.addView(mission);
+
+        addMoodCard();
+        content.addView(sectionTitle("TODAY'S HABITS"));
+        for(int i=0;i<total;i++)addTaskRow(i,key());
+
+        Button complete=button("✓  COMPLETE TODAY'S CHALLENGE");
+        complete.setTextSize(14);
+        complete.setTextColor(Color.WHITE);
+        complete.setBackground(shape(0xFF8A2BE2,18));
+        complete.setOnClickListener(v->{haptic(v);pulse(v);completeDay();});
+        content.addView(complete);
+        animateScreenIntro();
+    }
 
     private void animateScreenIntro(){ /* Instant rendering: no entry animation work. */ }
     private void addTaskRow(int i,String d){LinearLayout row=card();row.setPadding(dp(10),dp(8),dp(10),dp(8));CheckBox cb=new CheckBox(this);cb.setText(taskName(i));cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(checked(i,d));cb.setEnabled(allowed("can_edit_habits"));cb.setOnCheckedChangeListener((v,c)->{if(allowed("can_edit_habits")){if(c){haptic(v);sound(ToneGenerator.TONE_PROP_ACK);}setChecked(i,d,c);if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){syncHandler.removeCallbacks(syncRunnable);syncHandler.postDelayed(syncRunnable,1500);}}else v.setChecked(!c);});row.addView(cb);content.addView(row);}
