@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.view.*;
 import android.text.InputType;
@@ -38,8 +37,6 @@ public class SettingsActivity extends Activity {
         addCategory(root,"🤖  AI ASSISTANT","Maya voice, AI brain, web search and memory.",v->showAiSettings());
         addCategory(root,"🎭  MODES","Maya personality and background motivation modes.",v->showModeSettings());
         addCategory(root,"🎨  DISPLAY","Theme and notification preferences.",v->showDisplaySettings());
-        addCategory(root,"🔐  SECURITY & PRIVACY","Permissions and Maya privacy controls.",v->showSecuritySettings());
-        addCategory(root,"📱  PHONE & BACKGROUND","Background assistant, phone controls and battery settings.",v->showPhoneSettings());
         addCategory(root,"👥  ACCOUNTS & DATA","Primary/Sub accounts and progress controls.",v->showAccountSettings());
         addCategory(root,"ℹ️  ABOUT 309","App information and version.",v->showAboutSettings());
 
@@ -183,70 +180,6 @@ public class SettingsActivity extends Activity {
                 Toast.makeText(this,msg,Toast.LENGTH_SHORT).show();
             })
             .setNegativeButton("Cancel",null).show();
-    }
-
-    private void showSecuritySettings(){
-        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout p=card();p.addView(label("🔐 PERMISSIONS & PRIVACY",11,MUTED));p.addView(label("Open Android controls for permissions used by Maya.",12,MUTED));
-        Button notify=buttonStyle(new Button(this));notify.setText("🔔  Notification access");notify.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});p.addView(notify);
-        Button dnd=buttonStyle(new Button(this));dnd.setText("🔕  DND control access");dnd.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS));}catch(Exception ignored){}});p.addView(dnd);body.addView(p);
-
-        LinearLayout password=card();
-        password.addView(label("🔑 ACCOUNT PASSWORD",11,MUTED));
-        password.addView(label("Change the password directly while this account is signed in. No reset email is needed.",12,MUTED));
-        Button changePassword=buttonStyle(new Button(this));
-        changePassword.setText("🔐  Change password");
-        changePassword.setOnClickListener(v->startActivity(new Intent(this,ChangePasswordActivity.class)));
-        password.addView(changePassword);
-        body.addView(password);
-
-        LinearLayout key=card();key.addView(label("🔑 API KEY SAFETY",11,MUTED));key.addView(label("OpenAI and Tavily keys are never stored in the app. They stay in Supabase backend secrets.",12,MUTED));body.addView(key);
-        showCategory("🔐  SECURITY & PRIVACY","Permissions, privacy and key safety.",body);
-    }
-
-    private void showPhoneSettings(){
-        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout control=card();control.addView(label("📱 MAYA PHONE CONTROLS",11,MUTED));
-        Button battery=buttonStyle(new Button(this));battery.setText("🔋  Battery / background settings");battery.setOnClickListener(v->{try{startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));}catch(Exception e){startActivity(new Intent(Settings.ACTION_SETTINGS));}});control.addView(battery);
-        Button help=buttonStyle(new Button(this));help.setText("🎙️  Maya command guide");help.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Maya commands").setMessage("Say “Maya” first.\n\n• Maya torch on/off\n• Maya volume up\n• Maya play / pause music\n• Maya call [contact]\n• Maya notifications\n• Maya DND on/off\n• Maya motivate me").setPositiveButton("OK",null).show());control.addView(help);body.addView(control);
-
-        LinearLayout maya=card();maya.addView(label("🎙️ BACKGROUND ASSISTANT",11,MUTED));Switch bg=new Switch(this);bg.setText("Keep Maya available in background");bg.setTextColor(TEXT);bg.setTextSize(15);bg.setChecked(getSharedPreferences("maya_settings",MODE_PRIVATE).getBoolean("enabled",false));bg.setOnCheckedChangeListener((v,on)->{getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",on).apply();if(on){if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},3101);bg.setChecked(false);return;}Intent i=new Intent(this,MayaAssistantService.class);try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Maya background assistant ON 🎙️",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("maya_settings",MODE_PRIVATE).edit().putBoolean("enabled",false).apply();bg.setChecked(false);}}else{stopService(new Intent(this,MayaAssistantService.class));Toast.makeText(this,"Maya background assistant OFF",Toast.LENGTH_SHORT).show();}});maya.addView(bg);
-        Button def=buttonStyle(new Button(this)); def.setText("🤖  Set Maya as phone assistant"); def.setOnClickListener(v->{ requestMayaAssistantRole(); }); maya.addView(def);body.addView(maya);
-        showCategory("📱  PHONE & BACKGROUND","Background assistant, phone controls and battery settings.",body);
-    }
-
-    private void requestMayaAssistantRole(){
-        try{
-            if(Build.VERSION.SDK_INT>=29){
-                android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(Context.ROLE_SERVICE);
-                if(rm!=null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)){
-                    if(rm.isRoleHeld(android.app.role.RoleManager.ROLE_ASSISTANT)){
-                        Toast.makeText(this,"Maya is already the phone assistant. 🤖",Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT),3098);
-                    return;
-                }
-            }
-            Intent i;
-            if(Build.VERSION.SDK_INT>=29) i=new Intent("android.settings.VOICE_INPUT_SETTINGS");
-            else i=new Intent("android.settings.VOICE_INPUT_SETTINGS");
-            startActivity(i);
-        }catch(Exception e){
-            try{ startActivity(new Intent(Settings.ACTION_SETTINGS)); }
-            catch(Exception ignored){ Toast.makeText(this,"Open Default apps → Digital assistant and choose Maya.",Toast.LENGTH_LONG).show(); }
-        }
-    }
-
-    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
-        super.onActivityResult(requestCode,resultCode,data);
-        if(requestCode==3098 && Build.VERSION.SDK_INT>=29){
-            try{
-                android.app.role.RoleManager rm=(android.app.role.RoleManager)getSystemService(Context.ROLE_SERVICE);
-                boolean held=rm!=null && rm.isRoleHeld(android.app.role.RoleManager.ROLE_ASSISTANT);
-                Toast.makeText(this,held?"Maya is now your phone assistant. 🤖":"Maya was not selected as the phone assistant.",Toast.LENGTH_SHORT).show();
-            }catch(Exception ignored){}
-        }
     }
 
     private void showAccountSettings(){
