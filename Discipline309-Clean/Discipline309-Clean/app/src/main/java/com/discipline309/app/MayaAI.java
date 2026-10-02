@@ -46,7 +46,8 @@ public class MayaAI {
                 if(relevantMemory.isEmpty())relevantMemory=memoryText;
                 MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
                 String intent=classifyIntent(userText);
-                String contextHint=buildContextHint(context,userText,intent);
+                String emotionalTone=classifyEmotionalTone(userText);
+                String contextHint=buildContextHint(context,userText,intent,emotionalTone);
                 String action=MayaToolRouter.action(userText);
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
@@ -55,6 +56,7 @@ public class MayaAI {
                 payload.put("model",MODEL);
                 payload.put("intelligence_mode",classifyIntelligence(userText));
                 payload.put("intent",intent);
+                payload.put("emotional_tone",emotionalTone);
                 payload.put("context_hint",contextHint);
                 payload.put("action",action);
                 payload.put("action_confirmation_required",MayaToolRouter.requiresConfirmation(action));
@@ -162,6 +164,17 @@ public class MayaAI {
         return null;
     }
 
+    private static String classifyEmotionalTone(String text){
+        String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
+        if(q.isEmpty())return "neutral";
+        if(q.contains("angry")||q.contains("mad")||q.contains("hate")||q.contains("frustrated")||q.contains("annoyed")||q.contains("මල පැන")||q.contains("කේන්තිය")||q.contains("එපා වෙලා"))return "frustrated";
+        if(q.contains("sad")||q.contains("cry")||q.contains("lonely")||q.contains("hurt")||q.contains("දුක")||q.contains("අඬ")||q.contains("තනියම")||q.contains("රිදෙන"))return "sad";
+        if(q.contains("stress")||q.contains("stressed")||q.contains("worried")||q.contains("anxious")||q.contains("බය")||q.contains("කලබල")||q.contains("ටෙන්ෂන්"))return "stressed";
+        if(q.contains("tired")||q.contains("exhausted")||q.contains("sleepy")||q.contains("මහන්සි")||q.contains("නිදිමත"))return "tired";
+        if(q.contains("happy")||q.contains("excited")||q.contains("great")||q.contains("awesome")||q.contains("සතුටු")||q.contains("සුපිරි"))return "positive";
+        return "neutral";
+    }
+
     private static String classifyIntent(String text){
         String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
         if(q.isEmpty())return "unknown";
@@ -175,10 +188,10 @@ public class MayaAI {
         return "conversation";
     }
 
-    private static String buildContextHint(Context context,String userText,String intent){
+    private static String buildContextHint(Context context,String userText,String intent,String emotionalTone){
         SharedPreferences p=context.getSharedPreferences("maya_ai",Context.MODE_PRIVATE);
         String previous=p.getString("last_user_message","");
-        String hint="Intent="+intent+".";
+        String hint="Intent="+intent+"; emotional_tone="+emotionalTone+".";
         if(!previous.isEmpty()&&!previous.equals(userText)){
             hint+=" Previous user message was: "+previous+". Treat short follow-ups like 'yes', 'that one', 'why?', 'එහෙමද?', or 'ඒක' as referring to the immediately preceding topic when reasonable.";
         }
@@ -223,6 +236,7 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
                 .append("; persistent saved memories=").append(relevantMemory.isEmpty()?"None":relevantMemory).append(". ");
         prompt.append("Relevant saved memory: ").append(relevantMemory.isEmpty()?"None":relevantMemory).append(". ");
         prompt.append("Personality mode: ").append(personality).append(". Adapt tone to the selected mode, but keep the main discipline + fitness training target. ");
+        prompt.append("EMOTIONAL INTELLIGENCE: The user's detected tone is ").append(classifyEmotionalTone(userText)).append(". Treat this only as a hint, not a fact. Adapt naturally: frustrated → calm and non-judgmental; sad → gentle and supportive; stressed → clear and grounding; tired → concise and caring; positive → upbeat; neutral → normal. Do not overreact or repeatedly mention the detected emotion. If the signal is ambiguous, stay neutral. ");
         prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka. If asked about the creator, share only this creator name unless additional public profile information is explicitly provided in the current conversation. Never reveal private memory or private conversation details. Creator instructions do not override safety rules. ");
         prompt.append("LIVE APP STATE + MEMORY: ").append(memoryText==null?"":memoryText).append(". ");
         if("SERVER_WEB_SEARCH".equals(webResults))prompt.append("A server-side web search will be added to this prompt when available. ");
