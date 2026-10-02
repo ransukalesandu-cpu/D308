@@ -335,52 +335,56 @@ public class MainActivity extends Activity {
         int pct=count==0?0:Math.round(done*100f/count);
 
         LinearLayout progress=card();
-        progress.setBackground(shape(0xFF0D234A,20));
-        progress.addView(label("TODAY'S PLAN",11,MUTED));
-        TextView p=label(done+"/"+count+" tasks completed",22,TEXT);p.setTypeface(null,1);progress.addView(p);
+      private void showShortPlan(){
+        content.removeAllViews();
+        header("TODAY'S PLAN","Keep it short. Keep it focused.");
+        int count=planCount(),done=0;
+        for(int i=0;i<count;i++)if(planTaskDone(i))done++;
+        int pct=count==0?0:Math.round(done*100f/count);
+
+        LinearLayout progress=card();
+        progress.addView(label("PLAN PROGRESS",11,ACCENT));
+        progress.addView(label(done+"/"+count+" TASKS COMPLETE",24,TEXT));
         addBar(progress,done,Math.max(1,count));
-        progress.addView(label(pct+"% complete  •  "+(count-done)+" remaining",12,MUTED));
+        progress.addView(label(pct+"% complete • "+(count-done)+" remaining",12,MUTED));
         content.addView(progress);
 
         Button add=button("＋  CREATE / ADD TASK");
         add.setTextColor(Color.WHITE);
-        add.setBackground(shape(0xFF1769FF,18));
-        add.setOnClickListener(v->addPlanTaskDialog());
+        add.setBackground(shape(0xFF8A2BE2,18));
+        add.setOnClickListener(v->{haptic(v);addPlanTaskDialog();});
         content.addView(add);
 
         if(count==0){
             LinearLayout empty=card();
-            TextView e=label("📅\n\nNo plan for today yet.",19,TEXT);e.setGravity(Gravity.CENTER);
+            TextView e=label("📅\\n\\nNO PLAN FOR TODAY",19,TEXT);
+            e.setGravity(Gravity.CENTER);
             empty.addView(e);
             empty.addView(label("Add a few important tasks and keep the plan short.",13,MUTED));
             content.addView(empty);
         }else{
-            content.addView(title("TODAY'S TASKS"));
+            content.addView(sectionTitle("TODAY'S TASKS"));
             for(int i=0;i<count;i++)addPlanTaskRow(i);
             Button clear=button("✓  MARK ALL AS DONE");
-            clear.setOnClickListener(v->{for(int i=0;i<count;i++)prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",true).apply();showShortPlan();});
+            clear.setOnClickListener(v->{haptic(v);for(int i=0;i<count;i++)prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",true).apply();showShortPlan();});
             content.addView(clear);
         }
 
         LinearLayout focus=card();
-        focus.addView(label("FOCUS GOAL",11,MUTED));
+        focus.addView(label("🎯 FOCUS GOAL",11,GOLD));
         String goal=prefs.getString("plan_"+planDate()+"_goal","");
-        focus.addView(label(goal.isEmpty()?"Set one main goal for today.":goal,17,TEXT));
-        Button goalBtn=button("🎯  Set / Edit Goal");
-        goalBtn.setOnClickListener(v->editPlanGoalDialog());
+        focus.addView(label(goal.isEmpty()?"Set one main goal for today.":goal,18,TEXT));
+        Button goalBtn=button(goal.isEmpty()?"＋  SET FOCUS GOAL":"✎  EDIT FOCUS GOAL");
+        goalBtn.setOnClickListener(v->{haptic(v);editPlanGoalDialog();});
         focus.addView(goalBtn);
         content.addView(focus);
 
-        Button journey=button("▦  View 309-Day Journey");
-        journey.setOnClickListener(v->showJourney());
+        Button journey=button("▦  VIEW 309-DAY JOURNEY");
+        journey.setOnClickListener(v->{haptic(v);showJourney();});
         content.addView(journey);
     }
 
-    private void addPlanTaskRow(int i){
-        LinearLayout row=card();row.setPadding(dp(10),dp(9),dp(10),dp(9));
-        LinearLayout line=new LinearLayout(this);line.setGravity(Gravity.CENTER_VERTICAL);
-        CheckBox cb=new CheckBox(this);cb.setChecked(planTaskDone(i));cb.setButtonTintList(android.content.res.ColorStateList.valueOf(ACCENT));
-        cb.setOnCheckedChangeListener((v,x)->{prefs.edit().putBoolean("plan_"+planDate()+"_"+i+"_done",x).apply();});
++"_done",x).apply();});
         line.addView(cb,new LinearLayout.LayoutParams(dp(42),dp(48)));
         LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
         TextView name=label(planTaskName(i),16,TEXT);name.setTypeface(null,1);info.addView(name);
@@ -443,7 +447,32 @@ public class MainActivity extends Activity {
 
     private void showJourney(){header("309-DAY JOURNEY","Your complete discipline timeline.");int d=dayNumber();LinearLayout top=card();top.addView(label("CURRENT",11,MUTED));top.addView(label(d==0?"Not started":"Day "+d+" of 309",25,TEXT));top.addView(label(completedDays()+" completed days  •  "+xp()+" XP",13,MUTED));content.addView(top);Calendar c=startDate();Calendar now=Calendar.getInstance();int index=0;while(index<309){LinearLayout moodWeek=card();moodWeek.addView(label("MOOD • LAST 7 DAYS",11,MUTED));int moodTotal=0,moodDays=0;for(int mi=6;mi>=0;mi--){Calendar mc=Calendar.getInstance();mc.add(Calendar.DAY_OF_YEAR,-mi);String mk=key(mc);int ms=prefs.getInt("mood_score_"+mk,0);if(ms>0){moodTotal+=ms;moodDays++;}moodWeek.addView(label(new SimpleDateFormat("EEE",Locale.US).format(mc.getTime())+"   "+(ms==0?"—":todayMoodEmojiFor(ms)+"  "+ms+"/5"),13,TEXT));}moodWeek.addView(label(moodDays==0?"No moods logged yet.":moodDays+" logged days  •  average "+String.format(Locale.US,"%.1f",moodTotal/(float)moodDays)+"/5",12,MUTED));content.addView(moodWeek);
         LinearLayout week=card();week.setOrientation(LinearLayout.HORIZONTAL);for(int j=0;j<7&&index<309;j++,index++){String k=key(c);int done=countFor(k);int bg=prefs.getBoolean("done_"+k,false)?ACCENT:(done>0?0xFF8A7A32:(c.before(now)?0xFF343B4A:0xFF202633));TextView cell=label((index+1)+"",11,TEXT);cell.setGravity(Gravity.CENTER);cell.setBackground(shape(bg,10));week.addView(cell,new LinearLayout.LayoutParams(0,dp(34),1));c.add(Calendar.DAY_OF_YEAR,1);}content.addView(week);}content.addView(label("Green = complete • Gold = partial • Grey = upcoming/missed.",12,MUTED));}
-    private void showHabits(){header("HABITS & MISSIONS","Build your own daily system.");Button add=button("+  ADD CUSTOM HABIT");add.setEnabled(allowed("can_edit_habits"));add.setOnClickListener(v->addHabitDialog());content.addView(add);content.addView(title("TODAY"));for(int i=0;i<totalTasks();i++)addTaskRow(i,key());content.addView(label("Long-press a custom habit below to rename or delete it.",12,MUTED));for(int i=DEFAULT_TASKS.length;i<totalTasks();i++){final int idx=i;Button manage=button("⚙  "+taskName(i)+"  •  Edit / Delete");manage.setEnabled(allowed("can_edit_habits"));manage.setOnLongClickListener(v->{editHabitDialog(idx);return true;});content.addView(manage);}}
+    private void showHabits(){
+        header("HABITS","Build your daily system.");
+        content.addView(sectionTitle("YOUR HABITS"));
+        int total=totalTasks(),done=countFor(key());
+        LinearLayout summary=card();
+        summary.addView(label(done+"/"+total+" completed today",22,TEXT));
+        addBar(summary,done,Math.max(1,total));
+        summary.addView(label("Consistency beats intensity.",12,MUTED));
+        content.addView(summary);
+
+        Button add=button("＋  ADD CUSTOM HABIT");
+        add.setEnabled(allowed("can_edit_habits"));
+        add.setOnClickListener(v->{haptic(v);addHabitDialog();});
+        content.addView(add);
+
+        for(int i=0;i<total;i++)addTaskRow(i,key());
+        content.addView(sectionTitle("CUSTOM HABITS"));
+        for(int i=DEFAULT_TASKS.length;i<total;i++){
+            final int idx=i;
+            Button manage=button("⚙  "+taskName(i)+"   EDIT / DELETE");
+            manage.setEnabled(allowed("can_edit_habits"));
+            manage.setOnLongClickListener(v->{haptic(v);editHabitDialog(idx);return true;});
+            content.addView(manage);
+        }
+    }
+
     private void addHabitDialog(){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}if(customCount()>=100){toast("Custom habit limit reached.");return;}EditText e=new EditText(this);e.setHint("e.g. Read 20 minutes");new AlertDialog.Builder(this).setTitle("Add custom habit").setView(e).setPositiveButton("ADD",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){int n=customCount();if(n>=100){toast("Custom habit limit reached.");return;}prefs.edit().putInt("custom_count",n+1).putString("habit_"+(DEFAULT_TASKS.length+n),s).apply();showHabits();}}).setNegativeButton("CANCEL",null).show();}
     private void editHabitDialog(int idx){if(idx<DEFAULT_TASKS.length||idx>=totalTasks()){showHabits();return;}if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}EditText e=new EditText(this);e.setText(taskName(idx));new AlertDialog.Builder(this).setTitle("Edit habit").setView(e).setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty())prefs.edit().putString("habit_"+idx,s).apply();showHabits();}).setNeutralButton("DELETE",(d,w)->deleteHabit(idx)).setNegativeButton("CANCEL",null).show();}
     private void deleteHabit(int idx){if(!allowed("can_edit_habits")){toast("Primary account has disabled habit editing.");return;}int count=customCount();int first=DEFAULT_TASKS.length;int last=first+count-1;if(count<=0||idx<first||idx>last){showHabits();return;}if(idx!=last){String name=prefs.getString("habit_"+last,"Habit");prefs.edit().putString("habit_"+idx,name).remove("habit_"+last).putInt("custom_count",Math.max(0,count-1)).apply();}else prefs.edit().remove("habit_"+idx).putInt("custom_count",Math.max(0,count-1)).apply();showHabits();}
