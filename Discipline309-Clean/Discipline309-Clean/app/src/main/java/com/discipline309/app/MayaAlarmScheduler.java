@@ -116,7 +116,10 @@ public final class MayaAlarmScheduler {
             String label=p.getString("last_label","alarm");
             p.edit().clear().apply();
             return "හරි ❌ Maya alarm එක cancel කළා: "+label;
-        }catch(Exception e){return "Alarm එක cancel කරන්න බැරි වුණා.";}\n    }\n\n    private static boolean isAlarmCommand(String s){
+        }catch(Exception e){return "Alarm එක cancel කරන්න බැරි වුණා.";}
+    }
+
+    private static boolean isAlarmCommand(String s){
         return s.contains("alarm")||s.contains("reminder")||s.contains("alarm එක")
                 ||s.contains("alarm ekak")||s.contains("alarm eka")
                 ||s.contains("ඇලම්")||s.contains("එලාම්");
