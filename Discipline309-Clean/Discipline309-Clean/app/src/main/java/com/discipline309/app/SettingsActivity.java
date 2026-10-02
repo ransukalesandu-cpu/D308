@@ -39,6 +39,7 @@ public class SettingsActivity extends Activity {
         addCategory(root,"📱  PHONE ASSISTANT","Set Maya as your Android phone assistant.",v->showPhoneAssistantSettings());
         addCategory(root,"🎭  MODES","Maya personality and background motivation modes.",v->showModeSettings());
         addCategory(root,"🎨  DISPLAY","Theme and notification preferences.",v->showDisplaySettings());
+        addCategory(root,"🔒  ADVANCED / STRICT MODE","No-skip discipline, distracting-app limits and temporary DND control.",v->showStrictSettings());
         addCategory(root,"👥  ACCOUNTS & DATA","Primary/Sub accounts and progress controls.",v->showAccountSettings());
         addCategory(root,"ℹ️  ABOUT 309","App information and version.",v->showAboutSettings());
 
@@ -65,6 +66,48 @@ public class SettingsActivity extends Activity {
         Button back=buttonStyle(new Button(this));back.setText("←  Back to Settings");back.setOnClickListener(v->buildUi());wrapper.addView(back);
         wrapper.addView(body);
         setContentView(categoryScroll(wrapper));
+    }
+
+
+    private void showStrictSettings(){
+        LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout strict=card();strict.addView(label("🔒 STRICT MODE",11,GOLD));
+        strict.addView(label("When ON: today cannot be completed until every required task is finished. Selected distracting apps are limited by a daily time cap.",12,MUTED));
+        Switch on=new Switch(this);on.setText("Enable Advanced / Strict Mode");on.setTextColor(TEXT);on.setTextSize(16);on.setChecked(StrictModeManager.isEnabled(this));
+        on.setOnCheckedChangeListener((v,c)->{StrictModeManager.setEnabled(this,c);if(c)Toast.makeText(this,"Strict Mode ON 🔒",Toast.LENGTH_SHORT).show();else Toast.makeText(this,"Strict Mode OFF",Toast.LENGTH_SHORT).show();});strict.addView(on);body.addView(strict);
+
+        LinearLayout apps=card();apps.addView(label("📵 DISTRACTING APPS",11,MUTED));
+        apps.addView(label("Choose apps Maya should monitor. You must enable Android Accessibility access for the blocker to work.",12,MUTED));
+        Button choose=buttonStyle(new Button(this));choose.setText("📱  Choose apps + daily limit");choose.setOnClickListener(v->showStrictAppPicker());apps.addView(choose);
+        Button access=buttonStyle(new Button(this));access.setText("♿  Enable Strict Mode app control");access.setOnClickListener(v->{try{startActivity(new Intent("android.settings.ACCESSIBILITY_SETTINGS"));}catch(Exception ignored){}});apps.addView(access);body.addView(apps);
+
+        LinearLayout dnd=card();dnd.addView(label("🌙 DO NOT DISTURB",11,MUTED));
+        Switch auto=new Switch(this);auto.setText("Auto DND while Strict Mode is ON");auto.setTextColor(TEXT);auto.setTextSize(15);auto.setChecked(StrictModeManager.p(this).getBoolean("auto_dnd",false));
+        auto.setOnCheckedChangeListener((v,c)->{StrictModeManager.p(this).edit().putBoolean("auto_dnd",c).apply();if(c&&StrictModeManager.isEnabled(this))StrictModeManager.setDnd(this,true);});dnd.addView(auto);
+        Button dndAccess=buttonStyle(new Button(this));dndAccess.setText("🌙  Allow Maya to control DND");dndAccess.setOnClickListener(v->StrictModeManager.openDndAccess(this));dnd.addView(dndAccess);
+        dnd.addView(label("After you tell Maya to turn DND off, she can restore it automatically after the number of minutes you choose.",12,MUTED));body.addView(dnd);
+
+        LinearLayout info=card();info.addView(label("⚠️ ANDROID LIMIT",11,GOLD));info.addView(label("App blocking uses Android Accessibility and only works after you explicitly enable Maya's service. Android/system apps are never targeted by this feature.",12,MUTED));body.addView(info);
+        showCategory("🔒  ADVANCED / STRICT MODE","Harder discipline rules, app limits and DND control.",body);
+    }
+
+    private void showStrictAppPicker(){
+        final java.util.ArrayList<android.content.pm.ResolveInfo> apps=new java.util.ArrayList<>();
+        Intent q=new Intent(Intent.ACTION_MAIN);q.addCategory(Intent.CATEGORY_LAUNCHER);
+        try{apps.addAll(getPackageManager().queryIntentActivities(q,0));}catch(Exception ignored){}
+        java.util.Collections.sort(apps,(a,b)->a.loadLabel(getPackageManager()).toString().compareToIgnoreCase(b.loadLabel(getPackageManager()).toString()));
+        final String[] labels=new String[apps.size()];final boolean[] checked=new boolean[apps.size()];java.util.Set<String> selected=StrictModeManager.blocked(this);
+        int n=0;for(int i=0;i<apps.size();i++){String pkg=apps.get(i).activityInfo.packageName;if(pkg.equals(getPackageName())){labels[i]="Maya (protected)";checked[i]=false;}else{labels[i]=apps.get(i).loadLabel(getPackageManager()).toString();checked[i]=selected.contains(pkg);n++;}}
+        new AlertDialog.Builder(this).setTitle("Select distracting apps").setMultiChoiceItems(labels,checked,(d,w,c)->checked[w]=c)
+            .setPositiveButton("SAVE",(d,w)->{java.util.Set<String> out=new java.util.HashSet<>();for(int i=0;i<apps.size();i++)if(checked[i]&&!apps.get(i).activityInfo.packageName.equals(getPackageName()))out.add(apps.get(i).activityInfo.packageName);StrictModeManager.setBlocked(this,out);showStrictLimitDialog();})
+            .setNegativeButton("CANCEL",null).show();
+    }
+
+    private void showStrictLimitDialog(){
+        final String[] choices={"15 minutes/day","30 minutes/day","45 minutes/day","60 minutes/day","90 minutes/day","120 minutes/day"};
+        int cur=StrictModeManager.limitMinutes(this),idx=1;int[] vals={15,30,45,60,90,120};for(int i=0;i<vals.length;i++)if(vals[i]==cur)idx=i;
+        final int[] pick={idx};new AlertDialog.Builder(this).setTitle("Daily app limit").setSingleChoiceItems(choices,idx,(d,w)->pick[0]=w)
+            .setPositiveButton("SAVE",(d,w)->{StrictModeManager.p(this).edit().putInt("limit_minutes",vals[pick[0]]).apply();Toast.makeText(this,choices[pick[0]]+" saved.",Toast.LENGTH_SHORT).show();}).setNegativeButton("CANCEL",null).show();
     }
 
     private void showAiSettings(){
