@@ -73,16 +73,23 @@ public final class StrictModeManager {
     }
     public static int strictEscalationLevel(Context c,String userText){
         if(!isEnabled(c)||userText==null)return 0;
+        SharedPreferences sp=p(c);
+        String today=new SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date());
+        String storedDay=sp.getString("strict_skip_day","");
+        if(!today.equals(storedDay)){
+            sp.edit().putString("strict_skip_day",today)
+                    .putInt("strict_skip_level",0).apply();
+        }
         String q=userText.toLowerCase(Locale.ROOT);
         boolean skip=q.contains("skip")||q.contains("skipped")||q.contains("avoid")||q.contains("ignored")
                 ||q.contains("delay")||q.contains("refuse")||q.contains("excuse")
                 ||q.contains("skip කළ")||q.contains("නොකර")||q.contains("පස්සේ කර")
                 ||q.contains("අද නෑ")||q.contains("බැහැ");
-        if(!skip)return p(c).getInt("strict_skip_level",0);
-        String key=new SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date());
-        String countKey="strict_skip_"+key;
-        int count=Math.min(3,p(c).getInt(countKey,0)+1);
-        p(c).edit().putInt(countKey,count).putInt("strict_skip_level",count).apply();
+        if(!skip)return sp.getInt("strict_skip_level",0);
+        String countKey="strict_skip_"+today;
+        int count=Math.min(3,sp.getInt(countKey,0)+1);
+        sp.edit().putString("strict_skip_day",today)
+                .putInt(countKey,count).putInt("strict_skip_level",count).apply();
         return count;
     }
 
