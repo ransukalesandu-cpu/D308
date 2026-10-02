@@ -227,6 +227,13 @@ public class VoiceAssistant {
             return;
         }
         String action=MayaToolRouter.action(question);
+        if (question.contains("live conversation") || question.contains("live mode") || question.contains("live on") ||
+                question.contains("live conversation on") || question.contains("workout live") ||
+                question.contains("workout කරනකොට maya") || question.contains("workout ekedi maya")) {
+            startWorkoutLiveIfEnabled();
+            speak("හරි 🔥 Workout Live Conversation ON. Workout කරන ගමන් මට කතා කරන්න.");
+            return;
+        }
         if (MayaToolRouter.requiresConfirmation(action)) {
             if (isConfirmation(question)) {
                 String pending=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).getString("pending","NONE");
@@ -316,7 +323,6 @@ public class VoiceAssistant {
     }
 
     private void startWorkoutLiveIfEnabled(){
-        if(!activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getBoolean("workout_live_conversation",false)) return;
         try{
             Intent i=new Intent(activity,MayaAssistantService.class);
             i.setAction(MayaAssistantService.ACTION_START_WORKOUT_LIVE);
