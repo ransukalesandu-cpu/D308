@@ -271,8 +271,8 @@ public class SettingsActivity extends Activity {
         modes.addView(label("🎭 MAYA MODE",11,MUTED));
         modes.addView(label("Maya is focused by default on discipline + fitness training. Select one mode only.",12,MUTED));
 
-        final String[] modeKeys={"romance","caring","angry","motivative","auto"};
-        final String[] modeLabels={"💗 Romance","💛 Caring","😤 Angry / Tough","🔥 Motivative","🤖 Auto"};
+        final String[] modeKeys={"friendly","caring","angry","motivative","auto"};
+        final String[] modeLabels={"😄 Friendly","💛 Caring","😤 Angry / Tough","🔥 Motivative","🤖 Auto"};
         RadioGroup group=new RadioGroup(this);
         group.setOrientation(RadioGroup.VERTICAL);
         String current=prefs.getString("maya_mode","motivative");
