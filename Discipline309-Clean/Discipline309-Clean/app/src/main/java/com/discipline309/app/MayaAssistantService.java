@@ -676,14 +676,14 @@ private boolean fallbackListening=false;
         if(isBackgroundCompleteCommand(q)){
             taskAction.edit().putString("pending","COMPLETE_TASK")
                     .putString("pending_task_query",q).apply();
-            speak("හරි 😄 ""+q+"" complete කරන්නද? Yes කියන්න.");
+            speak("හරි 😄 \""+q+"\" complete කරන්නද? Yes කියන්න.");
             return;
         }
         String deleteQuery=parseBackgroundDeleteTask(q);
         if(deleteQuery!=null){
             taskAction.edit().putString("pending","DELETE_TASK")
                     .putString("pending_task_query",deleteQuery).apply();
-            speak("හරි 🗑️ ""+deleteQuery+"" task එක delete කරන්නද? Yes කියන්න.");
+            speak("හරි 🗑️ \""+deleteQuery+"\" task එක delete කරන්නද? Yes කියන්න.");
             return;
         }
 
@@ -904,7 +904,7 @@ private boolean fallbackListening=false;
         e.remove("plan_"+date+"_"+last+"_name").remove("plan_"+date+"_"+last+"_time")
          .remove("plan_"+date+"_"+last+"_priority").remove("plan_"+date+"_"+last+"_done")
          .putInt("plan_count_"+date,count-1).apply();
-        return "හරි 🗑️ ""+name+"" task එක delete කළා.";
+        return "හරි 🗑️ \""+name+"\" task එක delete කළා.";
     }
 
     private String[] parseBackgroundCreateTask(String q){
