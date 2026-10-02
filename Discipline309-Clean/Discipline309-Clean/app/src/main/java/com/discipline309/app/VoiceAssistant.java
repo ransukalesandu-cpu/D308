@@ -257,6 +257,27 @@ public class VoiceAssistant {
             }
         }
 
+        // Maya can reschedule an existing task reminder with confirmation.
+        if(isConfirmation(question) && "RESCHEDULE_TASK".equals(taskAction.getString("pending","NONE"))){
+            String taskQuery=taskAction.getString("pending_task_query","");
+            String newTime=taskAction.getString("pending_task_time","");
+            taskAction.edit().remove("pending").remove("pending_task_query").remove("pending_task_time").apply();
+            if(activity instanceof MainActivity){
+                speak(((MainActivity)activity).reschedulePlanTaskFromMaya(taskQuery,newTime));
+                return;
+            }
+        }
+        if(activity instanceof MainActivity){
+            String[] move=parseRescheduleTask(question);
+            if(move!=null){
+                taskAction.edit().putString("pending","RESCHEDULE_TASK")
+                        .putString("pending_task_query",move[0])
+                        .putString("pending_task_time",move[1]).apply();
+                speak("හරි 🔄 "+move[0]+" task එක "+move[1]+"ට reschedule කරන්නද? Yes කියන්න.");
+                return;
+            }
+        }
+
         // Auto-complete a Today's Habit only when the user clearly reports completion.
         if (isCompletedActivityStatement(question) && activity instanceof MainActivity) {
             String completed = ((MainActivity) activity).completeActivityFromMaya(question);
