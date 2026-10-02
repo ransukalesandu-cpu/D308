@@ -26,7 +26,7 @@ public class StrictAccessibilityService extends AccessibilityService{
    if(e.getEventType()!=AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)return;
    CharSequence p=e.getPackageName();if(p==null)return;
    String pkg=p.toString();
-   if(pkg.equals(getPackageName())||pkg.equals("com.android.systemui")||pkg.equals("com.android.settings"))return;
+   if(pkg.equals(getPackageName())||pkg.equals("com.android.systemui")||pkg.equals("com.android.settings")||StrictModeManager.whitelisted(this).contains(pkg))return;
    current=pkg;entered=System.currentTimeMillis();h.removeCallbacks(minute);h.postDelayed(minute,60000L);
    if(StrictModeManager.limitReached(this,pkg)){
      Intent i=new Intent(this,StrictBlockActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);startActivity(i);
