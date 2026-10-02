@@ -208,10 +208,16 @@ private boolean fallbackListening=false;
         try{
             Calendar now=Calendar.getInstance();
             int hour=now.get(Calendar.HOUR_OF_DAY);
-            // Quiet hours: never proactively speak overnight.
-            if(hour>=22 || hour<7){
+            SharedPreferences settings=getSharedPreferences("settings",MODE_PRIVATE);
+            int quietStart=settings.getInt("maya_quiet_start",22);
+            int quietEnd=settings.getInt("maya_quiet_end",7);
+            quietStart=Math.max(0,Math.min(23,quietStart));
+            quietEnd=Math.max(0,Math.min(23,quietEnd));
+            boolean quiet=quietStart>quietEnd ? (hour>=quietStart || hour<quietEnd)
+                    : quietStart<quietEnd && hour>=quietStart && hour<quietEnd;
+            if(quiet){
                 Calendar next=(Calendar)now.clone();
-                next.set(Calendar.HOUR_OF_DAY,7);
+                next.set(Calendar.HOUR_OF_DAY,quietEnd);
                 next.set(Calendar.MINUTE,5);
                 next.set(Calendar.SECOND,0);
                 next.set(Calendar.MILLISECOND,0);
@@ -240,7 +246,7 @@ private boolean fallbackListening=false;
         if(stopping || handler==null) return;
         handler.removeCallbacks(proactiveRunnable);
         if(getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false))
-            handler.postDelayed(proactiveRunnable,PROACTIVE_INTERVAL_MS);
+            handler.postDelayed(proactiveRunnable,proactiveDelayMs());
     }
 
     private void startWakeWord(){
