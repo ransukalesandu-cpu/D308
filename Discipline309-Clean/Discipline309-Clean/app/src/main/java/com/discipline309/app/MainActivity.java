@@ -155,7 +155,44 @@ public class MainActivity extends Activity {
     FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);
     np.setMargins(dp(8),0,dp(8),dp(8));
     root.addView(nav,np);
-    mayaFab=button("🎙");Button fab=mayaFab;fab.setTextSize(28);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFF8A2BE2,100));fab.setElevation(dp(14));fab.setContentDescription("Talk to Maya");fab.setOnClickListener(v->{haptic(v);if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(mayaWaveActive){if(voiceAssistant!=null)voiceAssistant.stopListening();stopMayaWave(true);fab.setContentDescription("Talk to Maya");}else{if(voiceAssistant==null){voiceAssistant=new VoiceAssistant(this);voiceAssistant.setVoiceStateListener(()->runOnUiThread(()->{if(mayaWaveActive){stopMayaWave(false);fab.setContentDescription("Talk to Maya");}}));}if(voiceAssistant.start()){startMayaWave();fab.setContentDescription("Stop Maya live talk");}else{stopMayaWave(false);fab.setContentDescription("Talk to Maya");}}}});
+     mayaFab=button("🎙");
+     Button fab=mayaFab;
+     fab.setTextSize(28);
+     fab.setTextColor(Color.WHITE);
+     fab.setGravity(Gravity.CENTER);
+     fab.setPadding(0,0,0,0);
+     fab.setBackground(shape(0xFF8A2BE2,100));
+     fab.setElevation(dp(14));
+     fab.setContentDescription("Talk to Maya");
+     fab.setOnClickListener(v->{
+         haptic(v);
+         if(!allowed("can_use_maya")){
+             toast("Primary account has disabled Maya.");
+             return;
+         }
+         if(mayaWaveActive){
+             if(voiceAssistant!=null) voiceAssistant.stopListening();
+             stopMayaWave(true);
+             fab.setContentDescription("Talk to Maya");
+             return;
+         }
+         if(voiceAssistant==null){
+             voiceAssistant=new VoiceAssistant(this);
+             voiceAssistant.setVoiceStateListener(()->runOnUiThread(()->{
+                 if(mayaWaveActive){
+                     stopMayaWave(false);
+                     fab.setContentDescription("Talk to Maya");
+                 }
+             }));
+         }
+         if(voiceAssistant.start()){
+             startMayaWave();
+             fab.setContentDescription("Stop Maya live talk");
+         }else{
+             stopMayaWave(false);
+             fab.setContentDescription("Talk to Maya");
+         }
+     });
     FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(68),dp(68),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
     setContentView(root);
 }
