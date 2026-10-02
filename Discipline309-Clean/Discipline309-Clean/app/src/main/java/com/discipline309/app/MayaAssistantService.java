@@ -626,6 +626,54 @@ private boolean fallbackListening=false;
         }
         if(q.isEmpty()) return;
 
+        // Background voice task actions use the same confirmation pattern as the in-app Maya voice assistant.
+        SharedPreferences taskAction=getSharedPreferences("maya_action",MODE_PRIVATE);
+        if(isVoiceConfirmation(q)){
+            String pending=taskAction.getString("pending","NONE");
+            if("ADD_TASK".equals(pending)){
+                String name=taskAction.getString("pending_task_name","");
+                int offset=taskAction.getInt("pending_task_offset",0);
+                String dateYmd=taskAction.getString("pending_task_date","");
+                String time=taskAction.getString("pending_task_time","");
+                taskAction.edit().remove("pending").remove("pending_task_name")
+                        .remove("pending_task_offset").remove("pending_task_date")
+                        .remove("pending_task_time").apply();
+                String result=createBackgroundTask(name,offset,dateYmd,time);
+                speak(result);
+                return;
+            }
+            if("COMPLETE_TASK".equals(pending)){
+                String query=taskAction.getString("pending_task_query","");
+                taskAction.edit().remove("pending").remove("pending_task_query").apply();
+                speak(completeBackgroundTask(query));
+                return;
+            }
+        }
+        if(isCancelCommand(q)){
+            taskAction.edit().remove("pending").remove("pending_task_name")
+                    .remove("pending_task_offset").remove("pending_task_date")
+                    .remove("pending_task_time").remove("pending_task_query").apply();
+            speak("හරි. Pending action එක cancel කළා.");
+            return;
+        }
+        String[] bgCreate=parseBackgroundCreateTask(q);
+        if(bgCreate!=null){
+            taskAction.edit().putString("pending","ADD_TASK")
+                    .putString("pending_task_name",bgCreate[0])
+                    .putInt("pending_task_offset",Integer.parseInt(bgCreate[1]))
+                    .putString("pending_task_date",bgCreate[2])
+                    .putString("pending_task_time",bgCreate[3]).apply();
+            String when=bgCreate[2].isEmpty()?(Integer.parseInt(bgCreate[1])==1?"හෙට":"අද"):bgCreate[2];
+            speak("හරි 📝 "+bgCreate[0]+" — "+when+" task එක add කරන්නද? Yes කියන්න.");
+            return;
+        }
+        if(isBackgroundCompleteCommand(q)){
+            taskAction.edit().putString("pending","COMPLETE_TASK")
+                    .putString("pending_task_query",q).apply();
+            speak("හරි 😄 ""+q+"" complete කරන්නද? Yes කියන්න.");
+            return;
+        }
+
         // Voice alarm actions use a confirmation step before scheduling.
         if(isVoiceConfirmation(q)){
             SharedPreferences ap=getSharedPreferences("maya_action",MODE_PRIVATE);
@@ -775,6 +823,89 @@ private boolean fallbackListening=false;
         if(q==null || q.trim().isEmpty()) return new String[]{""};
         String[] parts=q.split("\\s+(?:and|then|සහ|ඊළඟට|ඊට පස්සේ)\\s+");
         return parts.length==0 ? new String[]{q.trim()} : parts;
+    }
+
+    private boolean isCancelCommand(String q){
+        String s=q==null?"":q.toLowerCase(Locale.ROOT).trim();
+        return s.equals("cancel")||s.equals("cancel task")||s.equals("cancel alarm")||
+                s.equals("නවත්වන්න")||s.equals("එපා")||s.equals("අවලංගු කරන්න");
+    }
+
+    private boolean isBackgroundCompleteCommand(String q){
+        String s=q==null?"":q.toLowerCase(Locale.ROOT);
+        return s.contains("complete task")||s.contains("mark task done")||s.contains("finish task")||
+                s.contains("task එක complete")||s.contains("task eka complete")||
+                s.contains("task එක ඉවර")||s.contains("task eka iwar")||
+                s.contains("complete the next task")||s.contains("next task complete");
+    }
+
+    private String[] parseBackgroundCreateTask(String q){
+        if(q==null)return null;
+        String s=q.toLowerCase(Locale.ROOT).trim();
+        if(!(s.contains("create a task")||s.contains("create task")||s.contains("add a task")||
+                s.contains("add task")||s.contains("make a task")||s.contains("set a task")||
+                s.contains("task එකක් දා")||s.contains("task ekak da")||s.contains("task ekak had")))return null;
+        String original=q.trim();
+        String lower=s;
+        String name=original.replaceFirst("(?i).*?(?:create a task|create task|add a task|add task|make a task|set a task|task එකක් දා|task ekak da|task ekak had)","").trim();
+        int offset=0; String date="";
+        if(lower.contains("tomorrow")||lower.contains("හෙට")||lower.contains("heta")){offset=1;name=name.replaceAll("(?i)\\btomorrow\\b|හෙට|heta","").trim();}
+        java.util.regex.Matcher dm=java.util.regex.Pattern.compile("(\\d{4}-\\d{2}-\\d{2})").matcher(name);
+        if(dm.find()){date=dm.group(1);name=name.replace(dm.group(1),"").trim();}
+        String time="";
+        java.util.regex.Matcher tm=java.util.regex.Pattern.compile("(?i)(?:\\bat\\b|@)\\s*(\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)").matcher(name);
+        if(tm.find()){time=normalizeTaskTime(tm.group(1));name=name.substring(0,tm.start()).trim();}
+        name=name.replaceAll("[,.-]+$","").trim();
+        return name.isEmpty()?null:new String[]{name,String.valueOf(offset),date,time};
+    }
+
+    private String normalizeTaskTime(String raw){
+        try{
+            String s=raw.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+","");
+            java.text.SimpleDateFormat in=s.contains("AM")||s.contains("PM")?new java.text.SimpleDateFormat("h:mma",Locale.US):new java.text.SimpleDateFormat("H:mm",Locale.US);
+            java.util.Date d=in.parse(s);
+            return new java.text.SimpleDateFormat("HH:mm",Locale.US).format(d);
+        }catch(Exception e){return raw.trim();}
+    }
+
+    private String createBackgroundTask(String name,int offset,String dateYmd,String time){
+        if(name==null||name.trim().isEmpty())return "Task name එක නැහැ.";
+        Calendar d=Calendar.getInstance();
+        if(dateYmd!=null&&!dateYmd.trim().isEmpty()){
+            try{d.setTime(new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).parse(dateYmd.trim()));}
+            catch(Exception ignored){d.add(Calendar.DAY_OF_YEAR,offset);}
+        }else d.add(Calendar.DAY_OF_YEAR,offset);
+        d.set(Calendar.HOUR_OF_DAY,0);d.set(Calendar.MINUTE,0);d.set(Calendar.SECOND,0);d.set(Calendar.MILLISECOND,0);
+        String date=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(d.getTime());
+        SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);
+        int count=Math.max(0,Math.min(50,p.getInt("plan_count_"+date,0)));
+        if(count>=50)return "ඒ දවසේ plan එක full.";
+        SharedPreferences.Editor e=p.edit()
+                .putString("plan_"+date+"_"+count+"_name",name.trim())
+                .putString("plan_"+date+"_"+count+"_time",(time==null||time.isEmpty())?"Anytime":time)
+                .putString("plan_"+date+"_"+count+"_priority","Medium")
+                .putBoolean("plan_"+date+"_"+count+"_done",false)
+                .putInt("plan_count_"+date,count+1);
+        e.apply();
+        return "හරි ✅ ""+name.trim()+"" task එක "+(offset==1?"හෙට":"අද")+" create කළා.";
+    }
+
+    private String completeBackgroundTask(String query){
+        SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);
+        String date=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date());
+        int count=p.getInt("plan_count_"+date,0);
+        if(count<=0)return "අද plan එකේ task එකක් නැහැ.";
+        int target=-1;
+        String s=query==null?"":query.toLowerCase(Locale.ROOT);
+        for(int i=0;i<count;i++){
+            String n=p.getString("plan_"+date+"_"+i+"_name","").trim();
+            if(!n.isEmpty()&&(s.contains(n.toLowerCase(Locale.ROOT))||s.contains("next task")||s.contains("ඊළඟ task"))&&!p.getBoolean("plan_"+date+"_"+i+"_done",false)){target=i;break;}
+        }
+        if(target<0)return "Complete කරන්න ඕන task එක හඳුනාගන්න බැරි වුණා.";
+        String n=p.getString("plan_"+date+"_"+target+"_name","Task");
+        p.edit().putBoolean("plan_"+date+"_"+target+"_done",true).apply();
+        StrictModeManager.resetStrictEscalation(this);
+        return "හරි ✅ ""+n+"" complete කළා. 🔥";
     }
 
     private boolean isVoiceConfirmation(String q){
