@@ -87,6 +87,22 @@ public class SettingsActivity extends Activity {
         Button dndAccess=buttonStyle(new Button(this));dndAccess.setText("🌙  Allow Maya to control DND");dndAccess.setOnClickListener(v->StrictModeManager.openDndAccess(this));dnd.addView(dndAccess);
         dnd.addView(label("After you tell Maya to turn DND off, she can restore it automatically after the number of minutes you choose.",12,MUTED));body.addView(dnd);
 
+        LinearLayout rules=card();rules.addView(label("🧱 STRICT RULES",11,MUTED));
+        Switch noSkip=new Switch(this);noSkip.setText("No-skip / no-undo tasks");noSkip.setTextColor(TEXT);noSkip.setChecked(StrictModeManager.p(this).getBoolean("no_skip",true));
+        noSkip.setOnCheckedChangeListener((v,c)->StrictModeManager.p(this).edit().putBoolean("no_skip",c).apply());rules.addView(noSkip);
+        Button focus=buttonStyle(new Button(this));focus.setText("🎯  Start Focus Session");focus.setOnClickListener(v->showFocusDialog());rules.addView(focus);
+        Button schedule=buttonStyle(new Button(this));schedule.setText("⏰  Schedule Strict Mode");schedule.setOnClickListener(v->showStrictScheduleDialog());rules.addView(schedule);
+        Button clearSchedule=buttonStyle(new Button(this));clearSchedule.setText("✕  Remove Strict schedule");clearSchedule.setOnClickListener(v->{StrictModeManager.clearSchedule(this);Toast.makeText(this,"Strict schedule removed.",Toast.LENGTH_SHORT).show();});rules.addView(clearSchedule);
+        body.addView(rules);
+
+        LinearLayout allow=card();allow.addView(label("🛡️ ESSENTIAL APP WHITELIST",11,MUTED));
+        allow.addView(label("Whitelisted apps stay usable while Strict Mode is active. Use this only for genuinely essential apps.",12,MUTED));
+        Button wl=buttonStyle(new Button(this));wl.setText("🛡️  Choose essential apps");wl.setOnClickListener(v->showWhitelistPicker());allow.addView(wl);body.addView(allow);
+
+        LinearLayout stats=card();stats.addView(label("📊 STRICT PROGRESS",11,MUTED));
+        stats.addView(label("Selected apps: "+StrictModeManager.blocked(this).size()+"    •    Daily limit: "+StrictModeManager.limitMinutes(this)+" min",13,TEXT));
+        stats.addView(label("Focus sessions use DND while active. App usage counters reset by date.",12,MUTED));body.addView(stats);
+
         LinearLayout info=card();info.addView(label("⚠️ ANDROID LIMIT",11,GOLD));info.addView(label("App blocking uses Android Accessibility and only works after you explicitly enable Maya's service. Android/system apps are never targeted by this feature.",12,MUTED));body.addView(info);
         showCategory("🔒  ADVANCED / STRICT MODE","Harder discipline rules, app limits and DND control.",body);
     }
@@ -108,6 +124,31 @@ public class SettingsActivity extends Activity {
         int cur=StrictModeManager.limitMinutes(this),idx=1;int[] vals={15,30,45,60,90,120};for(int i=0;i<vals.length;i++)if(vals[i]==cur)idx=i;
         final int[] pick={idx};new AlertDialog.Builder(this).setTitle("Daily app limit").setSingleChoiceItems(choices,idx,(d,w)->pick[0]=w)
             .setPositiveButton("SAVE",(d,w)->{StrictModeManager.p(this).edit().putInt("limit_minutes",vals[pick[0]]).apply();Toast.makeText(this,choices[pick[0]]+" saved.",Toast.LENGTH_SHORT).show();}).setNegativeButton("CANCEL",null).show();
+    }
+
+    private void showFocusDialog(){
+        final String[] c={"15 minutes","30 minutes","45 minutes","60 minutes","90 minutes","120 minutes"};final int[] v={15,30,45,60,90,120};final int[] pick={1};
+        new AlertDialog.Builder(this).setTitle("🎯 Focus Session").setSingleChoiceItems(c,1,(d,w)->pick[0]=w)
+            .setPositiveButton("START",(d,w)->{StrictModeManager.startFocus(this,v[pick[0]]);Toast.makeText(this,"Focus started 🔒",Toast.LENGTH_SHORT).show();})
+            .setNegativeButton("CANCEL",null).show();
+    }
+    private void showStrictScheduleDialog(){
+        final TimePicker tp1=new TimePicker(this);tp1.setIs24HourView(true);tp1.setHour(6);tp1.setMinute(0);
+        final TimePicker tp2=new TimePicker(this);tp2.setIs24HourView(true);tp2.setHour(22);tp2.setMinute(0);
+        LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(18),dp(8),dp(18),dp(8));
+        l.addView(label("START TIME",12,MUTED));l.addView(tp1);l.addView(label("END TIME",12,MUTED));l.addView(tp2);
+        new AlertDialog.Builder(this).setTitle("⏰ Scheduled Strict Mode").setMessage("Strict Mode will automatically turn ON at start and OFF at end. It is rescheduled after reboot/time changes.")
+            .setView(l).setPositiveButton("SAVE",(d,w)->{StrictModeManager.scheduleStrict(this,tp1.getHour(),tp1.getMinute(),tp2.getHour(),tp2.getMinute());Toast.makeText(this,"Strict schedule saved.",Toast.LENGTH_SHORT).show();}).setNegativeButton("CANCEL",null).show();
+    }
+    private void showWhitelistPicker(){
+        final java.util.ArrayList<android.content.pm.ResolveInfo> apps=new java.util.ArrayList<>();
+        Intent q=new Intent(Intent.ACTION_MAIN);q.addCategory(Intent.CATEGORY_LAUNCHER);try{apps.addAll(getPackageManager().queryIntentActivities(q,0));}catch(Exception ignored){}
+        java.util.Collections.sort(apps,(a,b)->a.loadLabel(getPackageManager()).toString().compareToIgnoreCase(b.loadLabel(getPackageManager()).toString()));
+        final String[] labels=new String[apps.size()];final boolean[] checked=new boolean[apps.size()];java.util.Set<String> selected=StrictModeManager.whitelisted(this);
+        for(int i=0;i<apps.size();i++){labels[i]=apps.get(i).loadLabel(getPackageManager()).toString();checked[i]=selected.contains(apps.get(i).activityInfo.packageName);}
+        new AlertDialog.Builder(this).setTitle("Essential apps").setMultiChoiceItems(labels,checked,(d,w,c)->checked[w]=c)
+            .setPositiveButton("SAVE",(d,w)->{java.util.Set<String> out=new java.util.HashSet<>();for(int i=0;i<apps.size();i++)if(checked[i])out.add(apps.get(i).activityInfo.packageName);StrictModeManager.setWhitelist(this,out);Toast.makeText(this,"Whitelist saved.",Toast.LENGTH_SHORT).show();})
+            .setNegativeButton("CANCEL",null).show();
     }
 
     private void showAiSettings(){
