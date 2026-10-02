@@ -702,7 +702,10 @@ private boolean fallbackListening=false;
         String memoryText=memory==null?"":memory.relevant(userText);
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
         String personality;
-        if(p.getBoolean("mode_auto",false)){
+        String strictMode=StrictModeManager.strictMayaMode(this);
+        if(strictMode!=null){
+            personality=strictMode.equals("angry")?"strict angry discipline coach":"strict motivational discipline coach";
+        }else if(p.getBoolean("mode_auto",false)){
             int hour=java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
             personality=hour<12?"calm morning coach":hour>=21?"gentle night coach":"energetic discipline coach";
         }else if(p.getBoolean("mode_sweet",false)) personality="sweet/caring";
@@ -1092,6 +1095,12 @@ private boolean fallbackListening=false;
             lastSpokenAt=now;
             SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
             if(!p.getBoolean("auto_speak",true))return;
+            String selected=p.getString("maya_language","auto");
+            String country=Locale.getDefault().getCountry();
+            Locale target=("si".equals(selected)||("auto".equals(selected)&&"LK".equalsIgnoreCase(country)))?new Locale("si","LK"):Locale.ENGLISH;
+            int lang=tts.setLanguage(target);
+            if(lang==TextToSpeech.LANG_MISSING_DATA||lang==TextToSpeech.LANG_NOT_SUPPORTED){tts.setLanguage(Locale.ENGLISH);target=Locale.ENGLISH;}
+            applyMayaVoice(target);
             if(recognizer!=null&&listening){try{recognizer.cancel();}catch(Exception ignored){}listening=false;}
             float speed=Math.max(0,Math.min(100,p.getInt("speech_speed",45)));
             // Slightly slower default speech and a neutral pitch make Sinhala words easier to understand.
