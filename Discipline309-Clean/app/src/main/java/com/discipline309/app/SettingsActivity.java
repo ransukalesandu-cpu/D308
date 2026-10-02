@@ -207,7 +207,7 @@ public class SettingsActivity extends Activity {
     }
 
     private void showMayaVoicePicker(){
-        final String[] labels={"🌸 Maya Soft","💗 Maya Sweet","✨ Maya Clear"};
+        final String[] labels={"🌸 Aria","💗 Luna","✨ Ava"};
         int current=prefs.getInt("maya_voice",0);
         if(current<0||current>2)current=0;
         new AlertDialog.Builder(this)
