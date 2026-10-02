@@ -87,8 +87,14 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
         static void start(SpeechRecognizer recognizer) {
             android.content.Intent i = new android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "si-LK");
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "si-LK");
+            android.content.Context context = recognizer.getContext();
+            android.content.SharedPreferences p = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE);
+            String selected = p.getString("maya_language", "auto");
+            String country = java.util.Locale.getDefault().getCountry();
+            boolean sinhala = "si".equals(selected) || ("auto".equals(selected) && "LK".equalsIgnoreCase(country));
+            String locale = sinhala ? "si-LK" : "en-LK";
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, locale);
             try{recognizer.startListening(i);}catch(Exception e){throw new IllegalStateException("Speech recognition could not listen.",e);}
         }
     }
