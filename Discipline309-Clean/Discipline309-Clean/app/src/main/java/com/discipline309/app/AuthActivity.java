@@ -1,6 +1,8 @@
 package com.discipline309.app;
 
 import android.app.Activity;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -17,6 +19,7 @@ public class AuthActivity extends Activity {
     private EditText email, password, name, invite;
     private Spinner accountType;
     private boolean registerMode=false;
+    private static final int MAIN_PERMISSIONS=3090;
 
     private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
 
@@ -190,11 +193,41 @@ public class AuthActivity extends Activity {
         if(!SupabaseAccountManager.loggedIn(this)){show(false);return;}
         String role=SupabaseAccountManager.role(this);
         if("primary".equals(role)||"sub".equals(role)){
-            startActivity(new android.content.Intent(this,MainActivity.class));
+            requestMainAppPermissionsThenOpen();
         }else{
             startActivity(new android.content.Intent(this,AccountsActivity.class));
+            finish();
         }
+    }
+
+    private void requestMainAppPermissionsThenOpen(){
+        if(!SupabaseAccountManager.loggedIn(this)){show(false);return;}
+        java.util.ArrayList<String> needed=new java.util.ArrayList<>();
+        if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)
+            needed.add(Manifest.permission.RECORD_AUDIO);
+        if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)
+            needed.add(Manifest.permission.CAMERA);
+        if(android.os.Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
+
+        if(needed.isEmpty()){openMainAfterPermissions();return;}
+
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("🎙️ Maya needs a few permissions")
+            .setMessage("To use Maya voice, background listening, camera tools and important reminders, 309 Day Discipline needs Microphone, Camera and Notification permissions. You can choose Allow or Don't allow in Android's permission screen.")
+            .setNegativeButton("Not now",(d,w)->openMainAfterPermissions())
+            .setPositiveButton("Continue",(d,w)->requestPermissions(needed.toArray(new String[0]),MAIN_PERMISSIONS))
+            .setCancelable(false).show();
+    }
+
+    private void openMainAfterPermissions(){
+        startActivity(new android.content.Intent(this,MainActivity.class));
         finish();
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] grantResults){
+        super.onRequestPermissionsResult(requestCode,permissions,grantResults);
+        if(requestCode==MAIN_PERMISSIONS) openMainAfterPermissions();
     }
 
     @Override protected void onResume(){
