@@ -187,9 +187,42 @@ private boolean fallbackListening=false;
                     }
                 }
             }
-            if(!stopping && settings.getBoolean("maya_background_voice",false)) handler.postDelayed(this,PROACTIVE_INTERVAL_MS);
+            if(!stopping && settings.getBoolean("maya_background_voice",false))
+                handler.postDelayed(this,proactiveDelayMs());
         }
     };
+
+    private long proactiveDelayMs(){
+        try{
+            Calendar now=Calendar.getInstance();
+            int hour=now.get(Calendar.HOUR_OF_DAY);
+            // Quiet hours: never proactively speak overnight.
+            if(hour>=22 || hour<7){
+                Calendar next=(Calendar)now.clone();
+                next.set(Calendar.HOUR_OF_DAY,7);
+                next.set(Calendar.MINUTE,5);
+                next.set(Calendar.SECOND,0);
+                next.set(Calendar.MILLISECOND,0);
+                if(next.before(now)) next.add(Calendar.DAY_OF_YEAR,1);
+                return Math.max(15L*60L*1000L,next.getTimeInMillis()-now.getTimeInMillis());
+            }
+
+            SharedPreferences d=getSharedPreferences("discipline",MODE_PRIVATE);
+            String key=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(now.getTime());
+            int planCount=d.getInt("plan_count_"+key,0);
+            int planDone=0;
+            for(int i=0;i<planCount;i++) if(d.getBoolean("plan_"+key+"_"+i+"_done",false)) planDone++;
+            boolean missionDone=d.getBoolean("mission_"+key+"_done",false);
+
+            // More useful reminders when work is pending; slower when the day is complete.
+            if(planCount>0 && planDone<planCount) return 75L*60L*1000L;
+            if(!missionDone) return 90L*60L*1000L;
+            if(hour>=20) return 3L*60L*60L*1000L;
+            return PROACTIVE_INTERVAL_MS;
+        }catch(Exception ignored){
+            return PROACTIVE_INTERVAL_MS;
+        }
+    }
 
     private void scheduleProactiveCheckIn(){
         if(stopping || handler==null) return;
