@@ -121,6 +121,7 @@ public class MayaAI {
                     }
                 }
                 String finalReply=reply;
+                DailyMoodStore.record(context,emotionalTone(userText),userText);
                 if(finalReply.isEmpty())finalReply=MayaOfflineNLP.answer(context,userText);
                 if(finalReply==null||finalReply.trim().isEmpty())finalReply="Mayaට දැන් reply එක හදාගන්න බැහැ 😅.";
                 saveHistory(context,userText,finalReply);
@@ -164,7 +165,7 @@ public class MayaAI {
         return null;
     }
 
-    private static String classifyEmotionalTone(String text){
+    private static String emotionalTone(String text){ return classifyEmotionalTone(text); }\n\n    private static String classifyEmotionalTone(String text){
         String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
         if(q.isEmpty())return "neutral";
         if(q.contains("angry")||q.contains("mad")||q.contains("hate")||q.contains("frustrated")||q.contains("annoyed")||q.contains("මල පැන")||q.contains("කේන්තිය")||q.contains("එපා වෙලා"))return "frustrated";
