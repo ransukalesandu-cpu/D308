@@ -58,6 +58,9 @@ public class MayaAI {
                 payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,personality,selectedTool,webResults));
                 payload.put("model",MODEL);
                 payload.put("intelligence_mode",classifyIntelligence(userText));
+                payload.put("language",preferredLanguageCode(context));
+                payload.put("history",recentHistoryForApi(context));
+                payload.put("context",memoryText==null?"":memoryText);
                 payload.put("intent",intent);
                 payload.put("emotional_tone",emotionalTone);
                 payload.put("context_hint",contextHint);
@@ -217,6 +220,37 @@ public class MayaAI {
         }
         p.edit().putString("last_user_message",userText==null?"":userText.trim()).apply();
         return hint;
+    }
+
+    private static String preferredLanguageCode(Context context){
+        SharedPreferences p=context.getSharedPreferences("settings",Context.MODE_PRIVATE);
+        String selected=p.getString("maya_language","auto");
+        if("si".equals(selected))return "sinhala";
+        if("en".equals(selected))return "english";
+        return "auto";
+    }
+
+    private static JSONArray recentHistoryForApi(Context context){
+        JSONArray out=new JSONArray();
+        try{
+            SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
+            String saved=history.getString("recent","[]");
+            if(saved==null||saved.length()>4000)return out;
+            JSONArray recent=new JSONArray(saved);
+            int start=Math.max(0,recent.length()-12);
+            for(int i=start;i<recent.length();i++){
+                JSONObject item=recent.optJSONObject(i);
+                if(item==null)continue;
+                String role=item.optString("role","");
+                String content=item.optString("content","").trim();
+                if(!("user".equals(role)||"assistant".equals(role))||content.isEmpty())continue;
+                JSONObject h=new JSONObject();
+                h.put("role",role);
+                h.put("content",content.substring(0,Math.min(1000,content.length())));
+                out.put(h);
+            }
+        }catch(Exception ignored){}
+        return out;
     }
 
     private static String preferredLanguage(Context context){
