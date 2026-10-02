@@ -226,6 +226,15 @@ public class VoiceAssistant {
             speak("හරි 😄 Maya Live Conversation OFF.");
             return;
         }
+        // Auto-complete a Today's Habit only when the user clearly reports completion.
+        if (isCompletedActivityStatement(question) && activity instanceof MainActivity) {
+            String completed = ((MainActivity) activity).completeActivityFromMaya(question);
+            if (completed != null) {
+                speak(completed);
+                return;
+            }
+        }
+
         String action=MayaToolRouter.action(question);
         if (question.contains("live conversation") || question.contains("live mode") || question.contains("live on") ||
                 question.contains("live conversation on") || question.contains("workout live") ||
@@ -422,5 +431,19 @@ public class VoiceAssistant {
         tts=null;
         ttsReady=false;
         pendingSpeech="";
+    }    private boolean isCompletedActivityStatement(String q) {
+        if (q == null || q.trim().isEmpty()) return false;
+        String s = q.toLowerCase(Locale.ROOT).trim();
+        String[] markers = {
+                "i did ", "i have done ", "i completed ", "i finished ", "just did ",
+                "done ", "finished ", "completed ", "did my ",
+                "මම කළා", "මම කලා", "මම කරලා ඉවරයි", "කරලා ඉවරයි",
+                "කළා", "කලා", "ඉවරයි", "complete කළා", "complete කලා",
+                "finish කළා", "finish කලා"
+        };
+        for (String marker : markers) if (s.contains(marker)) return true;
+        return s.endsWith(" done") || s.endsWith(" finished") || s.endsWith(" completed");
     }
+
+
 }
