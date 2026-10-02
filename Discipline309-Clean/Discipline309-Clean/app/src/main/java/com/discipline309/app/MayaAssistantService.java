@@ -885,14 +885,53 @@ private boolean fallbackListening=false;
         SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);
         int count=Math.max(0,Math.min(50,p.getInt("plan_count_"+date,0)));
         if(count>=50)return "ඒ දවසේ plan එක full.";
+        String cleanTime=(time==null||time.trim().isEmpty())?"Anytime":time.trim();
+        boolean reminderScheduled=false;
+        if(!"Anytime".equalsIgnoreCase(cleanTime)){
+            try{
+                java.text.SimpleDateFormat tf=new java.text.SimpleDateFormat("HH:mm",Locale.US);
+                tf.setLenient(false);
+                Date parsed=tf.parse(cleanTime);
+                Calendar alarm=(Calendar)d.clone();
+                Calendar timeOnly=Calendar.getInstance();
+                timeOnly.setTime(parsed);
+                alarm.set(Calendar.HOUR_OF_DAY,timeOnly.get(Calendar.HOUR_OF_DAY));
+                alarm.set(Calendar.MINUTE,timeOnly.get(Calendar.MINUTE));
+                alarm.set(Calendar.SECOND,0);
+                alarm.set(Calendar.MILLISECOND,0);
+                if(alarm.getTimeInMillis()>System.currentTimeMillis()){
+                    Intent ri=new Intent(this,TaskReminderReceiver.class).setAction(TaskReminderReceiver.ACTION)
+                            .putExtra("task",name.trim());
+                    int request=Math.abs((date+"_"+count).hashCode());
+                    PendingIntent pi=PendingIntent.getBroadcast(this,request,ri,
+                            PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
+                    AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);
+                    if(am!=null){
+                        boolean exact=false;
+                        if(Build.VERSION.SDK_INT>=31){
+                            try{exact=am.canScheduleExactAlarms();}catch(Exception ignored){}
+                        }else exact=true;
+                        if(exact){
+                            try{am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,alarm.getTimeInMillis(),pi);}
+                            catch(SecurityException ignored){exact=false;}
+                        }
+                        if(!exact)am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,alarm.getTimeInMillis(),pi);
+                        reminderScheduled=true;
+                    }
+                }
+            }catch(Exception ignored){}
+        }
         SharedPreferences.Editor e=p.edit()
                 .putString("plan_"+date+"_"+count+"_name",name.trim())
-                .putString("plan_"+date+"_"+count+"_time",(time==null||time.isEmpty())?"Anytime":time)
+                .putString("plan_"+date+"_"+count+"_time",cleanTime)
                 .putString("plan_"+date+"_"+count+"_priority","Medium")
                 .putBoolean("plan_"+date+"_"+count+"_done",false)
                 .putInt("plan_count_"+date,count+1);
         e.apply();
-        return "හරි ✅ ""+name.trim()+"" task එක "+(offset==1?"හෙට":"අද")+" create කළා.";
+        String when=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(d.getTime());
+        if(offset==0 && dateYmd==null) when="අද";
+        else if(offset==1 && (dateYmd==null||dateYmd.trim().isEmpty())) when="හෙට";
+        return "හරි ✅ ""+name.trim()+"" task එක "+when+" create කළා."+ (reminderScheduled?" 🔔 Reminder එකත් set කළා.":"");
     }
 
     private String completeBackgroundTask(String query){
