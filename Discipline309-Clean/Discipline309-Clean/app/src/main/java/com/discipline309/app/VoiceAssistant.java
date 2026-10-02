@@ -32,6 +32,9 @@ public class VoiceAssistant {
     private String pendingAction = "NONE";
     private int recognitionRetryCount = 0;
     private final Handler voiceHandler = new Handler(Looper.getMainLooper());
+    private final Runnable liveConversationRestart = () -> {
+        if (continuousConversation && !listening) start();
+    };
     private final Runnable silenceTimeout = () -> {
         if (!listening || !continuousConversation) return;
         continuousConversation = false;
@@ -553,11 +556,11 @@ public class VoiceAssistant {
     }
 
     private void continueLiveConversation(long delay) {
-        if (continuousConversation && !listening) {
-            voiceHandler.postDelayed(() -> {
-                if (continuousConversation && !listening) start();
-            }, delay);
-        }
+        if (!continuousConversation || listening) return;
+        // Keep only one pending restart. TTS callbacks can arrive more than once
+        // during a rapid live-conversation turn.
+        voiceHandler.removeCallbacks(liveConversationRestart);
+        voiceHandler.postDelayed(liveConversationRestart, delay);
     }
 
     private void speak(String text) {
