@@ -47,6 +47,7 @@ public class MayaAI {
                 MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
                 String intent=classifyIntent(userText);
                 String contextHint=buildContextHint(context,userText,intent);
+                String action=MayaToolRouter.action(userText);
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
                 JSONObject payload=new JSONObject();
@@ -55,6 +56,8 @@ public class MayaAI {
                 payload.put("intelligence_mode",classifyIntelligence(userText));
                 payload.put("intent",intent);
                 payload.put("context_hint",contextHint);
+                payload.put("action",action);
+                payload.put("action_confirmation_required",MayaToolRouter.requiresConfirmation(action));
                 payload.put("web_search",selectedTool==MayaToolRouter.Tool.WEB_SEARCH);
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)payload.put("search_query",userText==null?"":userText);
 
