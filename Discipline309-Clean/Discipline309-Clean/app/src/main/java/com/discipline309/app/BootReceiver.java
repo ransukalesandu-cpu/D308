@@ -9,6 +9,7 @@ public class BootReceiver extends BroadcastReceiver {
 
     @Override public void onReceive(Context c, Intent i) {
         try { MainActivity.scheduleAll(c); } catch (Exception ignored) {}
+        try { MoodAlarm.scheduleNext(c); } catch (Exception ignored) {}
 
         String action = i == null ? null : i.getAction();
         boolean bootEvent =
