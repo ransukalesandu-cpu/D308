@@ -339,7 +339,16 @@ content.addView(title("TODAY'S MISSION"));LinearLayout mission=card();mission.ad
         render.run();syncNotesIfNeeded();
     }
 
-    private long lastNotesSyncAt=0L;\n    private void syncNotesIfNeeded(){\n        if(!SupabaseAccountManager.loggedIn(this))return;\n        long now=System.currentTimeMillis();\n        if(now-lastNotesSyncAt<30000L)return;\n        lastNotesSyncAt=now;\n        SupabaseAccountManager.syncLocalNotes(this,null);\n    }\n\n    private void noteEditor(int id){
+    private long lastNotesSyncAt=0L;
+    private void syncNotesIfNeeded(){
+        if(!SupabaseAccountManager.loggedIn(this))return;
+        long now=System.currentTimeMillis();
+        if(now-lastNotesSyncAt<30000L)return;
+        lastNotesSyncAt=now;
+        SupabaseAccountManager.syncLocalNotes(this,null);
+    }
+
+    private void noteEditor(int id){
         LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);
         EditText title=new EditText(this);title.setSingleLine(true);title.setHint("Title");title.setText(id>=0?noteTitle(id):"");box.addView(title);
         Spinner category=new Spinner(this);String[] cats={"Personal","Study","Goals"};category.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,cats));if(id>=0)for(int i=0;i<cats.length;i++)if(cats[i].equals(noteCategory(id)))category.setSelection(i);box.addView(category);
