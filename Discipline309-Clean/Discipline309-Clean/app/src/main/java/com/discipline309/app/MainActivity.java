@@ -464,6 +464,41 @@ public class MainActivity extends Activity {
 
     private boolean planTaskDone(int i){try{return validPlanIndex(i)&&prefs.getBoolean("plan_"+planDate()+"_"+i+"_done",false);}catch(Exception e){return false;}}
 
+    /** Maya voice: create a planned task for today, tomorrow, or a specific date. */
+    public String createPlanTaskFromMaya(String taskText, int dayOffset, String dateYmd) {
+        if (!allowed("can_edit_mission")) return "Primary account has disabled task editing.";
+        String name = taskText == null ? "" : taskText.trim();
+        if (name.isEmpty()) return null;
+        Calendar d = Calendar.getInstance();
+        if (dateYmd != null && !dateYmd.trim().isEmpty()) {
+            try {
+                d.setTime(new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateYmd.trim()));
+            } catch (Exception ignored) { d.add(Calendar.DAY_OF_YEAR, dayOffset); }
+        } else d.add(Calendar.DAY_OF_YEAR, dayOffset);
+        d.set(Calendar.HOUR_OF_DAY,0); d.set(Calendar.MINUTE,0); d.set(Calendar.SECOND,0); d.set(Calendar.MILLISECOND,0);
+        String date = key(d);
+        int count = Math.max(0, Math.min(50, prefs.getInt("plan_count_"+date,0)));
+        if (count >= 50) return "That day's plan is full.";
+        prefs.edit()
+                .putString("plan_"+date+"_"+count+"_name", name)
+                .putString("plan_"+date+"_"+count+"_time", "Anytime")
+                .putString("plan_"+date+"_"+count+"_priority", "Medium")
+                .putBoolean("plan_"+date+"_"+count+"_done", false)
+                .putInt("plan_count_"+date, count+1)
+                .apply();
+        showShortPlan();
+        return "හරි ✅ ""+name+"" task එක "+friendlyPlanDate(d)+"ට create කළා.";
+    }
+
+    private String friendlyPlanDate(Calendar d) {
+        Calendar today=Calendar.getInstance();
+        String a=key(today), b=key(d);
+        if(a.equals(b)) return "අද";
+        today.add(Calendar.DAY_OF_YEAR,1);
+        if(key(today).equals(b)) return "හෙට";
+        return new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(d.getTime());
+    }
+
     private void showShortPlan(){
         content.removeAllViews();
         header("TODAY'S PLAN","Keep it short. Keep it focused.");
