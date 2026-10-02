@@ -21,13 +21,12 @@ public class BootReceiver extends BroadcastReceiver {
         if (!bootEvent) return;
 
         try {
-            android.content.SharedPreferences maya =
-                    c.getSharedPreferences("maya_settings", Context.MODE_PRIVATE);
-            boolean enabled = maya.getBoolean("enabled", false);
+            android.content.SharedPreferences settings =
+                    c.getSharedPreferences("settings", Context.MODE_PRIVATE);
+            boolean enabled = settings.getBoolean("maya_background_voice", false);
 
-            if (enabled &&
-                (!SupabaseAccountManager.loggedIn(c) ||
-                 SupabaseAccountManager.can(c, "can_use_maya"))) {
+            if (enabled && SupabaseAccountManager.loggedIn(c) &&
+                SupabaseAccountManager.can(c, "can_use_maya")) {
                 showMayaBootNotification(c);
             }
         } catch (Exception ignored) {}
