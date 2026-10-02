@@ -32,6 +32,17 @@ public class VoiceAssistant {
     private String pendingAction = "NONE";
     private int recognitionRetryCount = 0;
     private final Handler voiceHandler = new Handler(Looper.getMainLooper());
+    private final Runnable silenceTimeout = () -> {
+        if (!listening || !continuousConversation) return;
+        continuousConversation = false;
+        listening = false;
+        try { if (recognizer != null) recognizer.cancel(); } catch (Exception ignored) {}
+        try { if (recognizer != null) recognizer.destroy(); } catch (Exception ignored) {}
+        recognizer = null;
+        recognitionRetryCount = 0;
+        notifyVoiceEnded();
+        Toast.makeText(activity, "Maya conversation එක 5s silence නිසා නතර කළා. 🎙️", Toast.LENGTH_SHORT).show();
+    };
     private Runnable voiceStateListener;
     public void setVoiceStateListener(Runnable listener) { voiceStateListener = listener; }
     private void notifyVoiceEnded() { try { if (voiceStateListener != null) voiceStateListener.run(); } catch (Exception ignored) {} }
@@ -64,6 +75,7 @@ public class VoiceAssistant {
     }
 
     public void stopListening() {
+        voiceHandler.removeCallbacks(silenceTimeout);
         continuousConversation=false;
         listening=false;
         notifyVoiceEnded();
@@ -100,13 +112,14 @@ public class VoiceAssistant {
         recognizer = SpeechRecognizer.createSpeechRecognizer(activity);
         recognizer.setRecognitionListener(new RecognitionListener() {
             public void onReadyForSpeech(Bundle p) {}
-            public void onBeginningOfSpeech() {}
+            public void onBeginningOfSpeech() { voiceHandler.removeCallbacks(silenceTimeout); }
             public void onRmsChanged(float r) {}
             public void onBufferReceived(byte[] b) {}
             public void onEndOfSpeech() {}
             public void onPartialResults(Bundle p) {}
             public void onEvent(int t, Bundle p) {}
             public void onError(int e) {
+                voiceHandler.removeCallbacks(silenceTimeout);
                 listening = false;
                 if (e == SpeechRecognizer.ERROR_NO_MATCH ||
                     e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
@@ -159,6 +172,7 @@ public class VoiceAssistant {
                 notifyVoiceEnded();
             }
             public void onResults(Bundle results) {
+                voiceHandler.removeCallbacks(silenceTimeout);
                 listening = false;
                 recognitionRetryCount = 0;
                 // Do not end the Maya button session after one answer. The TTS
@@ -188,7 +202,10 @@ public class VoiceAssistant {
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, sinhala
                 ? "ඔයාට Mayaගෙන් අහන්න ඕන දේ කියන්න"
                 : "Tell Maya what you need");
-        try { recognizer.startListening(intent); }
+        try {
+            recognizer.startListening(intent);
+            voiceHandler.removeCallbacks(silenceTimeout);
+            voiceHandler.postDelayed(silenceTimeout, 5000L);
         catch (Exception e) {
             listening = false;
             try { recognizer.destroy(); } catch (Exception ignored) {}
