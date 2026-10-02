@@ -37,6 +37,7 @@ public final class MayaToolRouter {
     /** Returns a stable action name for safe, app-exposed commands. */
     public static String action(String text) {
         String q = text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
+        if (containsAny(q, "alarm", "alarm එක", "alarm ekak", "alarm eka", "reminder", "ඇලම්", "එලාම්")) return "ADD_ALARM";
         if (containsAny(q, "start workout", "workout start", "ව්‍යායාම පටන්", "workout එක පටන්")) return "START_WORKOUT";
         if (containsAny(q, "complete task", "mark task done", "task done", "වැඩේ ඉවරයි", "task එක complete")) return "COMPLETE_TASK";
         if (containsAny(q, "show progress", "my progress", "progress එක", "මගේ progress")) return "SHOW_PROGRESS";
@@ -46,7 +47,7 @@ public final class MayaToolRouter {
     }
 
     public static boolean requiresConfirmation(String action) {
-        return "COMPLETE_TASK".equals(action) || "START_WORKOUT".equals(action);
+        return "ADD_ALARM".equals(action) || "COMPLETE_TASK".equals(action) || "START_WORKOUT".equals(action);
     }
 
     public static String describe(Tool tool) {
