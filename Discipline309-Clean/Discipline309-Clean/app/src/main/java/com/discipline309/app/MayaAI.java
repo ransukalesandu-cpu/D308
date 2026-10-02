@@ -58,6 +58,8 @@ public class MayaAI {
                 String effectivePersonality=personality;
                 String strictMode=StrictModeManager.strictMayaMode(context);
                 if(strictMode!=null) effectivePersonality=strictMode.equals("angry")?"angry":"motivative";
+                else if("auto".equalsIgnoreCase(effectivePersonality))
+                    effectivePersonality=resolveAutoPersonality(context,userText,emotionalTone);
 
                 JSONObject payload=new JSONObject();
                 payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,effectivePersonality,selectedTool,webResults));
@@ -359,6 +361,32 @@ PERSISTENT RECENT CONVERSATION (may span multiple days):
             }
             history.edit().putString("history_day",todayKey).putString("recent",updated.toString()).apply();
         }catch(Exception ignored){}
+    }
+
+    private static String resolveAutoPersonality(Context context,String userText,String emotionalTone){
+        try{
+            SharedPreferences p=context.getSharedPreferences("discipline",Context.MODE_PRIVATE);
+            java.util.Calendar cal=java.util.Calendar.getInstance();
+            int hour=cal.get(java.util.Calendar.HOUR_OF_DAY);
+            String key=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.ROOT).format(cal.getTime());
+            int planCount=p.getInt("plan_count_"+key,0);
+            int planDone=0;
+            String nextTask="";
+            for(int i=0;i<planCount;i++){
+                if(p.getBoolean("plan_"+key+"_"+i+"_done",false)) planDone++;
+                else if(nextTask.isEmpty()) nextTask=p.getString("plan_"+key+"_"+i+"_name","");
+            }
+            boolean missionDone=p.getBoolean("mission_"+key+"_done",false);
+            if("sad".equals(emotionalTone)||"stressed".equals(emotionalTone)||"tired".equals(emotionalTone)) return "caring";
+            if(planCount>0 && planDone<planCount) return hour>=18 ? "angry" : "motivative";
+            if(!missionDone) return hour>=18 ? "angry" : "motivative";
+            if(hour>=21 || hour<7) return "caring";
+            if(userText!=null && userText.trim().length()>0){
+                String q=userText.toLowerCase(java.util.Locale.ROOT);
+                if(q.contains("why")||q.contains("how")||q.contains("explain")||q.contains("compare")) return "friendly";
+            }
+            return "friendly";
+        }catch(Exception ignored){ return "motivative"; }
     }
 
     private static String classifyIntelligence(String text){
