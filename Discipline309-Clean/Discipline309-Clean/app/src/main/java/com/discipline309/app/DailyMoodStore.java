@@ -29,6 +29,20 @@ public final class DailyMoodStore {
  private static String dominant(JSONObject d){String[] a={"positive","neutral","tired","stressed","frustrated","sad"};String b="neutral";int n=-1;for(String x:a){int v=d.optInt(x,0);if(v>n){n=v;b=x;}}return b;}
  public static String getReason(JSONObject d){return d==null?"":d.optString("reason","");}
  public static String getInsight(JSONObject d){return d==null?"":d.optString("daily_insight","");}
+
+ private static String contextOf(String text){
+  if(text==null||text.trim().isEmpty())return "";
+  String s=text.toLowerCase(Locale.ROOT);
+  if(s.contains("gym")||s.contains("workout")||s.contains("training")||s.contains("exercise")||s.contains("fitness"))return "fitness";
+  if(s.contains("study")||s.contains("exam")||s.contains("school")||s.contains("class")||s.contains("ඉගෙන")||s.contains("විභාග"))return "study";
+  if(s.contains("sleep")||s.contains("tired")||s.contains("නින්ද")||s.contains("මහන්සි"))return "sleep/recovery";
+  if(s.contains("work")||s.contains("job")||s.contains("වැඩ"))return "work";
+  if(s.contains("family")||s.contains("ගෙදර")||s.contains("අම්මා")||s.contains("තාත්තා"))return "family";
+  if(s.contains("friend")||s.contains("යාලු")||s.contains("යාලුව"))return "friends";
+  if(s.contains("money")||s.contains("cash")||s.contains("සල්ලි"))return "money";
+  if(s.contains("relationship")||s.contains("love")||s.contains("ආදර"))return "relationships";
+  return "";
+ }
  private static String summary(String mood,JSONObject d){int n=0;for(String x:new String[]{"positive","neutral","tired","stressed","frustrated","sad"})n+=d.optInt(x,0);if(n==0)return "No mood conversations were recorded for this day.";return "Main mood: "+displayMood(mood)+". Maya recorded "+n+" mood-related conversation signals.";}
  private static String reason(String mood,JSONObject d){String c=d.optString("contexts","");if(c.isEmpty())return "No clear activity or conversation context was detected.";return "Likely context: "+c.replace("|",", ")+".";}
  private static String insight(String mood,JSONObject d){String c=d.optString("contexts","");if(c.isEmpty())return "No clear reason was detected from today's conversations.";if("positive".equals(mood))return "Today's positive mood was associated with: "+c.replace("|",", ")+". Keep those activities going.";if("sad".equals(mood))return "Today's conversations suggest the mood was affected by: "+c.replace("|",", ")+". A supportive, low-pressure day may help.";if("stressed".equals(mood))return "Today's stress signals were connected with: "+c.replace("|",", ")+".";if("frustrated".equals(mood))return "Today's frustration signals were connected with: "+c.replace("|",", ")+".;";if("tired".equals(mood))return "Today's tired signals were connected with: "+c.replace("|",", ")+". Rest and recovery were part of the day's context.";return "Today's mood signals appeared alongside: "+c.replace("|",", ")+".";}
