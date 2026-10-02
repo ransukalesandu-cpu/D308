@@ -648,6 +648,12 @@ private boolean fallbackListening=false;
                 speak(completeBackgroundTask(query));
                 return;
             }
+            if("DELETE_TASK".equals(pending)){
+                String query=taskAction.getString("pending_task_query","");
+                taskAction.edit().remove("pending").remove("pending_task_query").apply();
+                speak(deleteBackgroundTask(query));
+                return;
+            }
         }
         if(isCancelCommand(q)){
             taskAction.edit().remove("pending").remove("pending_task_name")
@@ -671,6 +677,13 @@ private boolean fallbackListening=false;
             taskAction.edit().putString("pending","COMPLETE_TASK")
                     .putString("pending_task_query",q).apply();
             speak("හරි 😄 ""+q+"" complete කරන්නද? Yes කියන්න.");
+            return;
+        }
+        String deleteQuery=parseBackgroundDeleteTask(q);
+        if(deleteQuery!=null){
+            taskAction.edit().putString("pending","DELETE_TASK")
+                    .putString("pending_task_query",deleteQuery).apply();
+            speak("හරි 🗑️ ""+deleteQuery+"" task එක delete කරන්නද? Yes කියන්න.");
             return;
         }
 
@@ -842,6 +855,56 @@ private boolean fallbackListening=false;
                 s.contains("task එක complete")||s.contains("task eka complete")||
                 s.contains("task එක ඉවර")||s.contains("task eka iwar")||
                 s.contains("complete the next task")||s.contains("next task complete");
+    }
+
+    private String parseBackgroundDeleteTask(String q){
+        if(q==null)return null;
+        String s=q.trim();
+        String l=s.toLowerCase(Locale.ROOT);
+        if(!(l.contains("delete task")||l.contains("remove task")||l.contains("delete the task")||
+                l.contains("task එක delete")||l.contains("task eka delete")||
+                l.contains("task එක අයින්")||l.contains("task eka ain"))) return null;
+        String name=s.replaceFirst("(?i).*?(?:delete the task|delete task|remove task|task එක delete|task eka delete|task එක අයින්|task eka ain)","").trim();
+        return name.isEmpty()?"next task":name;
+    }
+
+    private String deleteBackgroundTask(String query){
+        SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);
+        String date=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date());
+        int count=Math.max(0,Math.min(50,p.getInt("plan_count_"+date,0)));
+        if(count<=0)return "අද plan එකේ task එකක් නැහැ.";
+        String q=(query==null?"next task":query).toLowerCase(Locale.ROOT).trim();
+        int target=-1;
+        for(int i=0;i<count;i++){
+            String n=p.getString("plan_"+date+"_"+i+"_name","").trim();
+            boolean done=p.getBoolean("plan_"+date+"_"+i+"_done",false);
+            if(n.isEmpty())continue;
+            if((q.equals("next task")||q.contains("next task"))&&!done){target=i;break;}
+            if(!q.equals("next task")&&q.contains(n.toLowerCase(Locale.ROOT))){target=i;break;}
+        }
+        if(target<0)return "Delete කරන්න ඕන task එක හඳුනාගන්න බැරි වුණා.";
+        String name=p.getString("plan_"+date+"_"+target+"_name","Task");
+        try{
+            int request=Math.abs((date+"_"+target).hashCode());
+            AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);
+            Intent ri=new Intent(this,TaskReminderReceiver.class).setAction(TaskReminderReceiver.ACTION);
+            PendingIntent pi=PendingIntent.getBroadcast(this,request,ri,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_NO_CREATE);
+            if(am!=null&&pi!=null)am.cancel(pi);
+        }catch(Exception ignored){}
+        SharedPreferences.Editor e=p.edit();
+        for(int i=target;i<count-1;i++){
+            String from="plan_"+date+"_"+(i+1);
+            String to="plan_"+date+"_"+i;
+            e.putString(to+"_name",p.getString(from+"_name",""))
+             .putString(to+"_time",p.getString(from+"_time","Anytime"))
+             .putString(to+"_priority",p.getString(from+"_priority","Medium"))
+             .putBoolean(to+"_done",p.getBoolean(from+"_done",false));
+        }
+        int last=count-1;
+        e.remove("plan_"+date+"_"+last+"_name").remove("plan_"+date+"_"+last+"_time")
+         .remove("plan_"+date+"_"+last+"_priority").remove("plan_"+date+"_"+last+"_done")
+         .putInt("plan_count_"+date,count-1).apply();
+        return "හරි 🗑️ ""+name+"" task එක delete කළා.";
     }
 
     private String[] parseBackgroundCreateTask(String q){
