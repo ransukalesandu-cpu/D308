@@ -15,16 +15,23 @@ public final class MayaContextProvider {
     private MayaContextProvider(){}
     private static final Object CACHE_LOCK=new Object();
     private static String cachedContext="";
+    private static String cachedAccountKey="";
     private static long cachedAt=0L;
     private static final long CACHE_MS=1200L;
 
 
     public static String build(Context context){
         long cacheNow=System.currentTimeMillis();
-        synchronized(CACHE_LOCK){
-            if(!cachedContext.isEmpty() && cacheNow-cachedAt<CACHE_MS)return cachedContext;
-        }
         SharedPreferences p=context.getSharedPreferences("discipline",Context.MODE_PRIVATE);
+        String cachedKey;
+        try{
+            cachedKey=SupabaseAccountManager.loggedIn(context)
+                    ? "account:"+SupabaseAccountManager.userId(context)
+                    : "local";
+        }catch(Exception ignored){cachedKey="local";}
+        synchronized(CACHE_LOCK){
+            if(!cachedContext.isEmpty() && cachedKey.equals(cachedAccountKey) && cacheNow-cachedAt<CACHE_MS)return cachedContext;
+        }
         long startMillis=p.getLong("program_start",System.currentTimeMillis());
         Calendar start=Calendar.getInstance();
         start.setTimeInMillis(startMillis);
@@ -112,6 +119,7 @@ public final class MayaContextProvider {
                 "; journalToday=\""+safe(journal)+"\".";
         synchronized(CACHE_LOCK){
             cachedContext=result;
+            cachedAccountKey=cachedKey;
             cachedAt=cacheNow;
         }
         return result;
