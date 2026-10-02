@@ -104,12 +104,56 @@ public final class MayaContextProvider {
     }
 
     public static String quickStatus(Context context,String type){
-        String full=build(context);
-        if("mission".equals(type)) return extract(full,"todayMission=")+"; completed="+extract(full,"missionCompleted=");
-        if("xp".equals(type)) return extract(full,"XP=")+"; "+extract(full,"level=")+"; "+extract(full,"XPToNextLevel=");
-        if("streak".equals(type)) return extract(full,"currentStreak=")+"; "+extract(full,"bestStreak=");
-        if("day".equals(type)) return extract(full,"day=")+"; "+extract(full,"daysRemaining=");
-        return extract(full,"day=")+"; "+extract(full,"todayTasks=")+"; "+extract(full,"currentStreak=")+"; "+extract(full,"XP=");
+        SharedPreferences p=context.getSharedPreferences("discipline",Context.MODE_PRIVATE);
+        long startMillis=p.getLong("program_start",System.currentTimeMillis());
+        Calendar start=Calendar.getInstance();
+        start.setTimeInMillis(startMillis);
+        Calendar now=Calendar.getInstance();
+        Calendar target=(Calendar)start.clone();
+        target.add(Calendar.DAY_OF_YEAR,PROGRAM_DAYS-1);
+        String todayKey=key(now);
+        int day=Math.max(0,Math.min(PROGRAM_DAYS,daysFromStart(startMillis)));
+        int remaining=Math.max(0,PROGRAM_DAYS-day);
+
+        if("mission".equals(type)){
+            String mission=p.getString("mission_"+todayKey,"");
+            if(mission.isEmpty()){
+                String[] missions={"Complete every planned task today","Finish one focused study session",
+                        "Do your routine before entertainment","Write a 3-line evening reflection",
+                        "Complete today without skipping a habit"};
+                mission=missions[Math.abs(todayKey.hashCode())%missions.length];
+            }
+            boolean done=p.getBoolean("mission_"+todayKey+"_done",false);
+            return "todayMission=\""+safe(mission)+"\"; completed="+done;
+        }
+        if("day".equals(type)) return "day="+day+"/"+PROGRAM_DAYS+"; daysRemaining="+remaining;
+        if("streak".equals(type)){
+            int current=currentStreak(p,start,now);
+            return "currentStreak="+current+"; bestStreak="+bestStreak(p,start,now,target);
+        }
+        if("xp".equals(type)){
+            int customCount=Math.max(0,Math.min(100,p.getInt("custom_count",0)));
+            int totalTasks=DEFAULT_TASKS.length+customCount;
+            int completedDays=completedDays(p,start,now,target);
+            int totalCompletedTasks=totalCompletedTasks(p,start,now,target,totalTasks);
+            long xpLong=(long)completedDays*100L+(long)totalCompletedTasks*20L+
+                    Math.max(0,Math.min(1000000,p.getInt("xp_bonus",0)));
+            int xp=(int)Math.min(Integer.MAX_VALUE,xpLong);
+            return "XP="+xp+"; level="+(xp/500+1)+"; XPToNextLevel="+(500-(xp%500));
+        }
+        int customCount=Math.max(0,Math.min(100,p.getInt("custom_count",0)));
+        int totalTasks=DEFAULT_TASKS.length+customCount;
+        int todayTasks=countFor(p,todayKey,totalTasks);
+        return "day="+day+"/"+PROGRAM_DAYS+"; todayTasks="+todayTasks+"/"+totalTasks+
+                "; currentStreak="+currentStreak(p,start,now)+"; XP="+calculateXp(p,start,now,target,totalTasks);
+    }
+
+    private static int calculateXp(SharedPreferences p,Calendar start,Calendar now,Calendar target,int totalTasks){
+        int completedDays=completedDays(p,start,now,target);
+        int totalCompletedTasks=totalCompletedTasks(p,start,now,target,totalTasks);
+        long xpLong=(long)completedDays*100L+(long)totalCompletedTasks*20L+
+                Math.max(0,Math.min(1000000,p.getInt("xp_bonus",0)));
+        return (int)Math.min(Integer.MAX_VALUE,xpLong);
     }
 
     private static String extract(String s,String key){
