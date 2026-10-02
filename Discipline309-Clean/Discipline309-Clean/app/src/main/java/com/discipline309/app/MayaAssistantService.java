@@ -492,6 +492,18 @@ private boolean fallbackListening=false;
         if(q.equals("hey")) q="";
         else if(q.startsWith("hey ")) q=q.substring(4).trim();
         q=normalizeMixedCommand(q);
+        if(workoutLiveMode && (q.equals("maya stop") || q.equals("stop maya") || q.equals("live stop") || q.equals("workout live off") || q.equals("stop workout live"))){
+            stopWorkoutLiveConversation();
+            return;
+        }
+
+        if(q.contains("workout live") || q.contains("live conversation on") || q.contains("live mode on") ||
+           q.contains("start workout conversation") || q.contains("workout කරනකොට maya") ||
+           q.contains("workout ekedi maya") || q.contains("workout එකේදී maya")){
+            startWorkoutLiveConversation();
+            return;
+        }
+
         if(isConversationStopCommand(q)){
             conversationMode=false;
             speak("හරි 😄 Voice conversation එක නවත්තනවා. ආයෙත් Maya කියලා කතා කළාම මං එන්නම්.");
