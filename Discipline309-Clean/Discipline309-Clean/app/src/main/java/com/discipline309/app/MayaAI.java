@@ -9,6 +9,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Locale;
 
 public class MayaAI {
     public interface Callback { void onReply(String reply); }
@@ -108,6 +109,15 @@ public class MayaAI {
         });
     }
 
+    private static String preferredLanguage(Context context){
+        SharedPreferences p=context.getSharedPreferences("settings",Context.MODE_PRIVATE);
+        String selected=p.getString("maya_language","auto");
+        if("si".equals(selected)) return "Sinhala";
+        if("en".equals(selected)) return "English";
+        String country=Locale.getDefault().getCountry();
+        return "LK".equalsIgnoreCase(country) ? "Sinhala" : "English";
+    }
+
     private static String buildPrompt(Context context,String userText,String memoryText,String relevantMemory,String personality,MayaToolRouter.Tool selectedTool,String webResults){
         StringBuilder prompt=new StringBuilder();
         prompt.append("You are Maya, the user's personal voice-first AI assistant inside 309 Day Discipline. ");
@@ -115,7 +125,9 @@ public class MayaAI {
         prompt.append("Available modes are exactly: romance, caring, angry, motivative, and auto. Only one mode is active at a time. Auto selects the appropriate tone from the situation. ");
         prompt.append("Romance mode is friendly and warm only; do not roleplay as a romantic partner, flirt sexually, or create emotional dependency. ");
         prompt.append("Your main job is to be useful in the moment: listen, understand intent, remember ordinary preferences, explain things simply, and help the user take the next practical step. ");
-        prompt.append("Understand Sinhala, Singlish (Sinhala typed in English letters), and English. Prefer natural Sinhala/Singlish when the user speaks that way. ");
+        prompt.append("Understand Sinhala, Singlish (Sinhala typed in English letters), and English. ");
+        prompt.append("MAYA LANGUAGE: Reply in ").append(preferredLanguage(context)).append(" by default. This language setting is for Maya only and does not change the app UI. If the user explicitly asks to change Maya's language, the app Settings control is the source of truth. ");
+        prompt.append("When Maya language is Sinhala, use natural Sinhala/Singlish that sounds good when spoken aloud. When it is English, reply naturally in English. ");
         prompt.append("For voice replies, keep answers short, conversational, easy to hear, and avoid long lists unless requested. ");
         prompt.append("You may be funny, energetic, cute, calm, or caring according to the personality mode, but never act as a romantic partner or encourage emotional dependency. ");
         prompt.append("Be supportive without pretending certainty. Never claim a phone action happened unless the app actually performed it. ");
