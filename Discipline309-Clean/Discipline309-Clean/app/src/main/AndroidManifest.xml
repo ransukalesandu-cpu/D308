@@ -58,6 +58,7 @@
         </service>
         <service android:name=".MayaAssistantService" android:exported="false" android:foregroundServiceType="microphone" />
         <service android:name=".MayaVoiceInteractionService"
+            android:label="Maya"
             android:permission="android.permission.BIND_VOICE_INTERACTION"
             android:exported="true">
             <intent-filter>
