@@ -43,7 +43,7 @@ public class VoiceAssistant {
                         if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){
                             tts.setLanguage(Locale.ENGLISH);
                         }
-                        tts.setSpeechRate(.92f);
+                        selectMayaVoice(target);
                         ttsReady = true;
                         if (!pendingSpeech.isEmpty()) {
                             String queued = pendingSpeech;
@@ -281,12 +281,43 @@ public class VoiceAssistant {
                 ? new Locale("si","LK") : Locale.ENGLISH;
         int lang=tts.setLanguage(target);
         if(lang==TextToSpeech.LANG_MISSING_DATA||lang==TextToSpeech.LANG_NOT_SUPPORTED)tts.setLanguage(Locale.ENGLISH);
+        selectMayaVoice(target);
         tts.setSpeechRate(rate);
         String safe=naturalSinhala(text);
         if(safe.isEmpty()) return;
         try { tts.speak(safe, TextToSpeech.QUEUE_FLUSH, null, "maya_" + System.currentTimeMillis()); }
         catch (Exception ignored) {}
         } catch (Exception ignored) {}
+    }
+
+    private void selectMayaVoice(Locale target) {
+        if(tts==null)return;
+        try{
+            int choice=Math.max(0,Math.min(2,activity.getSharedPreferences("settings",0).getInt("maya_voice",0)));
+            java.util.ArrayList<TextToSpeech.Voice> female=new java.util.ArrayList<>();
+            java.util.ArrayList<TextToSpeech.Voice> all=new java.util.ArrayList<>();
+            java.util.Set<TextToSpeech.Voice> voices=tts.getVoices();
+            if(voices!=null)for(TextToSpeech.Voice voice:voices){
+                if(voice==null||voice.getLocale()==null||!voice.getLocale().getLanguage().equals(target.getLanguage()))continue;
+                if(voice.isNetworkConnectionRequired())continue;
+                all.add(voice);
+                String n=voice.getName()==null?"":voice.getName().toLowerCase(Locale.ROOT);
+                if(n.contains("female")||n.contains("fem")||n.contains("woman")||n.contains("girl"))female.add(voice);
+            }
+            java.util.ArrayList<TextToSpeech.Voice> pool=female.size()>=3?female:all;
+            if(!pool.isEmpty()){
+                java.util.Collections.sort(pool,(a,b)->{
+                    int q=Integer.compare(b.getQuality(),a.getQuality());
+                    return q!=0?q:a.getName().compareToIgnoreCase(b.getName());
+                });
+                int index=pool.size()>=3?(choice==0?0:(choice==1?pool.size()/2:pool.size()-1)):Math.min(choice,pool.size()-1);
+                tts.setVoice(pool.get(index));
+            }
+            float[] pitches={1.08f,1.02f,0.98f};
+            float[] rates={0.88f,0.94f,1.00f};
+            tts.setPitch(pitches[choice]);
+            tts.setSpeechRate(rates[choice]);
+        }catch(Exception ignored){}
     }
 
     private String naturalSinhala(String text) {
