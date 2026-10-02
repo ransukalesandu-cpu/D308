@@ -625,6 +625,36 @@ private boolean fallbackListening=false;
             q=combined.toString();
         }
         if(q.isEmpty()) return;
+
+        // Voice alarm actions use a confirmation step before scheduling.
+        if(isVoiceConfirmation(q)){
+            SharedPreferences ap=getSharedPreferences("maya_action",MODE_PRIVATE);
+            String pending=ap.getString("pending","NONE");
+            if("ADD_ALARM".equals(pending)){
+                String alarmText=ap.getString("pending_alarm_text","");
+                ap.edit().remove("pending").remove("pending_alarm_text").apply();
+                String result=MayaAlarmScheduler.scheduleFromVoice(this,alarmText);
+                if(result!=null){ speak(result); return; }
+            }
+        }
+        if(q.equals("cancel")||q.equals("cancel alarm")||q.equals("නවත්වන්න")||q.equals("එපා")){
+            getSharedPreferences("maya_action",MODE_PRIVATE).edit()
+                    .remove("pending").remove("pending_alarm_text").apply();
+            speak("හරි. Pending action එක cancel කළා.");
+            return;
+        }
+        if(q.contains("alarm")||q.contains("alarm එක")||q.contains("alarm ekak")||
+           q.contains("ඇලම්")||q.contains("එලාම්")){
+            String preview=MayaAlarmScheduler.preview(this,q);
+            if(preview!=null){
+                getSharedPreferences("maya_action",MODE_PRIVATE).edit()
+                        .putString("pending","ADD_ALARM")
+                        .putString("pending_alarm_text",q).apply();
+                speak(preview+" Yes කියන්න.");
+                return;
+            }
+        }
+
         String followUp=followUpContext(q);
         if(followUp!=null){
             askAI(followUp);
@@ -745,6 +775,14 @@ private boolean fallbackListening=false;
         if(q==null || q.trim().isEmpty()) return new String[]{""};
         String[] parts=q.split("\\s+(?:and|then|සහ|ඊළඟට|ඊට පස්සේ)\\s+");
         return parts.length==0 ? new String[]{q.trim()} : parts;
+    }
+
+    private boolean isVoiceConfirmation(String q){
+        if(q==null)return false;
+        String s=q.toLowerCase(Locale.ROOT).trim();
+        return s.equals("yes")||s.equals("yeah")||s.equals("yep")||s.equals("ok")||
+                s.equals("okay")||s.equals("sure")||s.equals("confirm")||s.equals("do it")||
+                s.equals("හරි")||s.equals("ඔව්")||s.equals("ඔව් කරන්න")||s.equals("කරන්න");
     }
 
     private String followUpContext(String q){
