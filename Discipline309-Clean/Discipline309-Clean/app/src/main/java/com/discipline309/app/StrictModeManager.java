@@ -33,15 +33,43 @@ public final class StrictModeManager {
         if(!on) { setDnd(c,false); StrictAlarmManager.rescheduleAll(c); }
     }
     public static String strictMayaMode(Context c){
+        return strictMayaMode(c,"","");
+    }
+
+    public static String strictMayaMode(Context c,String userText,String emotionalTone){
         if(!isEnabled(c)) return null;
-        String today=dayKey();
-        SharedPreferences sp=p(c);
-        String savedDay=sp.getString("maya_turn_day","");
-        int turn=sp.getInt("maya_turn",0);
-        if(!today.equals(savedDay)) turn=0;
-        String mode=(turn%2==0) ? "angry" : "motivative";
-        sp.edit().putString("maya_turn_day",today).putInt("maya_turn",turn+1).apply();
-        return mode;
+        try{
+            SharedPreferences sp=p(c);
+            Calendar cal=Calendar.getInstance();
+            int hour=cal.get(Calendar.HOUR_OF_DAY);
+            String key=new SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(cal.getTime());
+            int planCount=sp.getInt("plan_count_"+key,0);
+            int planDone=0;
+            String nextTask="";
+            for(int i=0;i<planCount;i++){
+                if(sp.getBoolean("plan_"+key+"_"+i+"_done",false)) planDone++;
+                else if(nextTask.isEmpty()) nextTask=sp.getString("plan_"+key+"_"+i+"_name","");
+            }
+            boolean missionDone=sp.getBoolean("mission_"+key+"_done",false);
+            boolean pendingTasks=planCount>0 && planDone<planCount;
+            String q=userText==null?"":userText.toLowerCase(Locale.ROOT);
+
+            // Strict Mode stays within its two tones, but chooses the tone from live context.
+            if(q.contains("skip")||q.contains("skipped")||q.contains("avoid")||q.contains("ignored")
+                    ||q.contains("delay")||q.contains("refuse")||q.contains("excuse")
+                    ||q.contains("skip කළ")||q.contains("නොකර")||q.contains("පස්සේ කර")
+                    ||q.contains("අද නෑ")||q.contains("බැහැ"))
+                return "angry";
+            if("frustrated".equals(emotionalTone)) return "motivative";
+            if("stressed".equals(emotionalTone)||"tired".equals(emotionalTone)) return "motivative";
+            if(pendingTasks && hour>=18) return "angry";
+            if(!missionDone && hour>=18) return "angry";
+            if(pendingTasks || !missionDone) return "motivative";
+            if(hour>=21 || hour<7) return "motivative";
+            return "motivative";
+        }catch(Exception ignored){
+            return "motivative";
+        }
     }
     public static int limitMinutes(Context c){return Math.max(1,p(c).getInt("limit_minutes",30));}
     public static Set<String> blocked(Context c){return new HashSet<>(p(c).getStringSet("blocked",new HashSet<>()));}
