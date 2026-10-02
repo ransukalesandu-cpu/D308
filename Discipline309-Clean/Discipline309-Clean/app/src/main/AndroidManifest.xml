@@ -64,7 +64,7 @@
         <service android:name=".MotivationService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="motivational voice coach" />
         </service>
-        <service android:name=".MayaAssistantService" android:exported="false" android:foregroundServiceType="specialUse">
+        <service android:name=".MayaAssistantService" android:exported="false" android:foregroundServiceType="microphone|specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Maya spoken background coaching; no background audio recording" />
         </service>
         <service android:name=".MayaVoiceInteractionService"
