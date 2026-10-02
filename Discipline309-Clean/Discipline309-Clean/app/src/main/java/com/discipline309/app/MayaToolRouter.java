@@ -33,6 +33,22 @@ public final class MayaToolRouter {
         return Tool.CHAT;
     }
 
+
+    /** Returns a stable action name for safe, app-exposed commands. */
+    public static String action(String text) {
+        String q = text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
+        if (containsAny(q, "start workout", "workout start", "ව්‍යායාම පටන්", "workout එක පටන්")) return "START_WORKOUT";
+        if (containsAny(q, "complete task", "mark task done", "task done", "වැඩේ ඉවරයි", "task එක complete")) return "COMPLETE_TASK";
+        if (containsAny(q, "show progress", "my progress", "progress එක", "මගේ progress")) return "SHOW_PROGRESS";
+        if (containsAny(q, "show notes", "list notes", "මගේ notes", "notes ටික")) return "LIST_NOTES";
+        if (containsAny(q, "open settings", "settings open", "සෙටින්ග්ස් අරින්න")) return "OPEN_SETTINGS";
+        return "NONE";
+    }
+
+    public static boolean requiresConfirmation(String action) {
+        return "COMPLETE_TASK".equals(action) || "START_WORKOUT".equals(action);
+    }
+
     public static String describe(Tool tool) {
         switch (tool) {
             case WEB_SEARCH: return "Use current web-search results.";
