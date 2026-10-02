@@ -226,6 +226,18 @@ public class VoiceAssistant {
             speak("හරි 😄 Maya Live Conversation OFF.");
             return;
         }
+        // Maya can create planned tasks for today, tomorrow, or a requested date.
+        if (activity instanceof MainActivity) {
+            String[] create = parseCreateTask(question);
+            if (create != null) {
+                String created = ((MainActivity) activity).createPlanTaskFromMaya(create[0], Integer.parseInt(create[1]), create[2]);
+                if (created != null) {
+                    speak(created);
+                    return;
+                }
+            }
+        }
+
         // Auto-complete a Today's Habit only when the user clearly reports completion.
         if (isCompletedActivityStatement(question) && activity instanceof MainActivity) {
             String completed = ((MainActivity) activity).completeActivityFromMaya(question);
@@ -435,7 +447,34 @@ public class VoiceAssistant {
         if (q == null || q.trim().isEmpty()) return false;
         String s = q.toLowerCase(Locale.ROOT).trim();
         String[] markers = {
-                "i did ", "i have done ", "i completed ", "i finished ", "just did ",
+                private String[] parseCreateTask(String q) {
+        if (q == null) return null;
+        String s=q.toLowerCase(Locale.ROOT).trim();
+        boolean command=s.contains("create a task")||s.contains("create task")||s.contains("add a task")||
+                s.contains("add task")||s.contains("make a task")||s.contains("set a task")||
+                s.contains("task එකක් දා")||s.contains("task ekak da")||s.contains("task ekak had");
+        if(!command) return null;
+        int offset=0;
+        if(s.contains("tomorrow")||s.contains("හෙට")||s.contains("heta")) offset=1;
+        String date=null;
+        java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})").matcher(s);
+        if(m.find()) date=String.format(Locale.US,"%04d-%02d-%02d",Integer.parseInt(m.group(1)),Integer.parseInt(m.group(2)),Integer.parseInt(m.group(3)));
+        int at=s.indexOf("create a task"); if(at<0) at=s.indexOf("create task");
+        if(at<0) at=s.indexOf("add a task"); if(at<0) at=s.indexOf("add task");
+        if(at<0) at=s.indexOf("make a task"); if(at<0) at=s.indexOf("set a task");
+        String task;
+        if(at>=0){
+            task=s.substring(at).replaceFirst("(?i)^(create a task|create task|add a task|add task|make a task|set a task)\\s*(for|on|tomorrow)?\\s*","");
+        } else {
+            int ek=s.indexOf("task ekak"); task=ek>=0?s.substring(ek).replaceFirst("(?i)^task ekak\\s*(da|hadanna|had)\\s*",""):s;
+            task=task.replaceFirst("(?i)^(task එකක් දා|task එකක් හද).*?(අද|හෙට|heta|tomorrow)?\\s*","");
+        }
+        task=task.replaceAll("(?i)\\b(for|on)\\s+(today|tomorrow|හෙට|heta)\\b","").trim();
+        if(task.isEmpty()) return null;
+        return new String[]{task,String.valueOf(offset),date==null?"":date};
+    }
+
+    "i did ", "i have done ", "i completed ", "i finished ", "just did ",
                 "done ", "finished ", "completed ", "did my ",
                 "මම කළා", "මම කලා", "මම කරලා ඉවරයි", "කරලා ඉවරයි",
                 "කළා", "කලා", "ඉවරයි", "complete කළා", "complete කලා",
