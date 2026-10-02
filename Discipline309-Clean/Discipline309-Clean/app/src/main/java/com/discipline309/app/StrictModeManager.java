@@ -39,6 +39,8 @@ public final class StrictModeManager {
         e.apply();
     }
     public static boolean limitReached(Context c,String pkg){return isSelected(c,pkg)&&usedMinutes(c,pkg)>=limitMinutes(c);}
+    public static int blockedAttempts(Context c,String pkg){return p(c).getInt("blocked_"+dayKey()+"_"+pkg,0);}
+    public static void addBlockedAttempt(Context c,String pkg){if(pkg!=null&&!pkg.isEmpty()){String k="blocked_"+dayKey()+"_"+pkg;p(c).edit().putInt(k,blockedAttempts(c,pkg)+1).apply();}}
     public static boolean noSkip(Context c){return isEnabled(c)&&p(c).getBoolean("no_skip",true);}
     public static boolean focusActive(Context c){return p(c).getLong("focus_until",0L)>System.currentTimeMillis();}
     public static long focusUntil(Context c){return p(c).getLong("focus_until",0L);}
