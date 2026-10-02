@@ -294,31 +294,44 @@ public class VoiceAssistant {
     private void selectMayaVoice(Locale target) {
         if (tts == null) return;
         try {
-            int choice=activity.getSharedPreferences("settings",0).getInt("maya_voice",0);
+            int choice=Math.max(0,Math.min(2,activity.getSharedPreferences("settings",0).getInt("maya_voice",0)));
             java.util.ArrayList<android.speech.tts.Voice> female=new java.util.ArrayList<>();
-            java.util.ArrayList<android.speech.tts.Voice> sameLanguage=new java.util.ArrayList<>();
+            java.util.ArrayList<android.speech.tts.Voice> all=new java.util.ArrayList<>();
             java.util.Set<android.speech.tts.Voice> voices=tts.getVoices();
             if(voices!=null){
                 for(android.speech.tts.Voice voice:voices){
                     if(voice==null || voice.getLocale()==null || !voice.getLocale().getLanguage().equals(target.getLanguage())) continue;
-                    sameLanguage.add(voice);
+                    if(voice.isNetworkConnectionRequired()) continue;
+                    all.add(voice);
                     String n=voice.getName()==null?"":voice.getName().toLowerCase(Locale.ROOT);
                     if(n.contains("female") || n.contains("fem") || n.contains("woman") || n.contains("girl"))
                         female.add(voice);
                 }
             }
-            android.speech.tts.Voice chosen=null;
-            if(!female.isEmpty()) chosen=female.get(Math.min(choice,female.size()-1));
-            else if(!sameLanguage.isEmpty()) chosen=sameLanguage.get(Math.min(choice,sameLanguage.size()-1));
-            if(chosen!=null) tts.setVoice(chosen);
 
-            // Three Maya voice styles are selectable even when the phone has only
-            // one installed female TTS voice. They keep the same language/voice
-            // while changing pitch and speed slightly.
-            float[] pitches={1.08f,1.04f,1.00f};
-            float[] rates={0.88f,0.92f,0.96f};
-            tts.setPitch(pitches[Math.max(0,Math.min(2,choice))]);
-            tts.setSpeechRate(rates[Math.max(0,Math.min(2,choice))]);
+            // Prefer three different installed female voices when the phone exposes them.
+            java.util.ArrayList<android.speech.tts.Voice> pool=female.size()>=3?female:all;
+            if(!pool.isEmpty()){
+                java.util.Collections.sort(pool,(x,y)->{
+                    int q=Integer.compare(y.getQuality(),x.getQuality());
+                    if(q!=0)return q;
+                    return x.getName().compareToIgnoreCase(y.getName());
+                });
+                int index;
+                if(pool.size()>=3){
+                    index=choice==0?0:(choice==1?pool.size()/2:pool.size()-1);
+                }else{
+                    index=Math.min(choice,pool.size()-1);
+                }
+                tts.setVoice(pool.get(index));
+            }
+
+            // Keep each style pleasant and clearly different even if the phone exposes
+            // only one compatible TTS voice.
+            float[] pitches={1.08f,1.02f,0.98f};
+            float[] rates={0.88f,0.94f,1.00f};
+            tts.setPitch(pitches[choice]);
+            tts.setSpeechRate(rates[choice]);
         } catch(Exception ignored) {}
     }
 
