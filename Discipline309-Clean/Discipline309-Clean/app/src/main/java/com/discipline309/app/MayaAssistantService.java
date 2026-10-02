@@ -155,6 +155,8 @@ private boolean fallbackListening=false;
 
     private void onMayaWakeWord(){
         if(stopping || !mayaAllowed()){ stopSelf(); return; }
+        // Ignore duplicate detections while Maya is already responding/listening.
+        if (conversationMode || ttsSpeaking || listening) return;
         wakeWordDetected=true;
         realWakeWordActive=true;
         conversationMode=true;
