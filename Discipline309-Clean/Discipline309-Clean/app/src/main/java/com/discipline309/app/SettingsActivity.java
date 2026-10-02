@@ -76,6 +76,14 @@ public class SettingsActivity extends Activity {
         Switch on=new Switch(this);on.setText("Enable Advanced / Strict Mode");on.setTextColor(TEXT);on.setTextSize(16);on.setChecked(StrictModeManager.isEnabled(this));
         on.setOnCheckedChangeListener((v,c)->{StrictModeManager.setEnabled(this,c);if(c)Toast.makeText(this,"Strict Mode ON 🔒",Toast.LENGTH_SHORT).show();else Toast.makeText(this,"Strict Mode OFF",Toast.LENGTH_SHORT).show();});strict.addView(on);body.addView(strict);
 
+        LinearLayout alarms=card();alarms.addView(label("⏰ STRICT ALARMS",11,GOLD));
+        alarms.addView(label("These alarms are separate from your normal Discipline alarms. They ring only while Strict Mode is ON.",12,MUTED));
+        LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);
+        for(int i=0;i<StrictAlarmManager.count(this);i++){final int idx=i;TextView a=label("⏰ "+StrictAlarmManager.time(this,i)+"  •  "+StrictAlarmManager.title(this,i),14,TEXT);a.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Remove Strict Alarm?").setMessage(StrictAlarmManager.title(this,idx)+"\n"+StrictAlarmManager.time(this,idx)).setNegativeButton("Cancel",null).setPositiveButton("Remove",(d,w)->{StrictAlarmManager.remove(this,idx);showStrictSettings();}).show());list.addView(a);}
+        alarms.addView(list);
+        Button addAlarm=buttonStyle(new Button(this));addAlarm.setText("➕  Add Strict Alarm");addAlarm.setOnClickListener(v->showStrictAlarmDialog());alarms.addView(addAlarm);
+        body.addView(alarms);
+
         LinearLayout apps=card();apps.addView(label("📵 DISTRACTING APPS",11,MUTED));
         apps.addView(label("Choose apps Maya should monitor. You must enable Android Accessibility access for the blocker to work.",12,MUTED));
         Button choose=buttonStyle(new Button(this));choose.setText("📱  Choose apps + daily limit");choose.setOnClickListener(v->showStrictAppPicker());apps.addView(choose);
@@ -105,6 +113,15 @@ public class SettingsActivity extends Activity {
 
         LinearLayout info=card();info.addView(label("⚠️ ANDROID LIMIT",11,GOLD));info.addView(label("App blocking uses Android Accessibility and only works after you explicitly enable Maya's service. Android/system apps are never targeted by this feature.",12,MUTED));body.addView(info);
         showCategory("🔒  ADVANCED / STRICT MODE","Harder discipline rules, app limits and DND control.",body);
+    }
+
+    private void showStrictAlarmDialog(){
+        LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(18),dp(8),dp(18),dp(8));
+        EditText name=new EditText(this);name.setHint("Alarm name e.g. Wake up / Study");name.setTextColor(TEXT);name.setHintTextColor(MUTED);l.addView(name);
+        TimePicker tp=new TimePicker(this);tp.setIs24HourView(true);l.addView(tp);
+        new AlertDialog.Builder(this).setTitle("⏰ Add Strict Alarm").setMessage("This alarm is active only while Strict Mode is ON. Existing normal alarms are unchanged.")
+          .setView(l).setPositiveButton("SAVE",(d,w)->{String n=name.getText().toString().trim();if(n.isEmpty())n="Strict Alarm";StrictAlarmManager.add(this,n,tp.getHour(),tp.getMinute());Toast.makeText(this,"Strict alarm saved.",Toast.LENGTH_SHORT).show();})
+          .setNegativeButton("CANCEL",null).show();
     }
 
     private void showStrictAppPicker(){
