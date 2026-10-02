@@ -85,7 +85,7 @@ private boolean fallbackListening=false;
     @Override public void onCreate(){
         super.onCreate();
         if(!mayaAllowed()){ stopSelf(); return; }
-        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false);
+        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",true);
         if(!backgroundVoiceOnly && Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){ stopSelf(); return; }
         try{
         memory=new MayaMemory(this);
@@ -117,7 +117,7 @@ private boolean fallbackListening=false;
         if(!backgroundVoiceOnly){
             handler.postDelayed(wakeWordRunnable,1200);
         }
-        // Background Maya auto-talk is opt-in through Settings and uses sparse check-ins.
+        // Background Maya auto-talk is enabled by default and uses sparse check-ins; users can disable it in Settings.
         scheduleProactiveCheckIn();
         // Battery saving: do not start proactive background speech. Maya waits for the wake word.
         }catch(Exception e){
