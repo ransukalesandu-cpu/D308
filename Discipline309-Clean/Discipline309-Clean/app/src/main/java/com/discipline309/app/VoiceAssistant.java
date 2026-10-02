@@ -590,6 +590,24 @@ public class VoiceAssistant {
         return s.endsWith(" done") || s.endsWith(" finished") || s.endsWith(" completed");
     }
 
+    private String[] parseRescheduleTask(String question){
+        if(question==null)return null;
+        String s=question.trim(), l=s.toLowerCase(Locale.ROOT);
+        if(!(l.contains("reschedule")||l.contains("move task")||l.contains("change task time")||
+                l.contains("edit task time")||l.contains("task එක reschedule")||l.contains("task eka reschedule")))return null;
+        java.util.regex.Matcher tm=java.util.regex.Pattern.compile("(?i)(?:to|at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)").matcher(s);
+        if(!tm.find())return null;
+        String raw=tm.group(1).trim().toUpperCase(Locale.ROOT).replaceAll("\s+","");
+        String time;
+        try{
+            java.text.SimpleDateFormat in=(raw.contains("AM")||raw.contains("PM"))?new java.text.SimpleDateFormat("h:mma",Locale.US):new java.text.SimpleDateFormat("H:mm",Locale.US);
+            in.setLenient(false); time=new java.text.SimpleDateFormat("HH:mm",Locale.US).format(in.parse(raw));
+        }catch(Exception e){return null;}
+        String q=s.substring(0,tm.start()).replaceAll("(?i).*?(?:reschedule|move task|change task time|edit task time|task එක reschedule|task eka reschedule)","").trim();
+        if(q.isEmpty())q="next task";
+        return new String[]{q,time};
+    }
+
     private String[] parseCreateTask(String q) {
         if (q == null) return null;
         String s=q.toLowerCase(Locale.ROOT).trim();
