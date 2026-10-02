@@ -34,7 +34,28 @@ public class MoodCalendarActivity extends Activity {
   for(int i=0;i<30;i++){JSONObject d=DailyMoodStore.get(this,c);if(d!=null&&d.optBoolean("finalized",false)){days++;for(int j=0;j<keys.length;j++)counts[j]+=d.optInt(keys[j],0);}c.add(Calendar.DAY_OF_YEAR,-1);}
   body.addView(tv(days+" finalized days in the last 30 days",15,0xFFA9A8C5));
   int total=0;for(int n:counts)total+=n;
-  for(int i=0;i<keys.length;i++){String pct=total==0?"0%":Math.round(counts[i]*100f/total)+"%";body.addView(tv(labels[i]+"  •  "+counts[i]+" signals  •  "+pct,16,Color.WHITE));}
+  for(int i=0;i<keys.length;i++){
+   String pct=total==0?"0%":Math.round(counts[i]*100f/total)+"%";
+   LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+   TextView label=tv(labels[i],15,Color.WHITE);row.addView(label,new LinearLayout.LayoutParams(dp(112),-2));
+   ProgressBar bar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
+   bar.setMax(Math.max(1,total));bar.setProgress(counts[i]);row.addView(bar,new LinearLayout.LayoutParams(0,dp(18),1));
+   row.addView(tv(" "+counts[i]+" • "+pct,14,0xFFD8D6EA),new LinearLayout.LayoutParams(dp(95),-2));
+   body.addView(row);
+  }
+  body.addView(tv("Last 30 days • mood signals only • no raw conversation text is shown.",13,0xFFA9A8C5));
+  body.addView(tv("📅 DAILY MOOD MAP",19,Color.WHITE));
+  Calendar map=Calendar.getInstance();
+  for(int r0=0;r0<5;r0++){
+   LinearLayout line=new LinearLayout(this);
+   for(int col=0;col<6;col++){
+    JSONObject md=DailyMoodStore.get(this,map);
+    TextView cell=tv(md!=null&&md.optBoolean("finalized",false)?moodEmoji(md.optString("mood","neutral")):"·",20,Color.WHITE);
+    cell.setGravity(Gravity.CENTER);line.addView(cell,new LinearLayout.LayoutParams(0,dp(42),1));
+    map.add(Calendar.DAY_OF_YEAR,-1);
+   }
+   body.addView(line);
+  }
   Button back=new Button(this);back.setText("← Back to Calendar");back.setAllCaps(false);back.setOnClickListener(v->build());body.addView(back);
   setContentView(body);
  }
@@ -47,7 +68,7 @@ public class MoodCalendarActivity extends Activity {
   if(d==null||!d.optBoolean("finalized",false)){card.addView(tv("No finalized mood summary for this day yet.",15,0xFFA9A8C5));return;}
   card.addView(tv(DailyMoodStore.displayMood(d.optString("mood","neutral")),22,Color.WHITE));
   card.addView(tv(d.optString("summary",""),15,0xFFD8D6EA));
-  String last=d.optString("last_text","");
-  if(!last.isEmpty())card.addView(tv("Last mood signal: "+last,13,0xFFA9A8C5));
+
  }
+ private String moodEmoji(String m){if("positive".equals(m))return "😊";if("sad".equals(m))return "😔";if("stressed".equals(m))return "😰";if("frustrated".equals(m))return "😤";if("tired".equals(m))return "😴";return "😐";}
 }
