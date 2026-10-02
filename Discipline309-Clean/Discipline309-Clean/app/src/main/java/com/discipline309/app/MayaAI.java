@@ -329,9 +329,7 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
             if(saved==null||saved.length()>4000)return;
             JSONArray recent=new JSONArray(saved);
             int start=Math.max(0,recent.length()-12);
-            prompt.append("
-PERSISTENT RECENT CONVERSATION (may span multiple days):
-");
+            prompt.append("\nPERSISTENT RECENT CONVERSATION (may span multiple days):\n");
             for(int i=start;i<recent.length();i++){
                 JSONObject item=recent.optJSONObject(i);
                 if(item==null)continue;
