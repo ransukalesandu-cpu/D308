@@ -994,7 +994,7 @@ private boolean fallbackListening=false;
         String when=new java.text.SimpleDateFormat("yyyy-MM-dd",Locale.US).format(d.getTime());
         if(offset==0 && dateYmd==null) when="අද";
         else if(offset==1 && (dateYmd==null||dateYmd.trim().isEmpty())) when="හෙට";
-        return "හරි ✅ ""+name.trim()+"" task එක "+when+" create කළා."+ (reminderScheduled?" 🔔 Reminder එකත් set කළා.":"");
+        return "හරි ✅ \""+name.trim()+"\" task එක "+when+" create කළා."+ (reminderScheduled?" 🔔 Reminder එකත් set කළා.":"");
     }
 
     private String completeBackgroundTask(String query){
@@ -1012,7 +1012,7 @@ private boolean fallbackListening=false;
         String n=p.getString("plan_"+date+"_"+target+"_name","Task");
         p.edit().putBoolean("plan_"+date+"_"+target+"_done",true).apply();
         StrictModeManager.resetStrictEscalation(this);
-        return "හරි ✅ ""+n+"" complete කළා. 🔥";
+        return "හරි ✅ \""+n+"\" complete කළා. 🔥";
     }
 
     private boolean isVoiceConfirmation(String q){
