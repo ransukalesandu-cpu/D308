@@ -37,6 +37,44 @@ public final class StrictModeManager {
         e.apply();
     }
     public static boolean limitReached(Context c,String pkg){return isSelected(c,pkg)&&usedMinutes(c,pkg)>=limitMinutes(c);}
+    public static boolean noSkip(Context c){return isEnabled(c)&&p(c).getBoolean("no_skip",true);}
+    public static boolean focusActive(Context c){return p(c).getLong("focus_until",0L)>System.currentTimeMillis();}
+    public static long focusUntil(Context c){return p(c).getLong("focus_until",0L);}
+    public static void startFocus(Context c,int minutes){
+        int m=Math.max(1,Math.min(240,minutes));
+        p(c).edit().putLong("focus_until",System.currentTimeMillis()+m*60000L).apply();
+        setDnd(c,true);
+        scheduleFocusEnd(c,m);
+    }
+    public static void stopFocus(Context c){
+        p(c).edit().remove("focus_until").apply();
+        if(isEnabled(c)&&p(c).getBoolean("auto_dnd",false))setDnd(c,true);else setDnd(c,false);
+    }
+    private static void scheduleFocusEnd(Context c,int minutes){
+        Intent i=new Intent(c,StrictFocusReceiver.class).setAction(StrictFocusReceiver.ACTION);
+        PendingIntent pi=PendingIntent.getBroadcast(c,30978,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am==null)return;
+        long when=System.currentTimeMillis()+minutes*60000L;
+        try{if(Build.VERSION.SDK_INT>=23)am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);else am.setExact(AlarmManager.RTC_WAKEUP,when,pi);}catch(Exception ignored){}
+    }
+    public static void scheduleStrict(Context c,int startHour,int startMinute,int endHour,int endMinute){
+        p(c).edit().putInt("schedule_start_h",startHour).putInt("schedule_start_m",startMinute).putInt("schedule_end_h",endHour).putInt("schedule_end_m",endMinute).putBoolean("schedule_enabled",true).apply();
+        scheduleAlarm(c,true,startHour,startMinute,30979);
+        scheduleAlarm(c,false,endHour,endMinute,30980);
+    }
+    public static void clearSchedule(Context c){p(c).edit().putBoolean("schedule_enabled",false).apply();}
+    private static void scheduleAlarm(Context c,boolean on,int h,int m,int req){
+        Calendar d=Calendar.getInstance();d.set(Calendar.HOUR_OF_DAY,h);d.set(Calendar.MINUTE,m);d.set(Calendar.SECOND,0);d.set(Calendar.MILLISECOND,0);
+        if(d.getTimeInMillis()<=System.currentTimeMillis())d.add(Calendar.DAY_OF_YEAR,1);
+        Intent i=new Intent(c,StrictScheduleReceiver.class).setAction(on?StrictScheduleReceiver.ON:StrictScheduleReceiver.OFF);
+        PendingIntent pi=PendingIntent.getBroadcast(c,req,i,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        AlarmManager am=(AlarmManager)c.getSystemService(Context.ALARM_SERVICE);if(am==null)return;
+        try{if(Build.VERSION.SDK_INT>=23)am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,d.getTimeInMillis(),pi);else am.setExact(AlarmManager.RTC_WAKEUP,d.getTimeInMillis(),pi);}catch(Exception ignored){}
+    }
+    public static void reschedule(Context c){
+        if(!p(c).getBoolean("schedule_enabled",false))return;
+        scheduleStrict(c,p(c).getInt("schedule_start_h",6),p(c).getInt("schedule_start_m",0),p(c).getInt("schedule_end_h",22),p(c).getInt("schedule_end_m",0));
+    }
     public static boolean canUseDnd(Context c){
         if(Build.VERSION.SDK_INT<23)return false;
         NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
