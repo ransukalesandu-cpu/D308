@@ -13,8 +13,17 @@ public final class MayaContextProvider {
     };
 
     private MayaContextProvider(){}
+    private static final Object CACHE_LOCK=new Object();
+    private static String cachedContext="";
+    private static long cachedAt=0L;
+    private static final long CACHE_MS=1200L;
+
 
     public static String build(Context context){
+        long cacheNow=System.currentTimeMillis();
+        synchronized(CACHE_LOCK){
+            if(!cachedContext.isEmpty() && cacheNow-cachedAt<CACHE_MS)return cachedContext;
+        }
         SharedPreferences p=context.getSharedPreferences("discipline",Context.MODE_PRIVATE);
         long startMillis=p.getLong("program_start",System.currentTimeMillis());
         Calendar start=Calendar.getInstance();
@@ -82,7 +91,7 @@ public final class MayaContextProvider {
             if(shortPlan.length()>0) shortPlan.append(" | ");
             shortPlan.append(name).append(" [").append(time).append(", ").append(priority).append(done?", done":", pending").append("]");
         }
-        return "309 DAY DISCIPLINE LIVE APP STATE: "+
+        String result="309 DAY DISCIPLINE LIVE APP STATE: "+
                 "day="+day+"/"+PROGRAM_DAYS+
                 "; daysRemaining="+remaining+
                 "; todayTasks="+todayTasks+"/"+totalTasks+
@@ -101,6 +110,11 @@ public final class MayaContextProvider {
                 "; focusGoal=\""+safe(focusGoal)+"\""+
                 "; shortPlanDetails=\""+safe(shortPlan.toString())+"\""+
                 "; journalToday=\""+safe(journal)+"\".";
+        synchronized(CACHE_LOCK){
+            cachedContext=result;
+            cachedAt=cacheNow;
+        }
+        return result;
     }
 
     public static String quickStatus(Context context,String type){
