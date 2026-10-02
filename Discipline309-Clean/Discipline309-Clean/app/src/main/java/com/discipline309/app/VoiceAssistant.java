@@ -100,6 +100,36 @@ public class VoiceAssistant {
                     }
                     return;
                 }
+
+                // Transient network/provider/recognizer errors are retried instead of
+                // immediately showing the generic voice-error message.
+                if (e == SpeechRecognizer.ERROR_NETWORK ||
+                    e == SpeechRecognizer.ERROR_NETWORK_TIMEOUT ||
+                    e == SpeechRecognizer.ERROR_SERVER ||
+                    e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ||
+                    e == SpeechRecognizer.ERROR_CLIENT) {
+                    if (recognitionRetryCount < 2) {
+                        recognitionRetryCount++;
+                        long delay = e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ? 900L : 700L;
+                        voiceHandler.postDelayed(() -> { if (!listening) start(); }, delay);
+                    } else {
+                        recognitionRetryCount = 0;
+                        Toast.makeText(activity, "Maya voice connection එක temporary issue එකක්. ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                    }
+                    return;
+                }
+
+                if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                    Toast.makeText(activity, "Mayaට microphone permission එක ඕන. Phone Settings වලින් allow කරන්න. 🎙️", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                if (e == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
+                    e == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE) {
+                    Toast.makeText(activity, "මේ voice language එක phone එකේ available නැහැ. Maya language එක Auto/English කරලා try කරන්න.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
                 Toast.makeText(activity, "Maya voice එකට පොඩි issue එකක්. ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_SHORT).show();
             }
             public void onResults(Bundle results) {
@@ -243,7 +273,11 @@ public class VoiceAssistant {
         if(!p.getBoolean("auto_speak",true)) return;
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
         try {
-        int lang=tts.setLanguage(new Locale("si","LK"));
+        String selectedLanguage=p.getString("maya_language","auto");
+        String country=Locale.getDefault().getCountry();
+        Locale target=("si".equals(selectedLanguage) || ("auto".equals(selectedLanguage) && "LK".equalsIgnoreCase(country)))
+                ? new Locale("si","LK") : Locale.ENGLISH;
+        int lang=tts.setLanguage(target);
         if(lang==TextToSpeech.LANG_MISSING_DATA||lang==TextToSpeech.LANG_NOT_SUPPORTED)tts.setLanguage(Locale.ENGLISH);
         tts.setSpeechRate(rate);
         String safe=naturalSinhala(text);
