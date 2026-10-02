@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.speech.RecognitionListener;
@@ -34,9 +35,12 @@ public class VoiceAssistant {
             tts = new TextToSpeech(activity, status -> {
                 try {
                     if (status == TextToSpeech.SUCCESS && tts != null) {
-                        Locale si = new Locale("si", "LK");
-                        int lang = tts.setLanguage(si);
-                        if (lang == TextToSpeech.LANG_MISSING_DATA || lang == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        String selected=activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getString("maya_language","auto");
+                        String country=Locale.getDefault().getCountry();
+                        Locale target=("si".equals(selected) || ("auto".equals(selected) && "LK".equalsIgnoreCase(country)))
+                                ? new Locale("si","LK") : Locale.ENGLISH;
+                        int lang=tts.setLanguage(target);
+                        if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){
                             tts.setLanguage(Locale.ENGLISH);
                         }
                         tts.setSpeechRate(.92f);
