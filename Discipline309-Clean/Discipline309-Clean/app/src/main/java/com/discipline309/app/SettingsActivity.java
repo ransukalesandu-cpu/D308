@@ -31,9 +31,9 @@ public class SettingsActivity extends Activity {
         LinearLayout root=new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(18),dp(20),dp(18),dp(28));
-        root.setBackgroundColor(BG);
+        android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TL_BR,new int[]{0xFF0A0E1A,0xFF000000});root.setBackground(bg);
         TextView t=label("⚙  Settings",27,TEXT);t.setTypeface(null,1);root.addView(t);
-        root.addView(label("Choose a category to edit your settings.",13,MUTED));
+        root.addView(label("MAYA • 309 DAY DISCIPLINE",12,ACCENT));root.addView(label("Choose a category to edit your settings.",13,MUTED));
 
         addCategory(root,"🤖  AI ASSISTANT","Maya voice, AI brain, web search and memory.",v->showAiSettings());
         addCategory(root,"🎭  MODES","Maya personality and background motivation modes.",v->showModeSettings());
@@ -51,12 +51,13 @@ public class SettingsActivity extends Activity {
         box.setPadding(dp(16),dp(14),dp(16),dp(14));
         TextView title=label(titleText,17,TEXT);title.setTypeface(null,1);box.addView(title);
         box.addView(label(desc,12,MUTED));
+        box.setElevation(dp(2));
         Button open=new Button(this);open=buttonStyle(open);open.setText("Open  ›");open.setGravity(Gravity.CENTER);open.setOnClickListener(action);box.addView(open);
         root.addView(box);
     }
 
     private LinearLayout categoryLayout(String titleText,String desc){
-        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(18),dp(18),dp(18),dp(28));root.setBackgroundColor(BG);
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setPadding(dp(18),dp(18),dp(18),dp(28));android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TL_BR,new int[]{0xFF0A0E1A,0xFF000000});root.setBackground(bg);
         TextView t=label(titleText,25,TEXT);t.setTypeface(null,1);root.addView(t);root.addView(label(desc,13,MUTED));return root;
     }
     private ScrollView categoryScroll(LinearLayout root){ScrollView s=new ScrollView(this);s.addView(root);return s;}
