@@ -56,7 +56,7 @@ public class MayaAI {
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
                 String effectivePersonality=personality;
-                String strictMode=StrictModeManager.strictMayaMode(context);
+                String strictMode=StrictModeManager.strictMayaMode(context,userText,emotionalTone);
                 if(strictMode!=null) effectivePersonality=strictMode.equals("angry")?"angry":"motivative";
                 else if("auto".equalsIgnoreCase(effectivePersonality))
                     effectivePersonality=resolveAutoPersonality(context,userText,emotionalTone);
