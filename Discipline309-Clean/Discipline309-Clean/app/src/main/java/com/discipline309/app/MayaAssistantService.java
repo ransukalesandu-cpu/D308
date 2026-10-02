@@ -109,7 +109,7 @@ private boolean fallbackListening=false;
             int lang=tts.setLanguage(target);
             if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(Locale.ENGLISH); }
             tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
-        handler.postDelayed(wakeWordRunnable,1200);
+        handler.postDelayed(wakeWordRunnable,1200);\n        // Background Maya auto-talk is opt-in through Settings and uses sparse check-ins.\n        scheduleProactiveCheckIn();
         // Battery saving: do not start proactive background speech. Maya waits for the wake word.
         }catch(Exception e){
             ready=false;
