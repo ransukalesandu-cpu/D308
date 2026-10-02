@@ -217,6 +217,15 @@ public class VoiceAssistant {
                 .replace("මයා", "")
                 .trim();
         String reply;
+        if(question.equals("maya stop") || question.equals("stop maya") || question.equals("maya pause") || question.equals("live stop")){
+            try{
+                Intent i=new Intent(activity,MayaAssistantService.class);
+                i.setAction(MayaAssistantService.ACTION_STOP_WORKOUT_LIVE);
+                if(android.os.Build.VERSION.SDK_INT>=26) activity.startForegroundService(i); else activity.startService(i);
+            }catch(Exception ignored){}
+            speak("හරි 😄 Maya Live Conversation OFF.");
+            return;
+        }
         String action=MayaToolRouter.action(question);
         if (MayaToolRouter.requiresConfirmation(action)) {
             if (isConfirmation(question)) {
@@ -224,6 +233,7 @@ public class VoiceAssistant {
                 if (!"NONE".equals(pending)) {
                     activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).edit().remove("pending").apply();
                     if ("START_WORKOUT".equals(pending)) {
+                        startWorkoutLiveIfEnabled();
                         speak("හරි 🔥 workout එක start කරන්න ready. Home screen එකෙන් workout routine එක open කරලා පටන් ගමු.");
                     } else if ("COMPLETE_TASK".equals(pending)) {
                         speak("හරි ✅ task එක complete කරන්න ready. අද task list එකෙන් complete කරන්න.");
@@ -303,6 +313,15 @@ public class VoiceAssistant {
             return;
         }
         speak(reply);
+    }
+
+    private void startWorkoutLiveIfEnabled(){
+        if(!activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getBoolean("workout_live_conversation",false)) return;
+        try{
+            Intent i=new Intent(activity,MayaAssistantService.class);
+            i.setAction(MayaAssistantService.ACTION_START_WORKOUT_LIVE);
+            if(android.os.Build.VERSION.SDK_INT>=26) activity.startForegroundService(i); else activity.startService(i);
+        }catch(Exception ignored){}
     }
 
     private boolean isConfirmation(String q){
