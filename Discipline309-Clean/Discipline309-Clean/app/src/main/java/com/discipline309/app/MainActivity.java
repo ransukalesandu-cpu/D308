@@ -526,12 +526,90 @@ public class MainActivity extends Activity {
     }
 
     private void showAchievements(){header("ACHIEVEMENTS","Milestones earned through consistency.");int days=completedDays(),streak=bestStreak(),missions=0;Calendar missionCursor=startDate();Calendar missionNow=Calendar.getInstance();Calendar missionTarget=(Calendar)missionCursor.clone();missionTarget.add(Calendar.DAY_OF_YEAR,308);int missionGuard=0;while(!missionCursor.after(missionNow)&&!missionCursor.after(missionTarget)&&missionGuard++<309){if(prefs.getBoolean("mission_"+key(missionCursor)+"_rewarded",false))missions++;missionCursor.add(Calendar.DAY_OF_YEAR,1);}LinearLayout summary=card();summary.addView(label("🏆 "+days+" completed days",22,TEXT));summary.addView(label("🔥 Best streak: "+streak+" days  •  🎯 Missions: "+missions,13,MUTED));content.addView(summary);int[] milestones={1,3,7,14,30,50,100,150,200,309};String[] names={"First Step","3-Day Spark","One Week","Two Weeks","30-Day Discipline","50-Day Warrior","100-Day Mastery","150-Day Elite","200-Day Relentless","309-Day Legend"};for(int i=0;i<milestones.length;i++){int m=milestones[i];boolean u=days>=m;LinearLayout a=card();a.addView(label(u?"🏆 "+names[i]:"🔒 "+names[i],17,u?TEXT:MUTED));a.addView(label(m+" completed days",12,MUTED));content.addView(a);}int[] streaks={3,7,14,30};String[] sn={"3-Day Streak","7-Day Streak","14-Day Streak","30-Day Streak"};for(int i=0;i<streaks.length;i++){boolean u=streak>=streaks[i];LinearLayout a=card();a.addView(label(u?"🔥 "+sn[i]:"🔒 "+sn[i],17,u?TEXT:MUTED));a.addView(label(streaks[i]+" consecutive completed days",12,MUTED));content.addView(a);}LinearLayout m=card();m.addView(label("🎯 MISSION ACHIEVEMENTS",11,MUTED));int[] mm={1,7,30};for(int x:mm)m.addView(label(missions>=x?"🏆 "+x+" daily missions completed":"🔒 "+x+" daily missions",14,missions>=x?TEXT:MUTED));content.addView(m);}
-    private void showStats(){header("PROGRESS & STATS","See the full picture, not just today's streak.");int completed=completedDays(),best=bestStreak(),current=currentStreak(),total=totalTasks(),today=countFor(key()),totalTasksDone=totalCompletedTasks(),totalXp=xp(),currentLevel=level();LinearLayout summary=card();summary.addView(label("LEVEL "+currentLevel,11,MUTED));summary.addView(label(completed+" completed days",23,TEXT));summary.addView(label("🔥 "+current+" current  •  🏆 "+best+" best streak",14,MUTED));summary.addView(label("⚡ "+totalXp+" total XP  •  "+totalTasksDone+" completed tasks",14,MUTED));content.addView(summary);LinearLayout week=card();week.addView(label("LAST 7 DAYS",11,MUTED));for(int i=6;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);int n=countFor(key(c));int pct=total==0?0:Math.round(n*100f/total);week.addView(label(new SimpleDateFormat("EEE",Locale.US).format(c.getTime())+"   "+n+"/"+total+"   "+pct+"%",13,TEXT));}content.addView(week);
-        LinearLayout planWeek=card();planWeek.addView(label("SHORT PLAN • LAST 7 DAYS",11,MUTED));
+    private void addStatMetric(LinearLayout parent,String value,String caption,int accent){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setPadding(dp(8),dp(10),dp(8),dp(10));
+        box.setBackground(shape(0x66151A2C,16));
+        TextView v=label(value,21,accent);
+        v.setGravity(Gravity.CENTER);
+        box.addView(v);
+        TextView t=label(caption,10,MUTED);
+        t.setGravity(Gravity.CENTER);
+        box.addView(t);
+        parent.addView(box,new LinearLayout.LayoutParams(0,dp(76),1));
+    }
+
+    private void showStats(){
+        header("PROGRESS","Your discipline journey at a glance.");
+        int completed=completedDays(),best=bestStreak(),current=currentStreak(),total=totalTasks(),
+                today=countFor(key()),totalTasksDone=totalCompletedTasks(),totalXp=xp(),currentLevel=level();
+
+        LinearLayout hero=card();
+        hero.addView(label("⚡ LEVEL "+currentLevel,11,ACCENT));
+        hero.addView(label(totalXp+" XP",30,TEXT));
+        hero.addView(label("Keep building consistency. Every completed day counts.",12,MUTED));
+        addBar(hero,Math.min(500,totalXp%500),500);
+        content.addView(hero);
+
+        content.addView(sectionTitle("OVERVIEW"));
+        LinearLayout metrics=new LinearLayout(this);
+        metrics.setOrientation(LinearLayout.HORIZONTAL);
+        addStatMetric(metrics,String.valueOf(completed),"Completed days",GOLD);
+        addStatMetric(metrics,String.valueOf(current),"Current streak",ACCENT);
+        addStatMetric(metrics,String.valueOf(best),"Best streak",GOLD);
+        addStatMetric(metrics,String.valueOf(totalTasksDone),"Tasks done",ACCENT);
+        content.addView(metrics);
+
+        LinearLayout todayCard=card();
+        todayCard.addView(label("TODAY",11,ACCENT));
+        int todayPct=total==0?0:Math.round(today*100f/total);
+        todayCard.addView(label(today+"/"+total+" tasks • "+todayPct+"% complete",19,TEXT));
+        addBar(todayCard,today,total);
+        content.addView(todayCard);
+
+        content.addView(sectionTitle("LAST 7 DAYS"));
+        LinearLayout week=card();
+        for(int i=6;i>=0;i--){
+            Calendar dc=Calendar.getInstance();dc.add(Calendar.DAY_OF_YEAR,-i);
+            int n=countFor(key(dc));int pct=total==0?0:Math.round(n*100f/total);
+            week.addView(label(new SimpleDateFormat("EEE",Locale.US).format(dc.getTime())+"    "+n+"/"+total+"    "+pct+"%",13,TEXT));
+        }
+        content.addView(week);
+
+        LinearLayout planWeek=card();
+        planWeek.addView(label("SHORT PLAN • LAST 7 DAYS",11,ACCENT));
         int planned=0,plannedDone=0,plannedDays=0;
-        for(int i=6;i>=0;i--){Calendar pc=Calendar.getInstance();pc.add(Calendar.DAY_OF_YEAR,-i);String pk=key(pc);int pcnt;try{pcnt=Math.max(0,Math.min(50,prefs.getInt("plan_count_"+pk,0)));}catch(Exception e){pcnt=0;}int pdone=0;for(int j=0;j<pcnt;j++)if(prefs.getBoolean("plan_"+pk+"_"+j+"_done",false))pdone++;planned+=pcnt;plannedDone+=pdone;if(pcnt>0)plannedDays++;int ppct=pcnt==0?0:Math.round(pdone*100f/pcnt);planWeek.addView(label(new SimpleDateFormat("EEE",Locale.US).format(pc.getTime())+"   "+pdone+"/"+pcnt+"   "+ppct+"%",13,TEXT));}
-        planWeek.addView(label(plannedDone+"/"+planned+" planned tasks completed  •  "+plannedDays+"/7 days planned",12,MUTED));
-        content.addView(planWeek);LinearLayout cal=card();cal.addView(label("LAST 30 DAYS",11,MUTED));for(int i=29;i>=0;i--){Calendar c=Calendar.getInstance();c.add(Calendar.DAY_OF_YEAR,-i);String k=key(c);TextView r=label(new SimpleDateFormat("dd MMM",Locale.US).format(c.getTime())+"   "+(prefs.getBoolean("done_"+k,false)?"✓ COMPLETE":countFor(k)>0?"• PARTIAL":"— MISSED"),13,TEXT);cal.addView(r);}content.addView(cal);Button achievements=button("🏆  View Achievements");achievements.setOnClickListener(v->showAchievements());content.addView(achievements);Button chat=button("💬  Chat with Maya");chat.setOnClickListener(v->chatDialog());content.addView(chat);Button journal=button("📝  Daily Journal & Reflection");journal.setOnClickListener(v->journalDialog());content.addView(journal);LinearLayout badges=card();badges.addView(label("ACHIEVEMENTS",11,MUTED));int[] ms={1,7,30,50,100,150,200,309};for(int m:ms)if(completed>=m)badges.addView(label("🏆 "+m+" day milestone unlocked",14,TEXT));else badges.addView(label("🔒 "+m+" day milestone",14,MUTED));content.addView(badges);}
+        for(int i=6;i>=0;i--){
+            Calendar pc=Calendar.getInstance();pc.add(Calendar.DAY_OF_YEAR,-i);String pk=key(pc);
+            int pcnt=Math.max(0,Math.min(50,prefs.getInt("plan_count_"+pk,0))),pdone=0;
+            for(int j=0;j<pcnt;j++)if(prefs.getBoolean("plan_"+pk+"_"+j+"_done",false))pdone++;
+            planned+=pcnt;plannedDone+=pdone;if(pcnt>0)plannedDays++;
+            int ppct=pcnt==0?0:Math.round(pdone*100f/pcnt);
+            planWeek.addView(label(new SimpleDateFormat("EEE",Locale.US).format(pc.getTime())+"    "+pdone+"/"+pcnt+"    "+ppct+"%",13,TEXT));
+        }
+        planWeek.addView(label(plannedDone+"/"+planned+" planned tasks completed • "+plannedDays+"/7 days planned",12,MUTED));
+        content.addView(planWeek);
+
+        content.addView(sectionTitle("ACHIEVEMENTS"));
+        LinearLayout badges=card();
+        int[] ms={1,7,30,50,100,150,200,309};
+        for(int m:ms)badges.addView(label(completed>=m?"🏆 "+m+" DAY MILESTONE":"🔒 "+m+" DAY MILESTONE",14,completed>=m?GOLD:MUTED));
+        content.addView(badges);
+
+        content.addView(sectionTitle("MORE"));
+        Button achievements=button("🏆  VIEW ACHIEVEMENTS");
+        achievements.setOnClickListener(v->{haptic(v);showAchievements();});
+        content.addView(achievements);
+        Button chat=button("💬  CHAT WITH MAYA");
+        chat.setOnClickListener(v->{haptic(v);chatDialog();});
+        content.addView(chat);
+        Button journal=button("📝  DAILY JOURNAL & REFLECTION");
+        journal.setOnClickListener(v->{haptic(v);journalDialog();});
+        content.addView(journal);
+    }
+
     private void journalDialog(){String today=prefs.getString("journal_"+key(),"");EditText e=new EditText(this);e.setHint("How was today? What did you learn?");e.setMinLines(5);e.setText(today);new AlertDialog.Builder(this).setTitle("📝 Today's Journal").setView(e).setPositiveButton("SAVE",(d,w)->{prefs.edit().putString("journal_"+key(),e.getText().toString().trim()).apply();toast("Journal saved 📝");}).setNegativeButton("CANCEL",null).show();}    private String formatDate(Calendar c){return new SimpleDateFormat("dd MMM yyyy",Locale.US).format(c.getTime());}
     private void completeDay(){int day=dayNumber();if(day<=0||day>309){toast(day<=0?"The 309-day program has not started yet.":"The 309-day program is already complete.");return;}String k=key();if(prefs.getBoolean("done_"+k,false)){toast("Today is already completed. 🔥");return;}if(countFor(k)!=totalTasks()){toast("Finish all "+totalTasks()+" tasks first.");return;}int streak=currentStreak()+1;int best=Math.max(bestStreak(),streak);prefs.edit().putBoolean("done_"+k,true).putInt("streak",streak).putInt("best",best).apply();sound(ToneGenerator.TONE_PROP_ACK);toast("Day completed! +100 XP 🔥");showHome();}
     private void showReminders(){header("REMINDERS","Daily alarms that keep your plan on track.");Button add=button("+  ADD DAILY REMINDER");add.setOnClickListener(v->alarmDialog());content.addView(add);boolean found=false;for(String k:prefs.getAll().keySet())if(k.startsWith("alarm")){try{String v=prefs.getString(k,"");String[] p=v.split("\\|",-1);if(p.length==3){int h=Integer.parseInt(p[1]),m=Integer.parseInt(p[2]);if(h<0||h>23||m<0||m>59)continue;found=true;LinearLayout row=card();row.setOrientation(LinearLayout.HORIZONTAL);row.addView(label("🔔 "+(p[0].isEmpty()?"Discipline reminder":p[0]),14,TEXT),new LinearLayout.LayoutParams(0,-2,1));row.addView(label(String.format(Locale.US,"%02d:%02d",h,m),14,ACCENT));content.addView(row);}}catch(Exception ignored){}}if(!found)content.addView(label("No reminders yet.",14,MUTED));content.addView(label("Reminders survive app restarts. Android may require exact-alarm and notification access.",12,MUTED));}
