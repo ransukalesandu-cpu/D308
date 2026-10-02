@@ -125,7 +125,7 @@ public class VoiceAssistant {
                     e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
                     if (recognitionRetryCount < 1) {
                         recognitionRetryCount++;
-                        voiceHandler.postDelayed(() -> { if (!listening) start(); }, 350);
+                        voiceHandler.postDelayed(() -> { if (continuousConversation && !listening) start(); }, 350);
                     } else {
                         recognitionRetryCount = 0;
                         Toast.makeText(activity, "Maya අහගෙන ඉන්නවා. ආයෙත් කියන්න. 🎙️", Toast.LENGTH_SHORT).show();
@@ -146,7 +146,7 @@ public class VoiceAssistant {
                     if (recognitionRetryCount < 2) {
                         recognitionRetryCount++;
                         long delay = e == SpeechRecognizer.ERROR_AUDIO ? 900L : (e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ? 900L : 700L);
-                        voiceHandler.postDelayed(() -> { if (!listening) start(); }, delay);
+                        voiceHandler.postDelayed(() -> { if (continuousConversation && !listening) start(); }, delay);
                     } else {
                         recognitionRetryCount = 0;
                         Toast.makeText(activity, "Maya voice service එකට connect වෙන්න බැරි වුණා. Microphone + Google voice recognition check කරලා ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_LONG).show();
@@ -206,7 +206,7 @@ public class VoiceAssistant {
             recognizer.startListening(intent);
             voiceHandler.removeCallbacks(silenceTimeout);
             voiceHandler.postDelayed(silenceTimeout, 5000L);
-        catch (Exception e) {
+        } catch (Exception e) {
             listening = false;
             try { recognizer.destroy(); } catch (Exception ignored) {}
             recognizer = null;
