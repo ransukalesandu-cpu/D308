@@ -36,6 +36,7 @@ public class SettingsActivity extends Activity {
         root.addView(label("MAYA • 309 DAY DISCIPLINE",12,ACCENT));root.addView(label("Choose a category to edit your settings.",13,MUTED));
 
         addCategory(root,"🤖  AI ASSISTANT","Maya voice, AI brain, web search and memory.",v->showAiSettings());
+        addCategory(root,"📱  PHONE ASSISTANT","Set Maya as your Android phone assistant.",v->showPhoneAssistantSettings());
         addCategory(root,"🎭  MODES","Maya personality and background motivation modes.",v->showModeSettings());
         addCategory(root,"🎨  DISPLAY","Theme and notification preferences.",v->showDisplaySettings());
         addCategory(root,"👥  ACCOUNTS & DATA","Primary/Sub accounts and progress controls.",v->showAccountSettings());
@@ -139,6 +140,27 @@ public class SettingsActivity extends Activity {
                     Toast.makeText(this,"Maya was not selected as the phone assistant.",Toast.LENGTH_SHORT).show();
             }catch(Exception ignored){}
         }
+    }
+
+    private void showPhoneAssistantSettings(){
+        LinearLayout body=new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+
+        LinearLayout assistant=card();
+        assistant.addView(label("✨ MAYA AS PHONE ASSISTANT",11,MUTED));
+        assistant.addView(label("Open Android's assistant selection and choose Maya as your default phone assistant when your device allows it.",12,MUTED));
+        Button set=buttonStyle(new Button(this));
+        set.setText("✨  Set Maya as phone assistant");
+        set.setOnClickListener(v->setMayaAsPhoneAssistant());
+        assistant.addView(set);
+        body.addView(assistant);
+
+        LinearLayout info=card();
+        info.addView(label("ℹ️ ANDROID NOTE",11,MUTED));
+        info.addView(label("Android decides which apps are eligible for the Assistant role. If Maya is not shown, this app version/device may not expose the required assistant service.",12,MUTED));
+        body.addView(info);
+
+        showCategory("📱  PHONE ASSISTANT","Choose Maya as your Android assistant.",body);
     }
 
     private void showModeSettings(){
