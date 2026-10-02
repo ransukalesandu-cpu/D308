@@ -49,6 +49,8 @@ public class MayaAI {
                 String emotionalTone=classifyEmotionalTone(userText);
                 String contextHint=buildContextHint(context,userText,intent,emotionalTone);
                 String action=MayaToolRouter.action(userText);
+                String directActionReply=executeSafeAction(context,action);
+                if(directActionReply!=null){ callback.onReply(directActionReply); return; }
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
                 JSONObject payload=new JSONObject();
@@ -165,7 +167,21 @@ public class MayaAI {
         return null;
     }
 
-    private static String emotionalTone(String text){ return classifyEmotionalTone(text); }\n\n    private static String classifyEmotionalTone(String text){
+    private static String emotionalTone(String text){ return classifyEmotionalTone(text); }\n\n    private static String executeSafeAction(Context context,String action){
+        try{
+            if("OPEN_SETTINGS".equals(action)){
+                Intent i=new Intent(context,SettingsActivity.class); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); context.startActivity(i);
+                return "හරි 😄 Maya Settings open කළා.";
+            }
+            if("SHOW_PROGRESS".equals(action)){
+                int days=context.getSharedPreferences("discipline_prefs",Context.MODE_PRIVATE).getInt("completed_days",0);
+                return "හරි 😄 ඔයාගේ progress එක app එකේ Home screen එකෙන් බලන්න පුළුවන්.";
+            }
+        }catch(Exception ignored){}
+        return null;
+    }
+
+    private static String classifyEmotionalTone(String text){
         String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
         if(q.isEmpty())return "neutral";
         if(q.contains("angry")||q.contains("mad")||q.contains("hate")||q.contains("frustrated")||q.contains("annoyed")||q.contains("මල පැන")||q.contains("කේන්තිය")||q.contains("එපා වෙලා"))return "frustrated";
