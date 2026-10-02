@@ -242,7 +242,7 @@ public class VoiceAssistant {
         } else if (question.isEmpty()) {
             reply = caring ? "ඔව්, මං මෙතන. හෙමින් කියන්න, මං අහගෙන ඉන්නවා. 💛" : romance ? "ඔව්, Maya මෙතන. කියන්න, මං අහගෙන ඉන්නවා. 💗" : angry ? "ඔව්. කියන්න. දැන් target එකට යමු. 😤" : motivative ? "ඔව්! Maya ready 🔥 කියන්න, අද target එක ගමු." : "ඔව්, මං මෙතන. කියන්න, මොකද වෙන්නේ? 😄";
         } else if (question.contains("hello") || question.contains("hi") || question.contains("හෙලෝ")) {
-            reply = romance ? "හෙලෝ 💗 Maya මෙතන. අදත් ඔයාගේ discipline + fitness target එකට යමු." : caring ? "හෙලෝ 💛 Maya මෙතන. අදත් පොඩි step එකකින් පටන් ගමු." : angry ? "හෙලෝ. 😤 අද excuses නැහැ. Target එකට යමු." : "හෙලෝ! Maya online 🔥 අද discipline + fitness target එක ගමු.";
+            reply = romance ? "හෙලෝ 😄 අද කොහොමද? මොකද වෙන්නේ කියලා කියන්න." : caring ? "හෙලෝ 💛 අද කොහොමද? දවස කොහොම ගියා?" : angry ? "හෙලෝ 😤 හරි, අද situation එක කියන්න. මොකද වෙන්නේ?" : "හෙලෝ 😄 Maya මෙතන. අද කොහොමද? මොනවාද වෙන්නේ?" ;
         } else if (question.contains("motivat") || question.contains("වැඩ") || question.contains("බැහැ")) {
             reply = angry ? "Excuses නවත්තමු. 😤 දැන් එක target එකක් තෝරගෙන කරමු!" : caring ? "අමාරු දවසක් නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛" : romance ? "හරි 💗 පොඩි step එකකින් පටන් ගමු. Discipline + fitness target එක අතාරින්න එපා." : "එක පොඩි step එකක් දැන්ම කරමු. 🔥";
         } else if (question.contains("sleep") || question.contains("නින්ද")) {
