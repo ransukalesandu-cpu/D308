@@ -542,10 +542,25 @@ public class VoiceAssistant {
         return "motivative";
     }
 
+    private void continueLiveConversation(long delay) {
+        if (continuousConversation && !listening) {
+            voiceHandler.postDelayed(() -> {
+                if (continuousConversation && !listening) start();
+            }, delay);
+        }
+    }
+
     private void speak(String text) {
-        if (tts == null || !ttsReady) { pendingSpeech = text == null ? "" : text; return; }
+        if (tts == null || !ttsReady) {
+            pendingSpeech = text == null ? "" : text;
+            continueLiveConversation(350L);
+            return;
+        }
         android.content.SharedPreferences p=activity.getSharedPreferences("settings",Context.MODE_PRIVATE);
-        if(!p.getBoolean("auto_speak",true)) return;
+        if(!p.getBoolean("auto_speak",true)) {
+            continueLiveConversation(280L);
+            return;
+        }
         float rate=.65f+(p.getInt("speech_speed",50)/100f)*.85f;
         try {
         String selectedLanguage=p.getString("maya_language","auto");
@@ -562,18 +577,10 @@ public class VoiceAssistant {
             tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
                 @Override public void onStart(String utteranceId) {}
                 @Override public void onDone(String utteranceId) {
-                    if (continuousConversation && !listening) {
-                        voiceHandler.postDelayed(() -> {
-                            if (continuousConversation && !listening) start();
-                        }, 280L);
-                    }
+                    continueLiveConversation(280L);
                 }
                 @Override public void onError(String utteranceId) {
-                    if (continuousConversation && !listening) {
-                        voiceHandler.postDelayed(() -> {
-                            if (continuousConversation && !listening) start();
-                        }, 400L);
-                    }
+                    continueLiveConversation(400L);
                 }
             });
         }
