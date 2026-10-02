@@ -55,8 +55,12 @@ public class MayaAI {
                 if(directActionReply!=null){ callback.onReply(directActionReply); return; }
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
+                String effectivePersonality=personality;
+                String strictMode=StrictModeManager.strictMayaMode(context);
+                if(strictMode!=null) effectivePersonality=strictMode.equals("angry")?"angry":"motivative";
+
                 JSONObject payload=new JSONObject();
-                payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,personality,selectedTool,webResults));
+                payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,effectivePersonality,selectedTool,webResults));
                 payload.put("model",MODEL);
                 payload.put("intelligence_mode",classifyIntelligence(userText));
                 payload.put("language",preferredLanguageCode(context));
@@ -65,6 +69,8 @@ public class MayaAI {
                 payload.put("intent",intent);
                 payload.put("emotional_tone",emotionalTone);
                 payload.put("context_hint",contextHint);
+                payload.put("strict_mode",strictMode!=null);
+                if(strictMode!=null)payload.put("strict_personality",strictMode);
                 payload.put("action",action);
                 payload.put("action_confirmation_required",MayaToolRouter.requiresConfirmation(action));
                 payload.put("web_search",selectedTool==MayaToolRouter.Tool.WEB_SEARCH);
