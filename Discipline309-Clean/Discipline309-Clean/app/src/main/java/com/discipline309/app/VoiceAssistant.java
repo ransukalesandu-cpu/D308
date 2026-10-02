@@ -363,7 +363,14 @@ public class VoiceAssistant {
                         startWorkoutLiveIfEnabled();
                         speak("හරි 🔥 workout එක start කරන්න ready. Home screen එකෙන් workout routine එක open කරලා පටන් ගමු.");
                     } else if ("COMPLETE_TASK".equals(pending)) {
-                        speak("හරි ✅ task එක complete කරන්න ready. අද task list එකෙන් complete කරන්න.");
+                        String taskQuery=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE)
+                                .getString("pending_task_query","");
+                        if(activity instanceof MainActivity){
+                            String result=((MainActivity)activity).completePlanTaskFromMaya(taskQuery);
+                            speak(result);
+                        }else{
+                            speak("හරි. Task complete කරන්න Main screen එක open කරලා try කරන්න.");
+                        }
                     }
                     return;
                 }
@@ -386,8 +393,14 @@ public class VoiceAssistant {
                     ap.edit().putString("pending",action).putString("pending_timer_text",question).apply();
                     speak(preview+" Yes කියන්න.");
                 } else {
-                    ap.edit().putString("pending",action).apply();
-                    speak("හරි 😄 "+("START_WORKOUT".equals(action) ? "workout එක start කරන්නද?" : "task එක complete කරන්නද?")+" Yes කියන්න.");
+                    if("COMPLETE_TASK".equals(action)){
+                        ap.edit().putString("pending",action)
+                                .putString("pending_task_query",question).apply();
+                        speak("හරි 😄 ""+question+"" task එක complete කරන්නද? Yes කියන්න.");
+                    }else{
+                        ap.edit().putString("pending",action).apply();
+                        speak("හරි 😄 "+("START_WORKOUT".equals(action) ? "workout එක start කරන්නද?" : "task එක complete කරන්නද?")+" Yes කියන්න.");
+                    }
                 }
                 return;
             }
