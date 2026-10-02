@@ -30,7 +30,9 @@ public class MayaAssistantService extends Service {
     // This service currently uses Android SpeechRecognizer for command capture.
     // A provider-independent WakeWordEngine hook lets us add Porcupine/openWakeWord
     // later without changing the command-routing code.
-    private boolean wakeWordEnabled = true;\n    // Background auto-talk is spoken check-ins only; it must not start an always-listening microphone.\n    private boolean backgroundVoiceOnly = false;
+    private boolean wakeWordEnabled = true;
+    // Background auto-talk is spoken check-ins only; it must not start an always-listening microphone.
+    private boolean backgroundVoiceOnly = false;
     private boolean wakeWordDetected = false;
     private boolean realWakeWordActive = false;
     private boolean conversationMode = false;
@@ -83,7 +85,8 @@ private boolean fallbackListening=false;
     @Override public void onCreate(){
         super.onCreate();
         if(!mayaAllowed()){ stopSelf(); return; }
-        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){ stopSelf(); return; }
+        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false);
+        if(!backgroundVoiceOnly && Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){ stopSelf(); return; }
         try{
         memory=new MayaMemory(this);
         createChannel();
@@ -95,7 +98,8 @@ private boolean fallbackListening=false;
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true).setContentIntent(pi).build();
         startForeground(ID,n);
-        handler=new Handler(Looper.getMainLooper());\n        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false);
+        handler=new Handler(Looper.getMainLooper());
+        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false);
         try{
             IntentFilter screenFilter=new IntentFilter();
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -109,7 +113,11 @@ private boolean fallbackListening=false;
             int lang=tts.setLanguage(target);
             if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(Locale.ENGLISH); }
             tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
-        if(!backgroundVoiceOnly){\n            handler.postDelayed(wakeWordRunnable,1200);\n        }\n        // Background Maya auto-talk is opt-in through Settings and uses sparse check-ins.\n        scheduleProactiveCheckIn();
+        if(!backgroundVoiceOnly){
+            handler.postDelayed(wakeWordRunnable,1200);
+        }
+        // Background Maya auto-talk is opt-in through Settings and uses sparse check-ins.
+        scheduleProactiveCheckIn();
         // Battery saving: do not start proactive background speech. Maya waits for the wake word.
         }catch(Exception e){
             ready=false;
@@ -794,7 +802,8 @@ private boolean fallbackListening=false;
         if(q.contains("what do you remember") || q.contains("what you remember") ||
            q.contains("මොනවා මතක") || q.contains("මතක තියෙන්නේ මොනවාද") || q.contains("memory list")){
             String all=memory.all();
-            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:\n"+all);
+            speak(all.isEmpty() ? "දැනට මගේ memory එක හිස්. 😄" : "මට මතක තියෙන්නේ මෙන්න:
+"+all);
             return;
         }
         if(q.contains("forget") || q.contains("delete memory") || q.contains("clear memory") ||
