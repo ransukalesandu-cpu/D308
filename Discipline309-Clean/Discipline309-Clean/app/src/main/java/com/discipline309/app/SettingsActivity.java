@@ -180,7 +180,7 @@ public class SettingsActivity extends Activity {
             .setTitle("App language")
             .setSingleChoiceItems(labels,checked,(dialog,which)->{
                 String lang=tags[which];
-                prefs.getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putBoolean("language_selected",true).apply();
+                getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putBoolean("language_selected",true).apply();
                 if(Build.VERSION.SDK_INT>=33){
                     try{
                         android.app.LocaleManager lm=(android.app.LocaleManager)getSystemService(LocaleManager.class);
