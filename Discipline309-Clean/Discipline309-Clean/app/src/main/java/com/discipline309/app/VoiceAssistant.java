@@ -29,6 +29,9 @@ public class VoiceAssistant {
     private String pendingSpeech = "";
     private int recognitionRetryCount = 0;
     private final Handler voiceHandler = new Handler(Looper.getMainLooper());
+    private Runnable voiceStateListener;
+    public void setVoiceStateListener(Runnable listener) { voiceStateListener = listener; }
+    private void notifyVoiceEnded() { try { if (voiceStateListener != null) voiceStateListener.run(); } catch (Exception ignored) {} }
 
     public VoiceAssistant(Activity activity) {
         this.activity = activity;
@@ -59,6 +62,7 @@ public class VoiceAssistant {
 
     public void stopListening() {
         listening=false;
+        notifyVoiceEnded();
         recognitionRetryCount=0;
         voiceHandler.removeCallbacksAndMessages(null);
         try { if(recognizer!=null) recognizer.cancel(); } catch(Exception ignored) {}
@@ -66,23 +70,23 @@ public class VoiceAssistant {
         recognizer=null;
     }
 
-    public void start() {
+    public boolean start() {
         if(SupabaseAccountManager.loggedIn(activity)&&!SupabaseAccountManager.can(activity,"can_use_maya")){
             Toast.makeText(activity,"Maya is disabled by your Primary account.",Toast.LENGTH_SHORT).show();
-            return;
+            return false;
         }
         if (android.os.Build.VERSION.SDK_INT >= 23 &&
                 activity.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             activity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 3099);
             Toast.makeText(activity, "Allow microphone access, then tap Maya again.", Toast.LENGTH_LONG).show();
-            return;
+            return false;
         }
         if (!SpeechRecognizer.isRecognitionAvailable(activity)) {
             Toast.makeText(activity, "Speech recognition is not available on this phone.", Toast.LENGTH_LONG).show();
-            return;
+            return false;
         }
 
-        if (listening) return;
+        if (listening) return true;
         listening = true;
         Toast.makeText(activity, "🎙️ කියන්න… Maya අහගෙන ඉන්නවා.", Toast.LENGTH_SHORT).show();
 
@@ -107,6 +111,7 @@ public class VoiceAssistant {
                     } else {
                         recognitionRetryCount = 0;
                         Toast.makeText(activity, "Maya අහගෙන ඉන්නවා. ආයෙත් කියන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                        notifyVoiceEnded();
                     }
                     return;
                 }
@@ -127,26 +132,31 @@ public class VoiceAssistant {
                     } else {
                         recognitionRetryCount = 0;
                         Toast.makeText(activity, "Maya voice service එකට connect වෙන්න බැරි වුණා. Microphone + Google voice recognition check කරලා ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_LONG).show();
+                        notifyVoiceEnded();
                     }
                     return;
                 }
 
                 if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
                     Toast.makeText(activity, "Mayaට microphone permission එක ඕන. Phone Settings වලින් allow කරන්න. 🎙️", Toast.LENGTH_LONG).show();
+                    notifyVoiceEnded();
                     return;
                 }
 
                 if (e == SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED ||
                     e == SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE) {
                     Toast.makeText(activity, "මේ voice language එක phone එකේ available නැහැ. Maya language එක Auto/English කරලා try කරන්න.", Toast.LENGTH_LONG).show();
+                    notifyVoiceEnded();
                     return;
                 }
 
                 Toast.makeText(activity, "Maya voice recognition error. Microphone එක busy ද, Google voice service එක available ද බලලා ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_LONG).show();
+                notifyVoiceEnded();
             }
             public void onResults(Bundle results) {
                 listening = false;
                 recognitionRetryCount = 0;
+                notifyVoiceEnded();
                 ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 String text = (matches == null || matches.isEmpty()) ? "" : matches.get(0);
                 handle(text);
@@ -178,13 +188,18 @@ public class VoiceAssistant {
             try { recognizer.destroy(); } catch (Exception ignored) {}
             recognizer = null;
             Toast.makeText(activity, "Maya voice start කරන්න බැරි වුණා.", Toast.LENGTH_SHORT).show();
+            notifyVoiceEnded();
+            return false;
         }
         } catch (Exception e) {
             listening = false;
             try { if (recognizer != null) recognizer.destroy(); } catch (Exception ignored) {}
             recognizer = null;
             Toast.makeText(activity, "Maya voice එක start කරන්න බැරි වුණා.", Toast.LENGTH_SHORT).show();
+            notifyVoiceEnded();
+            return false;
         }
+        return true;
     }
 
     private void handle(String spoken) {
