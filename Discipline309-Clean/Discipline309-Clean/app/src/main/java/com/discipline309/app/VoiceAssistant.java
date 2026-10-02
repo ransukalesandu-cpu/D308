@@ -143,9 +143,12 @@ public class VoiceAssistant {
                 .replace("මයා", "")
                 .trim();
         String reply;
-        boolean funny=activity.getSharedPreferences("settings",0).getBoolean("mode_funny",true);
-        boolean cute=activity.getSharedPreferences("settings",0).getBoolean("mode_cute",false);
-        boolean sweet=activity.getSharedPreferences("settings",0).getBoolean("mode_sweet",false);
+        String mode=activity.getSharedPreferences("settings",0).getString("maya_mode","motivative");
+        if("auto".equals(mode)) mode=resolveAutoMode(question);
+        boolean romance="romance".equals(mode);
+        boolean caring="caring".equals(mode);
+        boolean angry="angry".equals(mode);
+        boolean motivative="motivative".equals(mode);
         if (activity instanceof MainActivity) {
             MainActivity m=(MainActivity)activity;
             if (question.contains("අද mission") || question.contains("mission එක මොකක්ද") || question.contains("mission eka mokakda") || question.contains("ada mission")) {
@@ -189,24 +192,33 @@ public class VoiceAssistant {
             }
             return;
         } else if (question.isEmpty()) {
-            reply = sweet ? "ඔව්, මං මෙතන. හෙමින් කියන්න, මං අහගෙන ඉන්නවා. 💛" : cute ? "ඔව්ව් 😄✨ Maya මෙතන! කියන්නකෝ." : "ඔව්, මං මෙතන. කියන්න, මොකද වෙන්නේ? 😄";
+            reply = caring ? "ඔව්, මං මෙතන. හෙමින් කියන්න, මං අහගෙන ඉන්නවා. 💛" : romance ? "ඔව්, Maya මෙතන. කියන්න, මං අහගෙන ඉන්නවා. 💗" : angry ? "ඔව්. කියන්න. දැන් target එකට යමු. 😤" : motivative ? "ඔව්! Maya ready 🔥 කියන්න, අද target එක ගමු." : "ඔව්, මං මෙතන. කියන්න, මොකද වෙන්නේ? 😄";
         } else if (question.contains("hello") || question.contains("hi") || question.contains("හෙලෝ")) {
-            reply = funny ? "හෙලෝ! Maya online 😄 අද වැඩේ පටන් ගමුද, නැත්නම් excuses factory එක open කරමුද? 😂🔥" : cute ? "හෙලෝ! 🌸 Maya මෙතන. අදත් පොඩි step එකකින් පටන් ගමුද? ✨" : "හෙලෝ! මං Maya. අද වැඩේ පටන් ගමුද? 🔥";
+            reply = romance ? "හෙලෝ 💗 Maya මෙතන. අදත් ඔයාගේ discipline + fitness target එකට යමු." : caring ? "හෙලෝ 💛 Maya මෙතන. අදත් පොඩි step එකකින් පටන් ගමු." : angry ? "හෙලෝ. 😤 අද excuses නැහැ. Target එකට යමු." : "හෙලෝ! Maya online 🔥 අද discipline + fitness target එක ගමු.";
         } else if (question.contains("motivat") || question.contains("වැඩ") || question.contains("බැහැ")) {
-            reply = funny ? "Excuses වලට අද නිවාඩු 😂 පොඩි step එකක් දැන්ම කරමු! 🔥" : sweet ? "හරි, අමාරු දවසක් නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛" : cute ? "අපි පොඩි step එකක් කරමුකෝ 🌸✨ ඔයාට මේක පුළුවන්!" : "Excuses පස්සේ. පොඩි step එකක් දැන්ම කරමු. ඔයාට මේක පුළුවන්! 🔥";
+            reply = angry ? "Excuses නවත්තමු. 😤 දැන් එක target එකක් තෝරගෙන කරමු!" : caring ? "අමාරු දවසක් නම් පොඩියෙන් පටන් ගමු. ඔයාට පුළුවන්. 💛" : romance ? "හරි 💗 පොඩි step එකකින් පටන් ගමු. Discipline + fitness target එක අතාරින්න එපා." : "එක පොඩි step එකක් දැන්ම කරමු. 🔥";
         } else if (question.contains("sleep") || question.contains("නින්ද")) {
-            reply = funny ? "Phone එකටත් දැන් bedtime 😂 පැත්තකින් තියලා rest ගන්න. 🌙" : sweet ? "හරි, phone එක පැත්තකින් තියලා හොඳට rest ගන්න. ඔයාට rest එකත් වැදගත්. 💛🌙" : "හරි, phone එක පැත්තකින් තියලා හොඳට rest ගන්න. 🌙";
+            reply = caring || romance ? "හරි, phone එක පැත්තකින් තියලා හොඳට rest ගන්න. Rest එකත් training එකේ කොටසක්. 💛🌙" : angry ? "හරි. Recovery එකත් training එකේ කොටසක්. 😤🌙" : "Phone එක පැත්තකින් තියලා rest ගන්න. Recovery එක වැදගත්. 🌙";
         } else if (question.contains("thank") || question.contains("ස්තුති")) {
-            reply = cute ? "Anytimeee 😄✨ දැන් අපේ next little step එකට යමු!" : "Anytime! දැන් වැඩේ continue කරමු. 😄🔥";
+            reply = caring || romance ? "Anytime 💛 දැන් next step එකට යමු." : angry ? "හරි. 😤 දැන් next task එකට." : "Anytime! දැන් next step එක continue කරමු. 🔥";
         } else {
             final String userQuestion = question;
             String memory = activity.getSharedPreferences("maya_memory", 0).getString("items", "[]");
             String liveContext = activity instanceof MainActivity ? ((MainActivity) activity).buildMayaContext() : "Live app state unavailable.";
-            String personality = sweet ? "sweet/caring" : cute ? "cute" : funny ? "funny" : "normal";
+            String personality = "Maya mode: "+mode+"; primary target: discipline and fitness training";
             MayaAI.ask(activity, userQuestion, liveContext + " Saved ordinary memory: " + memory, personality, aiReply -> new Handler(Looper.getMainLooper()).post(() -> speak(aiReply)));
             return;
         }
         speak(reply);
+    }
+
+    private String resolveAutoMode(String question){
+        String q=question==null?"":question.toLowerCase(Locale.ROOT);
+        if(q.contains("tired")||q.contains("sad")||q.contains("බැහැ")||q.contains("අමාරු")||q.contains("stress")||q.contains("stressed")) return "caring";
+        if(q.contains("late")||q.contains("lazy")||q.contains("lazy")||q.contains("excuse")||q.contains("වැඩ නැහැ")) return "angry";
+        if(q.contains("workout")||q.contains("gym")||q.contains("training")||q.contains("exercise")||q.contains("fitness")||q.contains("workout")) return "motivative";
+        if(q.contains("love")||q.contains("romance")||q.contains("romantic")) return "romance";
+        return "motivative";
     }
 
     private void speak(String text) {
