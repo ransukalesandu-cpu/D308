@@ -305,7 +305,76 @@ private boolean fallbackListening=false;
         }
     }
 
-    /** Starts a short-lived speech recognizer while Maya is speaking so the\n     * user can interrupt her naturally. Android speech services may differ in\n     * echo cancellation, so only a recognized user phrase is treated as a\n     * barge-in event. */\n    private void startBargeInListening(){\n        if(stopping || !conversationMode || !ttsSpeaking || !SpeechRecognizer.isRecognitionAvailable(this)) return;\n        stopBargeInListening();\n        try{\n            bargeInRecognizer=SpeechRecognizer.createSpeechRecognizer(this);\n            bargeInRecognizer.setRecognitionListener(new RecognitionListener(){\n                public void onReadyForSpeech(Bundle b){bargeInListening=true;}\n                public void onBeginningOfSpeech(){\n                    if(tts!=null && ttsSpeaking){\n                        try{tts.stop();}catch(Exception ignored){}\n                        ttsSpeaking=false;\n                    }\n                }\n                public void onRmsChanged(float r){}\n                public void onBufferReceived(byte[] b){}\n                public void onEndOfSpeech(){}\n                public void onPartialResults(Bundle b){\n                    ArrayList<String> results=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);\n                    if(results!=null && !results.isEmpty() && results.get(0)!=null && !results.get(0).trim().isEmpty()) interruptMayaSpeech();\n                }\n                public void onResults(Bundle b){\n                    ArrayList<String> results=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);\n                    String spoken=(results==null||results.isEmpty())?\"\":results.get(0);\n                    interruptMayaSpeech();\n                    if(spoken!=null && !spoken.trim().isEmpty() && conversationMode && !stopping){\n                        stopBargeInListening();\n                        handle(spoken);\n                        if(conversationMode && !ttsSpeaking) restart(350);\n                    }\n                }\n                public void onError(int e){bargeInListening=false;}\n                public void onEvent(int t,Bundle b){}\n            });\n            Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);\n            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);\n            i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);\n            i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);\n            SharedPreferences p=getSharedPreferences(\"settings\",MODE_PRIVATE);\n            String selected=p.getString(\"maya_language\",\"auto\");\n            boolean sinhala=\"si\".equals(selected)||(\"auto\".equals(selected)&&\"LK\".equalsIgnoreCase(Locale.getDefault().getCountry()));\n            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,sinhala?\"si-LK\":\"en-LK\");\n            handler.postDelayed(()->{\n                if(!stopping && conversationMode && ttsSpeaking && bargeInRecognizer!=null){\n                    try{bargeInRecognizer.startListening(i);}catch(Exception ignored){bargeInListening=false;}\n                }\n            },450L);\n        }catch(Exception ignored){bargeInListening=false;}\n    }\n\n    private void interruptMayaSpeech(){\n        if(tts!=null && ttsSpeaking){\n            try{tts.stop();}catch(Exception ignored){}\n            ttsSpeaking=false;\n        }\n    }\n\n    private void stopBargeInListening(){\n        bargeInListening=false;\n        if(bargeInRecognizer!=null){\n            try{bargeInRecognizer.cancel();}catch(Exception ignored){}\n            try{bargeInRecognizer.destroy();}catch(Exception ignored){}\n            bargeInRecognizer=null;\n        }\n    }\n\n    private void endConversationMode(){
+    /** Starts a short-lived speech recognizer while Maya is speaking so the
+     * user can interrupt her naturally. Android speech services may differ in
+     * echo cancellation, so only a recognized user phrase is treated as a
+     * barge-in event. */
+    private void startBargeInListening(){
+        if(stopping || !conversationMode || !ttsSpeaking || !SpeechRecognizer.isRecognitionAvailable(this)) return;
+        stopBargeInListening();
+        try{
+            bargeInRecognizer=SpeechRecognizer.createSpeechRecognizer(this);
+            bargeInRecognizer.setRecognitionListener(new RecognitionListener(){
+                public void onReadyForSpeech(Bundle b){bargeInListening=true;}
+                public void onBeginningOfSpeech(){
+                    if(tts!=null && ttsSpeaking){
+                        try{tts.stop();}catch(Exception ignored){}
+                        ttsSpeaking=false;
+                    }
+                }
+                public void onRmsChanged(float r){}
+                public void onBufferReceived(byte[] b){}
+                public void onEndOfSpeech(){}
+                public void onPartialResults(Bundle b){
+                    ArrayList<String> results=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    if(results!=null && !results.isEmpty() && results.get(0)!=null && !results.get(0).trim().isEmpty()) interruptMayaSpeech();
+                }
+                public void onResults(Bundle b){
+                    ArrayList<String> results=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    String spoken=(results==null||results.isEmpty())?"":results.get(0);
+                    interruptMayaSpeech();
+                    if(spoken!=null && !spoken.trim().isEmpty() && conversationMode && !stopping){
+                        stopBargeInListening();
+                        handle(spoken);
+                        if(conversationMode && !ttsSpeaking) restart(350);
+                    }
+                }
+                public void onError(int e){bargeInListening=false;}
+                public void onEvent(int t,Bundle b){}
+            });
+            Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);
+            i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
+            SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
+            String selected=p.getString("maya_language","auto");
+            boolean sinhala="si".equals(selected)||("auto".equals(selected)&&"LK".equalsIgnoreCase(Locale.getDefault().getCountry()));
+            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,sinhala?"si-LK":"en-LK");
+            handler.postDelayed(()->{
+                if(!stopping && conversationMode && ttsSpeaking && bargeInRecognizer!=null){
+                    try{bargeInRecognizer.startListening(i);}catch(Exception ignored){bargeInListening=false;}
+                }
+            },450L);
+        }catch(Exception ignored){bargeInListening=false;}
+    }
+
+    private void interruptMayaSpeech(){
+        if(tts!=null && ttsSpeaking){
+            try{tts.stop();}catch(Exception ignored){}
+            ttsSpeaking=false;
+        }
+    }
+
+    private void stopBargeInListening(){
+        bargeInListening=false;
+        if(bargeInRecognizer!=null){
+            try{bargeInRecognizer.cancel();}catch(Exception ignored){}
+            try{bargeInRecognizer.destroy();}catch(Exception ignored){}
+            bargeInRecognizer=null;
+        }
+    }
+
+    private void endConversationMode(){
         boolean wasConversation=conversationMode;
         if(handler!=null) handler.removeCallbacks(conversationSilenceRunnable);
         conversationMode=false;
