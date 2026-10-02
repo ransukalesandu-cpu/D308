@@ -83,7 +83,14 @@ private boolean fallbackListening=false;
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
             registerReceiver(screenStateReceiver,screenFilter);
         }catch(Exception ignored){}
-        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){int lang=tts.setLanguage(new Locale("si","LK")); if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(new Locale("si")); } tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
+        tts=new TextToSpeech(this,status->{if(status==TextToSpeech.SUCCESS){
+            String selected=getSharedPreferences("settings",MODE_PRIVATE).getString("maya_language","auto");
+            String country=Locale.getDefault().getCountry();
+            Locale target=("si".equals(selected) || ("auto".equals(selected) && "LK".equalsIgnoreCase(country)))
+                    ? new Locale("si","LK") : Locale.ENGLISH;
+            int lang=tts.setLanguage(target);
+            if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(Locale.ENGLISH); }
+            tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
         handler.postDelayed(wakeWordRunnable,1200);
         // Battery saving: do not start proactive background speech. Maya waits for the wake word.
         }catch(Exception e){
