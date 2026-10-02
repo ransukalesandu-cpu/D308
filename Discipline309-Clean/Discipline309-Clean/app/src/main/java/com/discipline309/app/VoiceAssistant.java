@@ -103,18 +103,20 @@ public class VoiceAssistant {
 
                 // Transient network/provider/recognizer errors are retried instead of
                 // immediately showing the generic voice-error message.
-                if (e == SpeechRecognizer.ERROR_NETWORK ||
+                if (e == SpeechRecognizer.ERROR_AUDIO ||
+                    e == SpeechRecognizer.ERROR_NETWORK ||
                     e == SpeechRecognizer.ERROR_NETWORK_TIMEOUT ||
                     e == SpeechRecognizer.ERROR_SERVER ||
                     e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ||
-                    e == SpeechRecognizer.ERROR_CLIENT) {
+                    e == SpeechRecognizer.ERROR_CLIENT ||
+                    e == SpeechRecognizer.ERROR_TOO_MANY_REQUESTS) {
                     if (recognitionRetryCount < 2) {
                         recognitionRetryCount++;
-                        long delay = e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ? 900L : 700L;
+                        long delay = e == SpeechRecognizer.ERROR_AUDIO ? 900L : (e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY ? 900L : 700L);
                         voiceHandler.postDelayed(() -> { if (!listening) start(); }, delay);
                     } else {
                         recognitionRetryCount = 0;
-                        Toast.makeText(activity, "Maya voice connection එක temporary issue එකක්. ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "Maya voice service එකට connect වෙන්න බැරි වුණා. Microphone + Google voice recognition check කරලා ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_LONG).show();
                     }
                     return;
                 }
@@ -130,7 +132,7 @@ public class VoiceAssistant {
                     return;
                 }
 
-                Toast.makeText(activity, "Maya voice එකට පොඩි issue එකක්. ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, "Maya voice recognition error. Microphone එක busy ද, Google voice service එක available ද බලලා ආයෙත් try කරන්න. 🎙️", Toast.LENGTH_LONG).show();
             }
             public void onResults(Bundle results) {
                 listening = false;
