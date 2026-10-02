@@ -75,6 +75,15 @@ public class SettingsActivity extends Activity {
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=buttonStyle(new Button(this));test.setText("🔊  Test AI voice");test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);body.addView(voice);
 
+        LinearLayout language=card();
+        language.addView(label("🌐 MAYA LANGUAGE",11,MUTED));
+        language.addView(label("Auto uses your phone region: Sri Lanka → Sinhala; other regions → English. You can override this anytime.",12,MUTED));
+        Button chooseMayaLanguage=buttonStyle(new Button(this));
+        chooseMayaLanguage.setText("🌐  Change Maya language");
+        chooseMayaLanguage.setOnClickListener(v->showMayaLanguagePicker());
+        language.addView(chooseMayaLanguage);
+        body.addView(language);
+
         LinearLayout ai=card();ai.addView(label("🧠 MAYA AI BRAIN",11,MUTED));
         ai.addView(label("Maya AI is connected securely through the Supabase backend. No OpenAI API key is stored in this app.",12,MUTED));
         ai.addView(label("Model: gpt-5-mini",13,TEXT));
@@ -152,49 +161,27 @@ public class SettingsActivity extends Activity {
         LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
         LinearLayout theme=card();theme.addView(label("🎨 THEME",11,MUTED));theme.addView(label("Choose the app appearance.",12,MUTED));
         RadioButton rb=new RadioButton(this);rb.setText("🌌 Deep Navy — 309 Day");rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);theme.addView(rb);body.addView(theme);
-        LinearLayout language=card();
-        language.addView(label("🌐 APP LANGUAGE",11,MUTED));
-        language.addView(label("English is the default app language. Maya voice/conversation remains Sinhala.",12,MUTED));
-        Button chooseLanguage=buttonStyle(new Button(this));
-        chooseLanguage.setText("🌐  Change app language");
-        chooseLanguage.setOnClickListener(v->showLanguagePicker());
-        language.addView(chooseLanguage);
-        body.addView(language);
-
         LinearLayout app=card();app.addView(label("🔔 NOTIFICATIONS",11,MUTED));Switch n=new Switch(this);n.setText("Notifications");n.setTextColor(TEXT);n.setTextSize(15);n.setChecked(prefs.getBoolean("notifications",true));n.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(n);body.addView(app);
         showCategory("🎨  DISPLAY","Theme and notification preferences.",body);
     }
 
-    private void showLanguagePicker(){
-        final String[] labels={"English","සිංහල"};
-        final String[] tags={"en","si"};
-        String current="en";
-        if(Build.VERSION.SDK_INT>=33){
-            try{
-                android.app.LocaleManager lm=(android.app.LocaleManager)getSystemService(LocaleManager.class);
-                if(lm!=null && !lm.getApplicationLocales().isEmpty()) current=lm.getApplicationLocales().get(0).getLanguage();
-            }catch(Exception ignored){}
-        }
-        int checked=current.equals("si")?1:0;
+    private void showMayaLanguagePicker(){
+        final String[] labels={"Auto (region)","සිංහල","English"};
+        final String[] values={"auto","si","en"};
+        String current=prefs.getString("maya_language","auto");
+        int checked=0;
+        for(int i=0;i<values.length;i++) if(values[i].equals(current)) checked=i;
         new AlertDialog.Builder(this)
-            .setTitle("App language")
+            .setTitle("Maya language")
             .setSingleChoiceItems(labels,checked,(dialog,which)->{
-                String lang=tags[which];
-                getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putBoolean("language_selected",true).apply();
-                if(Build.VERSION.SDK_INT>=33){
-                    try{
-                        android.app.LocaleManager lm=(android.app.LocaleManager)getSystemService(LocaleManager.class);
-                        if(lm!=null) lm.setApplicationLocales(android.os.LocaleList.forLanguageTags(lang));
-                        dialog.dismiss();
-                        Toast.makeText(this,lang.equals("si")?"App language changed to Sinhala.":"App language changed to English.",Toast.LENGTH_SHORT).show();
-                    }catch(Exception e){
-                        Toast.makeText(this,"Could not change app language.",Toast.LENGTH_SHORT).show();
-                    }
-                }else{
-                    dialog.dismiss();
-                    Toast.makeText(this,"App language selection is supported on Android 13+.",Toast.LENGTH_LONG).show();
-                }
-            }).setNegativeButton("Cancel",null).show();
+                prefs.edit().putString("maya_language",values[which]).apply();
+                dialog.dismiss();
+                String msg=which==0
+                    ? "Maya will choose the default language from your region."
+                    : (which==1 ? "Maya language set to Sinhala." : "Maya language set to English.");
+                Toast.makeText(this,msg,Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("Cancel",null).show();
     }
 
     private void showSecuritySettings(){
