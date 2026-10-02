@@ -57,7 +57,7 @@ public final class MayaTimerScheduler {
         try{
             AlarmManager am=(AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
             Intent i=new Intent(context,AlarmReceiver.class);
-            PendingIntent pi=PendingIntent.getBroadcast(context,p.getInt("request_code"),i,
+            PendingIntent pi=PendingIntent.getBroadcast(context,p.getInt("request_code",0),i,
                     PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_NO_CREATE);
             if(am!=null&&pi!=null) am.cancel(pi);
             String label=p.getString("label","timer");
