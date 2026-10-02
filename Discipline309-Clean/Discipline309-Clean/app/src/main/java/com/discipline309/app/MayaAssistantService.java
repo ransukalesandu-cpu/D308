@@ -1404,7 +1404,7 @@ private boolean fallbackListening=false;
 
     private void openTimer(String q){
         try{
-            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\\\d+)").matcher(q);
+            java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d+)").matcher(q);
             Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
             if(m.find()) i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,Integer.parseInt(m.group(1))*60)));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
