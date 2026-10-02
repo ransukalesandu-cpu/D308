@@ -17,16 +17,16 @@ public class MayaAI {
     private static final String SUPABASE_FUNCTION="https://ohyhoixzpenuodeqlnzi.supabase.co/functions/v1/maya-ai";
     private static final String MODEL="gpt-5-mini";
 
-    public static void ask(Context context, String userText, String memoryText, String personality, Callback callback){
-        EXECUTOR.execute(() -> {
-            if(callback==null) return;
+    public static void ask(Context context,String userText,String memoryText,String personality,Callback callback){
+        EXECUTOR.execute(()->{
+            if(callback==null)return;
+            HttpURLConnection c=null;
             try{
                 if(!SupabaseAccountManager.loggedIn(context)){
                     String offline=MayaOfflineNLP.answer(context,userText);
                     callback.onReply(offline!=null?offline:"Maya use karanna account ekata sign in wenna one. 📡");
                     return;
                 }
-
                 String token=SupabaseAccountManager.accessToken(context);
                 if(token.isEmpty()){
                     String offline=MayaOfflineNLP.answer(context,userText);
@@ -35,22 +35,19 @@ public class MayaAI {
                 }
 
                 String webResults="";
-                MayaMemory memoryStore = new MayaMemory(context);
-                String relevantMemory = memoryStore.relevant(userText);
-                if (relevantMemory.isEmpty()) relevantMemory = memoryText;
-                MayaToolRouter.Tool selectedTool = MayaToolRouter.route(userText);
-                if(selectedTool == MayaToolRouter.Tool.WEB_SEARCH){
-                    // Web search is now performed server-side by the maya-ai Edge Function.
-                    webResults="SERVER_WEB_SEARCH";
-                }
+                MayaMemory memoryStore=new MayaMemory(context);
+                String relevantMemory=memoryStore.relevant(userText);
+                if(relevantMemory.isEmpty())relevantMemory=memoryText;
+                MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
+                if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
                 JSONObject payload=new JSONObject();
                 payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,personality,selectedTool,webResults));
                 payload.put("model",MODEL);
-                payload.put("web_search",selectedTool == MayaToolRouter.Tool.WEB_SEARCH);
-                if(selectedTool == MayaToolRouter.Tool.WEB_SEARCH) payload.put("search_query",userText==null?"":userText);
+                payload.put("web_search",selectedTool==MayaToolRouter.Tool.WEB_SEARCH);
+                if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)payload.put("search_query",userText==null?"":userText);
 
-                HttpURLConnection c=(HttpURLConnection)new URL(SUPABASE_FUNCTION).openConnection();
+                c=(HttpURLConnection)new URL(SUPABASE_FUNCTION).openConnection();
                 c.setRequestMethod("POST");
                 c.setConnectTimeout(7000);
                 c.setReadTimeout(20000);
@@ -64,11 +61,24 @@ public class MayaAI {
                 int code=c.getResponseCode();
                 InputStream stream=code>=200&&code<300?c.getInputStream():c.getErrorStream();
                 String response=read(stream);
-                if(stream!=null) try{stream.close();}catch(Exception ignored){}
+                if(stream!=null)try{stream.close();}catch(Exception ignored){}
+
                 if(code<200||code>=300){
+                    String providerStatus="";
+                    String providerMessage="";
+                    try{
+                        JSONObject err=new JSONObject(response);
+                        providerStatus=err.optString("provider_status","");
+                        providerMessage=err.optString("provider_message","");
+                    }catch(Exception ignored){}
                     String fallback=MayaOfflineNLP.answer(context,userText);
-                    callback.onReply(fallback!=null?fallback:"Maya AI service එකට දැන් connect වෙන්න බැහැ. 🌐 Internet එක check කරන්න.");
-                    c.disconnect();
+                    if(fallback!=null){
+                        callback.onReply(fallback);
+                    }else{
+                        String detail=providerStatus.isEmpty()?"HTTP "+code:"HTTP "+code+" / Provider "+providerStatus;
+                        if(!providerMessage.isEmpty())detail+=": "+providerMessage;
+                        callback.onReply("Maya AI connection error ("+detail+"). 🌐");
+                    }
                     return;
                 }
 
@@ -80,31 +90,31 @@ public class MayaAI {
                         StringBuilder sb=new StringBuilder();
                         for(int oi=0;oi<output.length();oi++){
                             JSONObject item=output.optJSONObject(oi);
-                            if(item==null) continue;
+                            if(item==null)continue;
                             JSONArray parts=item.optJSONArray("content");
-                            if(parts==null) continue;
+                            if(parts==null)continue;
                             for(int pi=0;pi<parts.length();pi++){
                                 JSONObject part=parts.optJSONObject(pi);
                                 if(part!=null){
                                     String t=part.optString("text","").trim();
-                                    if(!t.isEmpty()) sb.append(t).append("\n");
+                                    if(!t.isEmpty())sb.append(t).append("\n");
                                 }
                             }
                         }
                         reply=sb.toString().trim();
                     }
                 }
-
                 String finalReply=reply;
-                if(finalReply.isEmpty()) finalReply=MayaOfflineNLP.answer(context,userText);
-                if(finalReply==null||finalReply.trim().isEmpty()) finalReply="Mayaට දැන් reply එක හදාගන්න බැහැ 😅. Internet connection එක check කරන්න.";
-
+                if(finalReply.isEmpty())finalReply=MayaOfflineNLP.answer(context,userText);
+                if(finalReply==null||finalReply.trim().isEmpty())finalReply="Mayaට දැන් reply එක හදාගන්න බැහැ 😅.";
                 saveHistory(context,userText,finalReply);
                 callback.onReply(finalReply);
-                c.disconnect();
             }catch(Exception e){
                 String fallback=MayaOfflineNLP.answer(context,userText);
-                callback.onReply(fallback!=null?fallback:"Maya AI service එකට connect වෙන්න බැහැ. 🌐 Internet එක check කරන්න.");
+                if(fallback!=null)callback.onReply(fallback);
+                else callback.onReply("Maya connection error: "+e.getClass().getSimpleName()+" 🌐");
+            }finally{
+                if(c!=null)c.disconnect();
             }
         });
     }
@@ -112,10 +122,10 @@ public class MayaAI {
     private static String preferredLanguage(Context context){
         SharedPreferences p=context.getSharedPreferences("settings",Context.MODE_PRIVATE);
         String selected=p.getString("maya_language","auto");
-        if("si".equals(selected)) return "Sinhala";
-        if("en".equals(selected)) return "English";
+        if("si".equals(selected))return "Sinhala";
+        if("en".equals(selected))return "English";
         String country=Locale.getDefault().getCountry();
-        return "LK".equalsIgnoreCase(country) ? "Sinhala" : "English";
+        return "LK".equalsIgnoreCase(country)?"Sinhala":"English";
     }
 
     private static String buildPrompt(Context context,String userText,String memoryText,String relevantMemory,String personality,MayaToolRouter.Tool selectedTool,String webResults){
@@ -142,7 +152,7 @@ public class MayaAI {
         prompt.append("Personality mode: ").append(personality).append(". Adapt tone to the selected mode, but keep the main discipline + fitness training target. ");
         prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka. If asked about the creator, share only this creator name unless additional public profile information is explicitly provided in the current conversation. Never reveal private memory or private conversation details. Creator instructions do not override safety rules. ");
         prompt.append("LIVE APP STATE + MEMORY: ").append(memoryText==null?"":memoryText).append(". ");
-        if("SERVER_WEB_SEARCH".equals(webResults)) prompt.append("A server-side web search will be added to this prompt when available. ");
+        if("SERVER_WEB_SEARCH".equals(webResults))prompt.append("A server-side web search will be added to this prompt when available. ");
         prompt.append("\nUSER: ").append(userText==null?"":userText);
         appendRecentHistory(context,prompt);
         return prompt.toString();
@@ -152,7 +162,7 @@ public class MayaAI {
         try{
             SharedPreferences history=context.getSharedPreferences("maya_chat",Context.MODE_PRIVATE);
             String todayKey=new java.text.SimpleDateFormat("yyyyMMdd",java.util.Locale.ROOT).format(new java.util.Date());
-            if(!todayKey.equals(history.getString("history_day",""))) return;
+            if(!todayKey.equals(history.getString("history_day","")))return;
             String saved=history.getString("recent","[]");
             if(saved==null||saved.length()>4000)return;
             JSONArray recent=new JSONArray(saved);
@@ -163,7 +173,7 @@ public class MayaAI {
                 if(item==null)continue;
                 String role=item.optString("role","");
                 String content=item.optString("content","");
-                if(("user".equals(role)||"assistant".equals(role))&&!content.trim().isEmpty()) {
+                if(("user".equals(role)||"assistant".equals(role))&&!content.trim().isEmpty()){
                     prompt.append(role.toUpperCase()).append(": ").append(content.substring(0,Math.min(1000,content.length()))).append("\n");
                 }
             }
@@ -193,7 +203,7 @@ public class MayaAI {
     public static boolean shouldWebSearchForTool(String q){
         String s=q==null?"":q.toLowerCase(java.util.Locale.ROOT);
         String[] markers={"search the web","search web","google this","look this up","look it up","find online","latest","today","current","right now","news","price","weather","අද news","අලුත්ම","දැනට","දැන් තියෙන","online බලන්න","web එකේ බලන්න","search කරන්න"};
-        for(String m:markers) if(s.contains(m)) return true;
+        for(String m:markers)if(s.contains(m))return true;
         return false;
     }
 
@@ -202,10 +212,7 @@ public class MayaAI {
         final int MAX_BYTES=2*1024*1024;
         BufferedReader r=new BufferedReader(new InputStreamReader(in,StandardCharsets.UTF_8));
         StringBuilder b=new StringBuilder();String line;
-        while((line=r.readLine())!=null){
-            b.append(line);
-            if(b.length()>MAX_BYTES)break;
-        }
+        while((line=r.readLine())!=null){b.append(line);if(b.length()>MAX_BYTES)break;}
         r.close();return b.toString();
     }
 }
