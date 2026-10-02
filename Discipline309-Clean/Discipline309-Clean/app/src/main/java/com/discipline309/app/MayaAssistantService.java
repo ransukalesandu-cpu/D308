@@ -73,7 +73,7 @@ private boolean fallbackListening=false;
         PendingIntent pi=PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         Notification n=new Notification.Builder(this,"maya_assistant")
             .setContentTitle("Maya is active")
-            .setContentText("Voice assistant is listening • tap to manage")
+            .setContentText("Waiting for the Maya wake word • tap to manage")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true).setContentIntent(pi).build();
         startForeground(ID,n);
