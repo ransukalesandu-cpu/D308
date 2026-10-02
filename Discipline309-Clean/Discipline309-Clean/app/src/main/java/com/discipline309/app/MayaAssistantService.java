@@ -1117,4 +1117,9 @@ private boolean fallbackListening=false;
         }
         return START_STICKY;
     }
+    @Override
+    public android.os.IBinder onBind(android.content.Intent intent) {
+        return null;
+    }
+
 }
