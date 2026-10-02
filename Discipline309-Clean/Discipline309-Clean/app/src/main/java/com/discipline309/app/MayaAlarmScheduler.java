@@ -104,7 +104,19 @@ public final class MayaAlarmScheduler {
         return new Parsed(target,label);
     }
 
-    private static boolean isAlarmCommand(String s){
+    public static String cancelLast(Context context){
+        android.content.SharedPreferences p=context.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+        if(!p.contains("last_request"))return "Cancel කරන්න active Maya alarm එකක් නැහැ.";
+        try{
+            AlarmManager am=(AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+            Intent i=new Intent(context,AlarmReceiver.class);
+            PendingIntent pi=PendingIntent.getBroadcast(context,p.getInt("last_request",0),i,
+                    PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_NO_CREATE);
+            if(am!=null&&pi!=null)am.cancel(pi);
+            String label=p.getString("last_label","alarm");
+            p.edit().clear().apply();
+            return "හරි ❌ Maya alarm එක cancel කළා: "+label;
+        }catch(Exception e){return "Alarm එක cancel කරන්න බැරි වුණා.";}\n    }\n\n    private static boolean isAlarmCommand(String s){
         return s.contains("alarm")||s.contains("reminder")||s.contains("alarm එක")
                 ||s.contains("alarm ekak")||s.contains("alarm eka")
                 ||s.contains("ඇලම්")||s.contains("එලාම්");
