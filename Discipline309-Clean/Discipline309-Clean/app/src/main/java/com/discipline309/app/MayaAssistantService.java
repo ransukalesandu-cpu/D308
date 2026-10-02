@@ -1449,7 +1449,19 @@ private boolean fallbackListening=false;
         speak("Phone එක "+model+". Android "+Build.VERSION.RELEASE+". API "+Build.VERSION.SDK_INT+".");
     }
 
-    private void applyMayaVoice(Locale target){\n        try{\n            if(Build.VERSION.SDK_INT<21||tts==null)return;\n            ArrayList<android.speech.tts.Voice> voices=new ArrayList<>();\n            for(android.speech.tts.Voice v:tts.getVoices()){\n                if(v==null||v.getLocale()==null)continue;\n                if(v.getLocale().getLanguage().equalsIgnoreCase(target.getLanguage())&&!v.isNetworkConnectionRequired())voices.add(v);\n            }\n            Collections.sort(voices,(a,b)->{int q=Integer.compare(b.getQuality(),a.getQuality());if(q!=0)return q;return a.getName().compareToIgnoreCase(b.getName());});\n            int index=StrictModeManager.isEnabled(this)?0:Math.max(0,Math.min(2,getSharedPreferences("settings",MODE_PRIVATE).getInt("maya_voice",0)));\n            if(!voices.isEmpty())tts.setVoice(voices.get(Math.min(index,voices.size()-1)));\n        }catch(Exception ignored){}\n    }\n\n    private void speak(String s){
+    private void applyMayaVoice(Locale target){
+        try{
+            if(Build.VERSION.SDK_INT<21||tts==null)return;
+            ArrayList<android.speech.tts.Voice> voices=new ArrayList<>();
+            for(android.speech.tts.Voice v:tts.getVoices()){
+                if(v==null||v.getLocale()==null)continue;
+                if(v.getLocale().getLanguage().equalsIgnoreCase(target.getLanguage())&&!v.isNetworkConnectionRequired())voices.add(v);
+            }
+            Collections.sort(voices,(a,b)->{int q=Integer.compare(b.getQuality(),a.getQuality());if(q!=0)return q;return a.getName().compareToIgnoreCase(b.getName());});
+            int index=StrictModeManager.isEnabled(this)?0:Math.max(0,Math.min(2,getSharedPreferences("settings",MODE_PRIVATE).getInt("maya_voice",0)));
+            if(!voices.isEmpty())tts.setVoice(voices.get(Math.min(index,voices.size()-1)));
+        }catch(Exception ignored){}
+    }\n\n    private void speak(String s){
         try{
             if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
             String normalized=s.trim().replaceAll("\\s+"," ");
