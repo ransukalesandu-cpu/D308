@@ -32,7 +32,10 @@ public class MayaAssistantService extends Service {
     private OpenWakeWordAdapter wakeWordAdapter;
 
     private static final int ID=3099;
-    private SpeechRecognizer recognizer;\n    private SpeechRecognizer bargeInRecognizer;\n    private boolean bargeInListening=false;\n    private long ttsStartedAt=0L;
+    private SpeechRecognizer recognizer;
+    private SpeechRecognizer bargeInRecognizer;
+    private boolean bargeInListening=false;
+    private long ttsStartedAt=0L;
     private TextToSpeech tts;
     private boolean ready=false, stopping=false;
     private Handler handler;
@@ -1085,7 +1088,8 @@ private boolean fallbackListening=false;
         stopping=true;
         try{unregisterReceiver(screenStateReceiver);}catch(Exception ignored){}
         try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
-        try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}\n        try{stopBargeInListening();}catch(Exception ignored){}
+        try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}
+        try{stopBargeInListening();}catch(Exception ignored){}
         try{if(wakeWordAdapter!=null)wakeWordAdapter.stop();}catch(Exception ignored){}
         try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
         super.onDestroy();
