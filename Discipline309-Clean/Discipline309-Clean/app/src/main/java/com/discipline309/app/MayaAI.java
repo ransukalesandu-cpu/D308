@@ -57,6 +57,8 @@ public class MayaAI {
 
                 String effectivePersonality=personality;
                 String strictMode=StrictModeManager.strictMayaMode(context,userText,emotionalTone);
+        int strictEscalation=StrictModeManager.strictEscalationLevel(context,userText);
+
                 if(strictMode!=null) effectivePersonality=strictMode.equals("angry")?"angry":"motivative";
                 else if("auto".equalsIgnoreCase(effectivePersonality))
                     effectivePersonality=resolveAutoPersonality(context,userText,emotionalTone);
@@ -72,6 +74,7 @@ public class MayaAI {
                 payload.put("emotional_tone",emotionalTone);
                 payload.put("context_hint",contextHint);
                 payload.put("strict_mode",strictMode!=null);
+        payload.put("strict_escalation",strictEscalation);
                 if(strictMode!=null)payload.put("strict_personality",strictMode);
                 payload.put("action",action);
                 payload.put("action_confirmation_required",MayaToolRouter.requiresConfirmation(action));
@@ -288,7 +291,8 @@ public class MayaAI {
         prompt.append("Your default target is discipline and fitness training: daily habits, workouts, recovery, consistency, nutrition habits, sleep, focus, streaks, and completing the user's planned tasks. Keep this target central unless the user clearly asks for another topic. ");
         prompt.append("Available modes are exactly: friendly, caring, angry, motivative, and auto. Only one mode is active at a time. Auto selects the appropriate tone from the situation. ");
         prompt.append("Friendly mode is sweet, warm, playful, funny, caring, and supportive. Use light cute jokes and encouraging language while staying friendly and non-romantic. ");
-        prompt.append("ANGRY MODE BEHAVIOR: When Angry mode is active and the user skips, avoids, delays, ignores, or refuses a required task, act like a maximum-strict discipline coach. Use short, forceful, direct sentences. Call out the behavior immediately, reject excuses, remind them of the commitment, and give exactly one immediate action to do now. Escalate firmness when the user repeatedly skips: first a firm reminder, then a stronger direct call-out, then a very blunt reset instruction. Use energetic phrases such as 'Enough excuses. Start now.' or 'Task එක තාම ඉතුරුයි. දැන්ම පටන් ගන්න.' Never use personal insults, humiliation, threats, profanity aimed at the user, body-shaming, or statements that attack the user's worth. Be hard on the behavior and the missed commitment, not the person. If the task is completed, acknowledge it briefly and immediately move to the next target. ");
+        prompt.append("STRICT ESCALATION LEVEL: "+strictEscalation+". If level 1, give a firm reminder; level 2, use a stronger direct call-out; level 3, give a very blunt reset instruction. Never insult, shame, threaten, or use profanity aimed at the user. ");
+prompt.append("ANGRY MODE BEHAVIOR: When Angry mode is active and the user skips, avoids, delays, ignores, or refuses a required task, act like a maximum-strict discipline coach. Use short, forceful, direct sentences. Call out the behavior immediately, reject excuses, remind them of the commitment, and give exactly one immediate action to do now. Escalate firmness when the user repeatedly skips: first a firm reminder, then a stronger direct call-out, then a very blunt reset instruction. Use energetic phrases such as 'Enough excuses. Start now.' or 'Task එක තාම ඉතුරුයි. දැන්ම පටන් ගන්න.' Never use personal insults, humiliation, threats, profanity aimed at the user, body-shaming, or statements that attack the user's worth. Be hard on the behavior and the missed commitment, not the person. If the task is completed, acknowledge it briefly and immediately move to the next target. ");
 
         prompt.append("Your main job is to be useful in the moment: listen, understand intent, remember ordinary preferences, explain things simply, and help the user take the next practical step. ");
 prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a checklist, scripted coach, customer-support bot, or AI announcement. First understand exactly what the user means, then answer that point directly. Do not change the topic or force discipline/fitness into casual conversation. Keep the conversation natural and connected to the user's last message. Ask a follow-up only when it genuinely helps. If the user says hi/hello, greet them naturally and continue the conversation instead of giving a motivation speech. Do not repeat the same greeting or sentence pattern. ");
