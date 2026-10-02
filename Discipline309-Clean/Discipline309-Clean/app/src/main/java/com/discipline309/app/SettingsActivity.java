@@ -173,6 +173,18 @@ public class SettingsActivity extends Activity {
         LinearLayout voice=card();voice.addView(label("🎙️ AI VOICE",11,MUTED));
         Switch speak=new Switch(this);speak.setText("Auto speak AI responses");speak.setTextColor(TEXT);speak.setTextSize(15);speak.setChecked(prefs.getBoolean("auto_speak",true));speak.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("auto_speak",c).apply());voice.addView(speak);
         Switch backgroundVoice=new Switch(this);backgroundVoice.setText("Maya background auto-talk");backgroundVoice.setTextColor(TEXT);backgroundVoice.setTextSize(15);backgroundVoice.setChecked(prefs.getBoolean("maya_background_voice",true));backgroundVoice.setOnCheckedChangeListener((v,on)->{prefs.edit().putBoolean("maya_background_voice",on).apply();Intent i=new Intent(this,MayaAssistantService.class);if(on){try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Maya background auto-talk ON 🎙️",Toast.LENGTH_SHORT).show();}catch(Exception e){prefs.edit().putBoolean("maya_background_voice",false).apply();v.setChecked(false);Toast.makeText(this,"Android could not start Maya background voice.",Toast.LENGTH_SHORT).show();}}else{stopService(i);Toast.makeText(this,"Maya background auto-talk OFF",Toast.LENGTH_SHORT).show();}});voice.addView(backgroundVoice);voice.addView(label("Maya gives occasional Sinhala/funny discipline check-ins while this is ON. Android may limit background microphone access; this mode uses spoken check-ins, not hidden recording.",12,MUTED));
+        LinearLayout quiet=card();
+        quiet.addView(label("🌙 MAYA QUIET HOURS",11,MUTED));
+        quiet.addView(label("Maya stays silent during these hours for proactive background check-ins.",12,MUTED));
+        Button quietStart=buttonStyle(new Button(this));
+        Button quietEnd=buttonStyle(new Button(this));
+        quietStart.setText("🌙  Quiet starts: "+String.format(Locale.getDefault(),"%02d:00",prefs.getInt("maya_quiet_start",22)));
+        quietEnd.setText("☀️  Quiet ends: "+String.format(Locale.getDefault(),"%02d:00",prefs.getInt("maya_quiet_end",7)));
+        quietStart.setOnClickListener(v->showMayaQuietHourPicker("Quiet starts","maya_quiet_start",22));
+        quietEnd.setOnClickListener(v->showMayaQuietHourPicker("Quiet ends","maya_quiet_end",7));
+        quiet.addView(quietStart); quiet.addView(quietEnd);
+        voice.addView(quiet);
+
         voice.addView(label("Speech speed",14,TEXT));SeekBar speed=new SeekBar(this);speed.setMax(100);speed.setProgress(prefs.getInt("speech_speed",50));voice.addView(speed);TextView speedText=label("Normal",12,MUTED);voice.addView(speedText);
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=buttonStyle(new Button(this));test.setText("🔊  Test AI voice");test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);
@@ -328,6 +340,21 @@ public class SettingsActivity extends Activity {
         RadioButton rb=new RadioButton(this);rb.setText("🌌 Deep Navy — 309 Day");rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);theme.addView(rb);body.addView(theme);
         LinearLayout app=card();app.addView(label("🔔 NOTIFICATIONS",11,MUTED));Switch n=new Switch(this);n.setText("Notifications");n.setTextColor(TEXT);n.setTextSize(15);n.setChecked(prefs.getBoolean("notifications",true));n.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(n);body.addView(app);
         showCategory("🎨  DISPLAY","Theme and notification preferences.",body);
+    }
+
+    private void showMayaQuietHourPicker(String title,String key,int fallback){
+        TimePickerDialog d=new TimePickerDialog(this,(v,h,m)->{
+            prefs.edit().putInt(key,h).apply();
+            Toast.makeText(this,title+" set to "+String.format(Locale.getDefault(),"%02d:00",h)+" 🌙",Toast.LENGTH_SHORT).show();
+            try{
+                if(prefs.getBoolean("maya_background_voice",false)){
+                    Intent i=new Intent(this,MayaAssistantService.class);
+                    if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);
+                }
+            }catch(Exception ignored){}
+        },prefs.getInt(key,fallback),0,true);
+        d.setTitle(title);
+        d.show();
     }
 
     private void showMayaVoicePicker(){
