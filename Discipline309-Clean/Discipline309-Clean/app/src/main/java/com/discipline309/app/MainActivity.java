@@ -535,23 +535,81 @@ public class MainActivity extends Activity {
     private String noteRemoteId(int i){return prefs.getString("note_"+i+"_remote_id","");}
 
     private void showNotes(){
-        header("NOTES","Capture ideas fast. Maya can organize, summarize and plan. 📝");
-        LinearLayout top=new LinearLayout(this);top.setOrientation(LinearLayout.HORIZONTAL);
-        Button add=button("＋ NEW NOTE");add.setOnClickListener(v->noteEditor(-1));top.addView(add,new LinearLayout.LayoutParams(0,dp(50),1));
-        if("primary".equals(SupabaseAccountManager.role(this))){Button family=button("👥 FAMILY NOTES");family.setOnClickListener(v->showFamilyNotes());LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(dp(145),dp(50));fp.setMargins(dp(8),0,0,0);top.addView(family,fp);}
+        header("NOTES","Capture ideas. Let Maya help you organize them.");
+        LinearLayout top=new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        Button add=button("＋  NEW NOTE");
+        add.setBackground(shape(0xFF8A2BE2,16));
+        add.setOnClickListener(v->{haptic(v);noteEditor(-1);});
+        top.addView(add,new LinearLayout.LayoutParams(0,dp(50),1));
+        if("primary".equals(SupabaseAccountManager.role(this))){
+            Button family=button("👥 FAMILY");
+            family.setOnClickListener(v->{haptic(v);showFamilyNotes();});
+            LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(dp(110),dp(50));
+            fp.setMargins(dp(8),0,0,0);top.addView(family,fp);
+        }
         content.addView(top);
-        EditText search=new EditText(this);search.setSingleLine(true);search.setHint("Search notes…");search.setTextColor(TEXT);search.setHintTextColor(MUTED);search.setTextSize(15);search.setPadding(dp(14),0,dp(14),0);search.setBackground(shape(SURFACE,16));content.addView(search,new LinearLayout.LayoutParams(-1,dp(50)));
-        content.addView(label("🏷 PERSONAL  •  STUDY  •  GOALS",11,MUTED));
-        LinearLayout list=new LinearLayout(this);list.setOrientation(LinearLayout.VERTICAL);content.addView(list);
+
+        EditText search=new EditText(this);
+        search.setSingleLine(true);
+        search.setHint("🔎  Search notes...");
+        search.setTextColor(TEXT);
+        search.setHintTextColor(MUTED);
+        search.setTextSize(15);
+        search.setPadding(dp(14),0,dp(14),0);
+        search.setBackground(glassShape(ACCENT));
+        LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,dp(52));
+        sp.setMargins(0,dp(10),0,0);
+        content.addView(search,sp);
+
+        content.addView(sectionTitle("YOUR NOTES"));
+        LinearLayout list=new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        content.addView(list);
         Runnable render=()->{
-            list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.US);ArrayList<Integer> ids=new ArrayList<>();
-            for(int i=0;i<notesCount();i++){String h=(noteTitle(i)+" "+noteBody(i)+" "+noteCategory(i)).toLowerCase(Locale.US);if(q.isEmpty()||h.contains(q))ids.add(i);}
+            list.removeAllViews();
+            String q=search.getText().toString().trim().toLowerCase(Locale.US);
+            ArrayList<Integer> ids=new ArrayList<>();
+            for(int i=0;i<notesCount();i++){
+                String h=(noteTitle(i)+" "+noteBody(i)+" "+noteCategory(i)).toLowerCase(Locale.US);
+                if(q.isEmpty()||h.contains(q))ids.add(i);
+            }
             Collections.sort(ids,(x,y)->{if(notePinned(x)!=notePinned(y))return notePinned(x)?-1:1;return Long.compare(noteTime(y),noteTime(x));});
-            if(ids.isEmpty()){list.addView(label(q.isEmpty()?"No notes yet. Tap NEW NOTE or +.":"No matching notes.",14,MUTED));return;}
-            for(int id:ids){LinearLayout nc=card();LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);TextView tt=label((notePinned(id)?"📌 ":"")+noteTitle(id),18,TEXT);tt.setTypeface(null,1);row.addView(tt,new LinearLayout.LayoutParams(0,-2,1));Button more=button("⋮");more.setOnClickListener(v->noteMenu(id));row.addView(more,new LinearLayout.LayoutParams(dp(48),dp(44)));nc.addView(row);nc.addView(label("🏷 "+noteCategory(id),11,ACCENT));String body=noteBody(id).trim();if(!body.isEmpty()){String preview=body.replace("\n"," ");if(preview.length()>180)preview=preview.substring(0,180)+"...";nc.addView(label(preview,14,TEXT));}if(noteTime(id)>0)nc.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));nc.setOnClickListener(v->noteEditor(id));list.addView(nc);}
+            if(ids.isEmpty()){
+                LinearLayout empty=card();
+                empty.addView(label(q.isEmpty()?"📝\\n\\nNO NOTES YET":"🔎\\n\\nNO MATCHING NOTES",19,TEXT));
+                empty.addView(label("Tap NEW NOTE to create one.",12,MUTED));
+                list.addView(empty);return;
+            }
+            for(int id:ids){
+                LinearLayout nc=card();
+                LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);
+                TextView tt=label((notePinned(id)?"📌 ":"")+noteTitle(id),18,TEXT);tt.setTypeface(null,1);
+                row.addView(tt,new LinearLayout.LayoutParams(0,-2,1));
+                Button more=button("⋮");more.setOnClickListener(v->noteMenu(id));
+                row.addView(more,new LinearLayout.LayoutParams(dp(48),dp(44)));
+                nc.addView(row);
+                nc.addView(label("🏷 "+noteCategory(id),11,ACCENT));
+                String body=noteBody(id).trim();
+                if(!body.isEmpty()){String preview=body.replace("\n"," ");if(preview.length()>180)preview=preview.substring(0,180)+"...";nc.addView(label(preview,14,TEXT));}
+                if(noteTime(id)>0)nc.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));
+                nc.setOnClickListener(v->{haptic(v);noteEditor(id);});
+                list.addView(nc);
+            }
         };
-        final Handler notesSearchHandler=new Handler(Looper.getMainLooper()); final Runnable[] pendingNoteRender={null}; search.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int a,int b,int d){}public void onTextChanged(CharSequence s,int a,int b,int d){ if(pendingNoteRender[0]!=null) notesSearchHandler.removeCallbacks(pendingNoteRender[0]); pendingNoteRender[0]=()->render.run(); notesSearchHandler.postDelayed(pendingNoteRender[0],180); } public void afterTextChanged(android.text.Editable e){}});
-        render.run();syncNotesIfNeeded();
+        final Handler notesSearchHandler=new Handler(Looper.getMainLooper());
+        final Runnable[] pendingNoteRender={null};
+        search.addTextChangedListener(new android.text.TextWatcher(){
+            public void beforeTextChanged(CharSequence s,int a,int b,int d){}
+            public void onTextChanged(CharSequence s,int a,int b,int d){
+                if(pendingNoteRender[0]!=null)notesSearchHandler.removeCallbacks(pendingNoteRender[0]);
+                pendingNoteRender[0]=()->render.run();
+                notesSearchHandler.postDelayed(pendingNoteRender[0],180);
+            }
+            public void afterTextChanged(android.text.Editable e){}
+        });
+        render.run();
+        syncNotesIfNeeded();
     }
 
     private long lastNotesSyncAt=0L;
@@ -736,7 +794,45 @@ public class MainActivity extends Activity {
 
     private void journalDialog(){String today=prefs.getString("journal_"+key(),"");EditText e=new EditText(this);e.setHint("How was today? What did you learn?");e.setMinLines(5);e.setText(today);new AlertDialog.Builder(this).setTitle("📝 Today's Journal").setView(e).setPositiveButton("SAVE",(d,w)->{prefs.edit().putString("journal_"+key(),e.getText().toString().trim()).apply();toast("Journal saved 📝");}).setNegativeButton("CANCEL",null).show();}    private String formatDate(Calendar c){return new SimpleDateFormat("dd MMM yyyy",Locale.US).format(c.getTime());}
     private void completeDay(){int day=dayNumber();if(day<=0||day>309){toast(day<=0?"The 309-day program has not started yet.":"The 309-day program is already complete.");return;}String k=key();if(prefs.getBoolean("done_"+k,false)){toast("Today is already completed. 🔥");return;}if(countFor(k)!=totalTasks()){toast("Finish all "+totalTasks()+" tasks first.");return;}int streak=currentStreak()+1;int best=Math.max(bestStreak(),streak);prefs.edit().putBoolean("done_"+k,true).putInt("streak",streak).putInt("best",best).apply();sound(ToneGenerator.TONE_PROP_ACK);toast("Day completed! +100 XP 🔥");showHome();}
-    private void showReminders(){header("REMINDERS","Daily alarms that keep your plan on track.");Button add=button("+  ADD DAILY REMINDER");add.setOnClickListener(v->alarmDialog());content.addView(add);boolean found=false;for(String k:prefs.getAll().keySet())if(k.startsWith("alarm")){try{String v=prefs.getString(k,"");String[] p=v.split("\\|",-1);if(p.length==3){int h=Integer.parseInt(p[1]),m=Integer.parseInt(p[2]);if(h<0||h>23||m<0||m>59)continue;found=true;LinearLayout row=card();row.setOrientation(LinearLayout.HORIZONTAL);row.addView(label("🔔 "+(p[0].isEmpty()?"Discipline reminder":p[0]),14,TEXT),new LinearLayout.LayoutParams(0,-2,1));row.addView(label(String.format(Locale.US,"%02d:%02d",h,m),14,ACCENT));content.addView(row);}}catch(Exception ignored){}}if(!found)content.addView(label("No reminders yet.",14,MUTED));content.addView(label("Reminders survive app restarts. Android may require exact-alarm and notification access.",12,MUTED));}
+    private void showReminders(){
+        header("REMINDERS","Keep your routine on track.");
+        Button add=button("＋  ADD DAILY REMINDER");
+        add.setBackground(shape(0xFF8A2BE2,18));
+        add.setOnClickListener(v->{haptic(v);alarmDialog();});
+        content.addView(add);
+        content.addView(sectionTitle("SCHEDULED REMINDERS"));
+        boolean found=false;
+        for(String k:prefs.getAll().keySet())if(k.startsWith("alarm")){
+            try{
+                String v=prefs.getString(k,"");String[] p=v.split("\\|",-1);
+                if(p.length==3){
+                    int h=Integer.parseInt(p[1]),m=Integer.parseInt(p[2]);
+                    if(h<0||h>23||m<0||m>59)continue;
+                    found=true;
+                    LinearLayout row=card();
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    TextView icon=label("🔔",22,ACCENT);icon.setGravity(Gravity.CENTER);
+                    row.addView(icon,new LinearLayout.LayoutParams(dp(44),dp(50)));
+                    LinearLayout info=new LinearLayout(this);info.setOrientation(LinearLayout.VERTICAL);
+                    info.addView(label(p[0].isEmpty()?"Discipline reminder":p[0],16,TEXT));
+                    info.addView(label("Every day",11,MUTED));
+                    row.addView(info,new LinearLayout.LayoutParams(0,-2,1));
+                    TextView time=label(String.format(Locale.US,"%02d:%02d",h,m),19,GOLD);
+                    time.setGravity(Gravity.CENTER);
+                    row.addView(time,new LinearLayout.LayoutParams(dp(70),dp(50)));
+                    content.addView(row);
+                }
+            }catch(Exception ignored){}
+        }
+        if(!found){
+            LinearLayout empty=card();
+            empty.addView(label("🔔\\n\\nNO REMINDERS YET",19,TEXT));
+            empty.addView(label("Add a daily reminder for your discipline routine.",12,MUTED));
+            content.addView(empty);
+        }
+        content.addView(label("Reminders survive app restarts. Android may require notification and exact-alarm access.",12,MUTED));
+    }
+
     private void alarmDialog(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);EditText name=new EditText(this);name.setHint("Reminder name");l.addView(name);TimePicker p=new TimePicker(this);p.setIs24HourView(true);l.addView(p);new AlertDialog.Builder(this).setTitle("Add daily reminder").setView(l).setPositiveButton("SAVE",(d,w)->{schedule(name.getText().toString(),p.getHour(),p.getMinute());showReminders();toast("Reminder saved");}).setNegativeButton("CANCEL",null).show();}
     private void schedule(String name,int h,int m){int id=(name+"|"+h+"|"+m).hashCode();Calendar c=Calendar.getInstance();c.set(Calendar.HOUR_OF_DAY,h);c.set(Calendar.MINUTE,m);c.set(Calendar.SECOND,0);c.set(Calendar.MILLISECOND,0);if(c.getTimeInMillis()<=System.currentTimeMillis())c.add(Calendar.DAY_OF_YEAR,1);scheduleStatic(this,name,h,m,id,c.getTimeInMillis());prefs.edit().putString("alarm"+id,name+"|"+h+"|"+m).apply();}
     public static void scheduleAll(Context context){SharedPreferences p=context.getSharedPreferences(PREFS,MODE_PRIVATE);for(String k:p.getAll().keySet())if(k.startsWith("alarm")){String v=p.getString(k,null);if(v==null)continue;String[] a=v.split("\\|",-1);if(a.length==3)try{int id=Integer.parseInt(k.substring(5));scheduleStatic(context,a[0],Integer.parseInt(a[1]),Integer.parseInt(a[2]),id,-1);}catch(Exception ignored){}}}
