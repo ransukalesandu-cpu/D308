@@ -74,6 +74,15 @@ public class SettingsActivity extends Activity {
         speed.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean u){String s=p<30?"Slow":p>70?"Fast":"Normal";speedText.setText("Speech speed: "+s);if(u)prefs.edit().putInt("speech_speed",p).apply();}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         Button test=buttonStyle(new Button(this));test.setText("🔊  Test AI voice");test.setOnClickListener(v->speak("Your Discipline assistant is ready."));voice.addView(test);body.addView(voice);
 
+        LinearLayout mayaVoice=card();
+        mayaVoice.addView(label("👩  MAYA VOICE",11,MUTED));
+        mayaVoice.addView(label("Choose the voice style Maya uses for spoken replies. Available voices depend on the TTS voices installed on your phone.",12,MUTED));
+        Button chooseVoice=buttonStyle(new Button(this));
+        chooseVoice.setText("👩  Change Maya voice");
+        chooseVoice.setOnClickListener(x->showMayaVoicePicker());
+        mayaVoice.addView(chooseVoice);
+        body.addView(mayaVoice);
+
         LinearLayout language=card();
         language.addView(label("🌐 MAYA LANGUAGE",11,MUTED));
         language.addView(label("Auto uses your phone region: Sri Lanka → Sinhala; other regions → English. You can override this anytime.",12,MUTED));
@@ -195,6 +204,18 @@ public class SettingsActivity extends Activity {
         RadioButton rb=new RadioButton(this);rb.setText("🌌 Deep Navy — 309 Day");rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);theme.addView(rb);body.addView(theme);
         LinearLayout app=card();app.addView(label("🔔 NOTIFICATIONS",11,MUTED));Switch n=new Switch(this);n.setText("Notifications");n.setTextColor(TEXT);n.setTextSize(15);n.setChecked(prefs.getBoolean("notifications",true));n.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(n);body.addView(app);
         showCategory("🎨  DISPLAY","Theme and notification preferences.",body);
+    }
+
+    private void showMayaVoicePicker(){
+        final String[] labels={"🌸 Aria","💗 Luna","✨ Ava"};
+        int current=Math.max(0,Math.min(2,prefs.getInt("maya_voice",0)));
+        new AlertDialog.Builder(this).setTitle("Maya voice")
+            .setSingleChoiceItems(labels,current,(dialog,which)->{
+                prefs.edit().putInt("maya_voice",which).apply();
+                dialog.dismiss();
+                String msg=which==0?"Aria selected.":which==1?"Luna selected.":"Ava selected.";
+                Toast.makeText(this,msg+" Test AI voice to hear the style.",Toast.LENGTH_SHORT).show();
+            }).setNegativeButton("Cancel",null).show();
     }
 
     private void showMayaLanguagePicker(){
