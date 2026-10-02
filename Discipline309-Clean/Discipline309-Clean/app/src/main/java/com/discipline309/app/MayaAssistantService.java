@@ -301,6 +301,20 @@ private boolean fallbackListening=false;
         if(handler!=null && !stopping && wasConversation) handler.postDelayed(wakeWordRunnable,250);
     }
 
+    private boolean isWaitCommand(String q){
+        if(q==null)return false;
+        String l=q.toLowerCase(Locale.ROOT).trim();
+        return l.equals("wait") || l.equals("wait maya") || l.equals("waiting") ||
+            l.equals("wait a second") || l.equals("wait a bit") ||
+            l.equals("tikak inn") || l.equals("tikak inna") ||
+            l.equals("poddak inn") || l.equals("poddak inna") ||
+            l.equals("tikak wait karanna") || l.equals("poddak wait karanna") ||
+            l.equals("wait karanna") || l.equals("ඉන්න") ||
+            l.equals("ටිකක් ඉන්න") || l.equals("පොඩ්ඩක් ඉන්න") ||
+            l.equals("ටිකක් wait කරන්න") || l.equals("පොඩ්ඩක් wait කරන්න") ||
+            l.equals("wait කරන්න") || l.equals("බලාගෙන ඉන්න");
+    }
+
     private boolean isConversationStopCommand(String q){
         if(q==null)return false;
         String l=q.toLowerCase(Locale.ROOT).trim();
@@ -334,6 +348,16 @@ private boolean fallbackListening=false;
             conversationMode=false;
             speak("හරි 😄 Voice conversation එක නවත්තනවා. ආයෙත් Maya කියලා කතා කළාම මං එන්නම්.");
             endConversationMode();
+            return;
+        }
+
+        // "wait" / "waiting" keeps the live conversation open for 10 seconds.
+        if(isWaitCommand(q)){
+            if(handler!=null){
+                handler.removeCallbacks(conversationSilenceRunnable);
+                handler.postDelayed(conversationSilenceRunnable,10000L);
+            }
+            speak("හරි 😄 තත්පර 10ක් wait කරනවා.");
             return;
         }
         // Once Maya is invoked as the system assistant, keep the microphone turn-by-turn
