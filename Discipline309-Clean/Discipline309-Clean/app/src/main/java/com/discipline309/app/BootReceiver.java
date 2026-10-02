@@ -23,7 +23,7 @@ public class BootReceiver extends BroadcastReceiver {
         try {
             android.content.SharedPreferences settings =
                     c.getSharedPreferences("settings", Context.MODE_PRIVATE);
-            boolean enabled = settings.getBoolean("maya_background_voice", false);
+            boolean enabled = settings.getBoolean("maya_background_voice", true);
 
             if (enabled && SupabaseAccountManager.loggedIn(c) &&
                 SupabaseAccountManager.can(c, "can_use_maya")) {
