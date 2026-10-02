@@ -20,6 +20,7 @@ public class AuthActivity extends Activity {
     private Spinner accountType;
     private boolean registerMode=false;
     private static final int MAIN_PERMISSIONS=3090;
+    private boolean permissionFlowStarted=false;
 
     private int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
 
@@ -201,6 +202,8 @@ public class AuthActivity extends Activity {
     }
 
     private void requestMainAppPermissionsThenOpen(){
+        if(permissionFlowStarted)return;
+        permissionFlowStarted=true;
         if(!SupabaseAccountManager.loggedIn(this)){show(false);return;}
         java.util.ArrayList<String> needed=new java.util.ArrayList<>();
         if(android.os.Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)
@@ -212,6 +215,13 @@ public class AuthActivity extends Activity {
 
         if(needed.isEmpty()){openMainAfterPermissions();return;}
 
+        boolean firstPermissionPrompt=!getSharedPreferences("settings",MODE_PRIVATE).getBoolean("main_permissions_prompt_shown",false);
+        if(!firstPermissionPrompt){
+            requestPermissions(needed.toArray(new String[0]),MAIN_PERMISSIONS);
+            return;
+        }
+
+        getSharedPreferences("settings",MODE_PRIVATE).edit().putBoolean("main_permissions_prompt_shown",true).apply();
         new android.app.AlertDialog.Builder(this)
             .setTitle("🎙️ Maya needs a few permissions")
             .setMessage("To use Maya voice, background listening, camera tools and important reminders, 309 Day Discipline needs Microphone, Camera and Notification permissions. You can choose Allow or Don't allow in Android's permission screen.")
