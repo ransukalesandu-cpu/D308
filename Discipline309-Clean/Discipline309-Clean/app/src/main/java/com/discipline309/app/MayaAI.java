@@ -336,8 +336,7 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
                 String role=item.optString("role","");
                 String content=item.optString("content","");
                 if(("user".equals(role)||"assistant".equals(role))&&!content.trim().isEmpty()){
-                    prompt.append(role.toUpperCase()).append(": ").append(content.substring(0,Math.min(1000,content.length()))).append("
-");
+                    prompt.append(role.toUpperCase()).append(": ").append(content.substring(0,Math.min(1000,content.length()))).append("\n");
                 }
             }
         }catch(Exception ignored){}
