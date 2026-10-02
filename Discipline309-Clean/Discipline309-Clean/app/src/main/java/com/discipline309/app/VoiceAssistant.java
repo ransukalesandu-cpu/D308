@@ -247,6 +247,36 @@ public class VoiceAssistant {
             }
         }
 
+        String qLower=question==null?"":question.toLowerCase(java.util.Locale.ROOT);
+        if(qLower.contains("strict mode on") || qLower.contains("strict mode enable") || qLower.contains("strict on") || qLower.contains("strict mode eka on") || qLower.contains("strict mode eka on karanna")){
+            StrictModeManager.setEnabled(activity,true);
+            speak("හරි 🔒 Strict Mode ON කළා. අද tasks skip කරන්න බැහැ. Selected distracting apps වල time limit එකත් active.");
+            return;
+        }
+        if(qLower.contains("strict mode off") || qLower.contains("strict mode disable") || qLower.contains("strict off") || qLower.contains("strict mode eka off") || qLower.contains("strict mode eka off karanna")){
+            StrictModeManager.setEnabled(activity,false);
+            speak("හරි. Strict Mode OFF කළා.");
+            return;
+        }
+        if(qLower.contains("dnd off") || qLower.contains("do not disturb off") || qLower.contains("dnd ain") || qLower.contains("dnd eka off")){
+            int minutes=15;
+            java.util.regex.Matcher dm=java.util.regex.Pattern.compile("(\\d{1,3})\\s*(?:minute|minutes|min|mins|මිනිත්තු)").matcher(qLower);
+            if(dm.find()) try{minutes=Integer.parseInt(dm.group(1));}catch(Exception ignored){}
+            if(StrictModeManager.canUseDnd(activity)){
+                StrictModeManager.setDnd(activity,false);
+                StrictModeManager.disableDndAfter(activity,minutes);
+                speak("හරි 💛 DND off කළා. "+minutes+" minutes පස්සේ Maya ඒක ආයෙ on කරන්න try කරනවා.");
+            }else{
+                speak("DND control permission එක දීලා නැහැ. Settings > Advanced / Strict Mode එකෙන් Allow Maya to control DND දෙන්න.");
+            }
+            return;
+        }
+        if(qLower.contains("dnd on") || qLower.contains("do not disturb on") || qLower.contains("dnd eka on")){
+            if(StrictModeManager.canUseDnd(activity)){StrictModeManager.setDnd(activity,true);speak("හරි 🌙 DND ON කළා.");}
+            else speak("DND control permission එක නැහැ. Settings > Advanced / Strict Mode එකෙන් permission එක දෙන්න.");
+            return;
+        }
+
         String action=MayaToolRouter.action(question);
         if (question.contains("live conversation") || question.contains("live mode") || question.contains("live on") ||
                 question.contains("live conversation on") || question.contains("workout live") ||
