@@ -45,12 +45,16 @@ public class MayaAI {
                 String relevantMemory=memoryStore.relevant(userText);
                 if(relevantMemory.isEmpty())relevantMemory=memoryText;
                 MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
+                String intent=classifyIntent(userText);
+                String contextHint=buildContextHint(context,userText,intent);
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)webResults="SERVER_WEB_SEARCH";
 
                 JSONObject payload=new JSONObject();
                 payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,personality,selectedTool,webResults));
                 payload.put("model",MODEL);
                 payload.put("intelligence_mode",classifyIntelligence(userText));
+                payload.put("intent",intent);
+                payload.put("context_hint",contextHint);
                 payload.put("web_search",selectedTool==MayaToolRouter.Tool.WEB_SEARCH);
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)payload.put("search_query",userText==null?"":userText);
 
@@ -153,6 +157,30 @@ public class MayaAI {
             return preferredLanguage(context).equals("Sinhala")?"හරි, ඒක මතක තියාගන්නම්. 🧠":"Got it. I'll remember that. 🧠";
         }
         return null;
+    }
+
+    private static String classifyIntent(String text){
+        String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
+        if(q.isEmpty())return "unknown";
+        if(q.matches(".*\\b(hi|hello|hey|yo|sup)\\b.*")||q.contains("හෙලෝ")||q.contains("ආයුබෝවන්"))return "greeting";
+        if(q.matches(".*\\b(why|how|explain|what is|difference|compare|solve|calculate)\\b.*")||q.contains("ඇයි")||q.contains("කොහොමද")||q.contains("විස්තර"))return "knowledge";
+        if(q.contains("?")||q.startsWith("what ")||q.startsWith("can you ")||q.startsWith("is ")||q.startsWith("are "))return "question";
+        if(q.contains("plan")||q.contains("schedule")||q.contains("routine")||q.contains("කරන්න ඕන")||q.contains("plan එක"))return "planning";
+        if(q.contains("gym")||q.contains("workout")||q.contains("training")||q.contains("exercise")||q.contains("workout එක"))return "fitness";
+        if(q.contains("sad")||q.contains("stress")||q.contains("tired")||q.contains("බය")||q.contains("දුක")||q.contains("stress"))return "emotional_support";
+        if(q.matches(".*\\b(remember|forget|memory)\\b.*")||q.contains("මතක"))return "memory";
+        return "conversation";
+    }
+
+    private static String buildContextHint(Context context,String userText,String intent){
+        SharedPreferences p=context.getSharedPreferences("maya_ai",Context.MODE_PRIVATE);
+        String previous=p.getString("last_user_message","");
+        String hint="Intent="+intent+".";
+        if(!previous.isEmpty()&&!previous.equals(userText)){
+            hint+=" Previous user message was: "+previous+". Treat short follow-ups like 'yes', 'that one', 'why?', 'එහෙමද?', or 'ඒක' as referring to the immediately preceding topic when reasonable.";
+        }
+        p.edit().putString("last_user_message",userText==null?"":userText.trim()).apply();
+        return hint;
     }
 
     private static String preferredLanguage(Context context){
