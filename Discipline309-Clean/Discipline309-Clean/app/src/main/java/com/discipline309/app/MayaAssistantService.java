@@ -648,9 +648,16 @@ private boolean fallbackListening=false;
 
     private String modeReply(String normal,String funny,String sweet){
         SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
-        if(p.getBoolean("mode_sweet",false)) return sweet;
-        if(p.getBoolean("mode_cute",false)) return "Aww 😄 කියන්නකෝ, Maya මෙතන! ✨";
-        if(p.getBoolean("mode_funny",true)) return funny;
+        String mode=p.getString("maya_mode","motivative");
+        if("auto".equals(mode)){
+            Calendar c=Calendar.getInstance();
+            int h=c.get(Calendar.HOUR_OF_DAY);
+            mode=(h>=21||h<7)?"caring":"motivative";
+        }
+        if("caring".equals(mode)) return sweet;
+        if("romance".equals(mode)) return "හරි 💗 Maya මෙතන. කියන්න, අද discipline + fitness target එකට යමු.";
+        if("angry".equals(mode)) return "ඔව්. 😤 කියන්න. දැන් excuses නැතුව target එකට යමු.";
+        if("motivative".equals(mode)) return funny;
         return normal;
     }
 
