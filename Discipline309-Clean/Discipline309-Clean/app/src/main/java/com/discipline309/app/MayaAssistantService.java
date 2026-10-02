@@ -308,57 +308,15 @@ private boolean fallbackListening=false;
         }
     }
 
-    /** Starts a short-lived speech recognizer while Maya is speaking so the
-     * user can interrupt her naturally. Android speech services may differ in
-     * echo cancellation, so only a recognized user phrase is treated as a
-     * barge-in event. */
+    /**
+     * Keep a single SpeechRecognizer active at a time. Starting a second
+     * recognizer while TTS is speaking can make Android report microphone/
+     * recognizer-busy errors, so interruption is handled by the normal
+     * conversation turn after TTS finishes.
+     */
     private void startBargeInListening(){
-        if(stopping || !conversationMode || !ttsSpeaking || !SpeechRecognizer.isRecognitionAvailable(this)) return;
-        stopBargeInListening();
-        try{
-            bargeInRecognizer=SpeechRecognizer.createSpeechRecognizer(this);
-            bargeInRecognizer.setRecognitionListener(new RecognitionListener(){
-                public void onReadyForSpeech(Bundle b){bargeInListening=true;}
-                public void onBeginningOfSpeech(){
-                    if(tts!=null && ttsSpeaking){
-                        try{tts.stop();}catch(Exception ignored){}
-                        ttsSpeaking=false;
-                    }
-                }
-                public void onRmsChanged(float r){}
-                public void onBufferReceived(byte[] b){}
-                public void onEndOfSpeech(){}
-                public void onPartialResults(Bundle b){
-                    ArrayList<String> results=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    if(results!=null && !results.isEmpty() && results.get(0)!=null && !results.get(0).trim().isEmpty()) interruptMayaSpeech();
-                }
-                public void onResults(Bundle b){
-                    ArrayList<String> results=b==null?null:b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                    String spoken=(results==null||results.isEmpty())?"":results.get(0);
-                    interruptMayaSpeech();
-                    if(spoken!=null && !spoken.trim().isEmpty() && conversationMode && !stopping){
-                        stopBargeInListening();
-                        handle(spoken);
-                        if(conversationMode && !ttsSpeaking) restart(350);
-                    }
-                }
-                public void onError(int e){bargeInListening=false;}
-                public void onEvent(int t,Bundle b){}
-            });
-            Intent i=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,true);
-            i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,1);
-            SharedPreferences p=getSharedPreferences("settings",MODE_PRIVATE);
-            String selected=p.getString("maya_language","auto");
-            boolean sinhala="si".equals(selected)||("auto".equals(selected)&&"LK".equalsIgnoreCase(Locale.getDefault().getCountry()));
-            i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,sinhala?"si-LK":"en-LK");
-            handler.postDelayed(()->{
-                if(!stopping && conversationMode && ttsSpeaking && bargeInRecognizer!=null){
-                    try{bargeInRecognizer.startListening(i);}catch(Exception ignored){bargeInListening=false;}
-                }
-            },450L);
-        }catch(Exception ignored){bargeInListening=false;}
+        // Intentionally disabled: Android speech recognition services commonly
+        // cannot run a second recognizer concurrently with the conversation one.
     }
 
     private void interruptMayaSpeech(){
