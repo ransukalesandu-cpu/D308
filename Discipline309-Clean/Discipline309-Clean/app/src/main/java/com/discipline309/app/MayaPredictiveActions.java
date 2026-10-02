@@ -24,6 +24,15 @@ public final class MayaPredictiveActions {
                 else if(nextTask.isEmpty()) nextTask=p.getString("plan_"+key+"_"+i+"_name","next task");
             }
             String focus=p.getString("plan_"+key+"_goal","").trim();
+            // Strict Mode gets firmer, task-focused proactive coaching without changing the user's task data.
+            if(StrictModeManager.isEnabled(context)){
+                if(planCount>0 && planDone<planCount && !nextTask.isEmpty()){
+                    return "😤 Strict Mode: "+nextTask+" තාම ඉතුරුයි. දැන් excuses නැතුව ඒක finish කරමු. 🔥";
+                }
+                if(!missionDone) return "🔥 Strict Mode: අද mission එක තාම complete නෑ. දැන් start කරලා finish කරමු.";
+                if(hour>=21) return "😤 Strict Mode: අද work එක close කරලා streak එක protect කරමු.";
+                return "🔥 Strict Mode active. ඊළඟ task එකට move වෙමු — no excuses.";
+            }
             // Time-aware coaching with light personality variation, while keeping the advice task-focused.
             int vibe=Math.abs((day*31+hour)%4);
             if(planCount>0 && planDone<planCount && !nextTask.isEmpty()){
