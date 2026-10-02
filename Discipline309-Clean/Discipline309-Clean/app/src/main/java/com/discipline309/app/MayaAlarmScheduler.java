@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 /** Voice-friendly alarm parser/scheduler used by Maya. */
 public final class MayaAlarmScheduler {
+    private static final String PREF="maya_scheduled_actions";
     private MayaAlarmScheduler(){}
 
     public static String scheduleFromVoice(Context context, String spoken){
@@ -41,6 +42,8 @@ public final class MayaAlarmScheduler {
             if(!exact) am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);
             String date=new SimpleDateFormat("MMM d",Locale.ENGLISH).format(p.time.getTime());
             String time=new SimpleDateFormat("h:mm a",Locale.ENGLISH).format(p.time.getTime());
+            context.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit()
+                    .putInt("last_request",requestCode).putLong("last_time",when).putString("last_label",p.label).apply();
             return "හරි 🔔 "+date+" at "+time+"ට alarm එක set කළා: "+p.label;
         }catch(Exception e){
             return "Alarm එක set කරන්න බැරි වුණා. Phone alarm permission එක check කරන්න.";
