@@ -48,7 +48,7 @@ public class MayaAI {
                 MayaToolRouter.Tool selectedTool=MayaToolRouter.route(userText);
                 String intent=classifyIntent(userText);
                 String emotionalTone=classifyEmotionalTone(userText);
-                String contextHint=buildContextHint(context,userText,intent,emotionalTone);
+                String contextHint=buildContextHint(context,userText,intent,emotionalTone);\n                if(isFollowUp(userText))contextHint+=" This is a likely follow-up to the recent conversation. Resolve pronouns and short replies using the most recent relevant user/assistant exchange before answering.";
                 String action=MayaToolRouter.action(userText);
                 String directActionReply=executeSafeAction(context,action);
                 if(directActionReply!=null){ callback.onReply(directActionReply); return; }
@@ -222,7 +222,7 @@ public class MayaAI {
         return hint;
     }
 
-    private static String preferredLanguageCode(Context context){
+    private static boolean isFollowUp(String text){\n        String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();\n        if(q.isEmpty()||q.length()>80)return false;\n        String[] markers={"yes","yeah","yep","no","nope","okay","ok","sure","that","this","it","why?","how?","what about","and then","really","then","එහෙමද","ඒක","මේක","ඇයි","කොහොමද","ඊට පස්සේ","හරි","ඔව්","නෑ","ඒකට","එතකොට"};\n        for(String m:markers)if(q.equals(m)||q.startsWith(m+" ")||q.startsWith(m+"?"))return true;\n        return q.matches(".*\\b(that one|this one|the same|what about it)\\b.*");\n    }\n\n    private static String preferredLanguageCode(Context context){
         SharedPreferences p=context.getSharedPreferences("settings",Context.MODE_PRIVATE);
         String selected=p.getString("maya_language","auto");
         if("si".equals(selected))return "sinhala";
