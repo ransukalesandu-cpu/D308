@@ -340,9 +340,9 @@ public class VoiceAssistant {
             String result=MayaTimerScheduler.start(activity,timerText);
             if(result!=null){ speak(result); return; }
         }
-        if (question.equals("cancel timer") || question.equals("timer cancel") || question.equals("ටයිමර් එක cancel")) {
+        if (question.equals("cancel timer") || question.equals("timer cancel") || question.equals("cancel my timer") || question.equals("ටයිමර් එක cancel") || question.equals("මගේ timer එක cancel")) {
             timerAction.edit().remove("pending").remove("pending_timer_text").apply();
-            speak("හරි. Pending timer එක cancel කළා.");
+            speak(MayaTimerScheduler.cancelLast(activity));
             return;
         }
 
