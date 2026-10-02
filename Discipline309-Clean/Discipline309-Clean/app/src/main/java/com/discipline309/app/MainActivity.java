@@ -465,7 +465,7 @@ public class MainActivity extends Activity {
     private boolean planTaskDone(int i){try{return validPlanIndex(i)&&prefs.getBoolean("plan_"+planDate()+"_"+i+"_done",false);}catch(Exception e){return false;}}
 
     /** Maya voice: create a planned task for today, tomorrow, or a specific date. */
-    public String createPlanTaskFromMaya(String taskText, int dayOffset, String dateYmd) {
+    public String createPlanTaskFromMaya(String taskText, int dayOffset, String dateYmd, String time) {
         if (!allowed("can_edit_mission")) return "Primary account has disabled task editing.";
         String name = taskText == null ? "" : taskText.trim();
         if (name.isEmpty()) return null;
@@ -481,13 +481,13 @@ public class MainActivity extends Activity {
         if (count >= 50) return "That day's plan is full.";
         prefs.edit()
                 .putString("plan_"+date+"_"+count+"_name", name)
-                .putString("plan_"+date+"_"+count+"_time", "Anytime")
+                .putString("plan_"+date+"_"+count+"_time", (time == null || time.trim().isEmpty()) ? "Anytime" : time.trim())
                 .putString("plan_"+date+"_"+count+"_priority", "Medium")
                 .putBoolean("plan_"+date+"_"+count+"_done", false)
                 .putInt("plan_count_"+date, count+1)
                 .apply();
         showShortPlan();
-        return "හරි ✅ ""+name+"" task එක "+friendlyPlanDate(d)+"ට create කළා.";
+        return "හරි ✅ \"" + name + "\" task එක " + friendlyPlanDate(d) + ((time == null || time.trim().isEmpty()) ? "" : " " + time.trim() + "ට") + " create කළා.";
     }
 
     private String friendlyPlanDate(Calendar d) {
