@@ -131,8 +131,7 @@ public class MayaAI {
                                 JSONObject part=parts.optJSONObject(pi);
                                 if(part!=null){
                                     String t=part.optString("text","").trim();
-                                    if(!t.isEmpty())sb.append(t).append("
-");
+                                    if(!t.isEmpty())sb.append(t).append("\n");
                                 }
                             }
                         }
