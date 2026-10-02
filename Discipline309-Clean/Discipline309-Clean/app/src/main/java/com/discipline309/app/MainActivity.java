@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
     private int customCount(){try{return Math.max(0,Math.min(100,prefs.getInt("custom_count",0)));}catch(Exception e){return 0;}}
     private int totalTasks(){return DEFAULT_TASKS.length+customCount();}
     private boolean checked(int i,String d){try{return i>=0&&i<totalTasks()&&d!=null&&!d.isEmpty()&&prefs.getBoolean("task_"+i+"_"+d,false);}catch(Exception e){return false;}}
-    private void setChecked(int i,String d,boolean v){try{if(i>=0&&i<totalTasks()&&d!=null&&!d.isEmpty())prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}catch(Exception ignored){}}
+    private void setChecked(int i,String d,boolean v){try{if(i>=0&&i<totalTasks()&&d!=null&&!d.isEmpty()){if(!v&&StrictModeManager.noSkip(this)){toast("🔒 Strict Mode: completed tasks cannot be skipped or undone.");return;}prefs.edit().putBoolean("task_"+i+"_"+d,v).apply();}}catch(Exception ignored){}}
     private boolean allowed(String permission){return !SupabaseAccountManager.loggedIn(this)||SupabaseAccountManager.can(this,permission);}
     private int countFor(String d){int n=0;for(int i=0;i<totalTasks();i++)if(checked(i,d))n++;return n;}
     private int completedDays(){int n=0;Calendar c=startDate();Calendar now=Calendar.getInstance();int guard=0;while(!c.after(now)&&!c.after(target())&&guard++<309){if(prefs.getBoolean("done_"+key(c),false))n++;c.add(Calendar.DAY_OF_YEAR,1);}return n;}
@@ -422,7 +422,7 @@ public class MainActivity extends Activity {
         }
         String name = taskName(best);
         showHome();
-        return "හරි ✅ අද "" + name + "" task එක auto-complete කළා.";
+        return "හරි ✅ අද \"" + name + "\" task එක auto-complete කළා.";
     }
 
     private int activityMatchScore(String spoken, String task, int index) {
