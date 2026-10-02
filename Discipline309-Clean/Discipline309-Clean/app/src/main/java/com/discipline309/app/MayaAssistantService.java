@@ -1460,7 +1460,9 @@ private boolean fallbackListening=false;
             int index=StrictModeManager.isEnabled(this)?0:Math.max(0,Math.min(2,getSharedPreferences("settings",MODE_PRIVATE).getInt("maya_voice",0)));
             if(!voices.isEmpty())tts.setVoice(voices.get(Math.min(index,voices.size()-1)));
         }catch(Exception ignored){}
-    }\n\n    private void speak(String s){
+    }
+
+    private void speak(String s){
         try{
             if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
             String normalized=s.trim().replaceAll("\\s+"," ");
