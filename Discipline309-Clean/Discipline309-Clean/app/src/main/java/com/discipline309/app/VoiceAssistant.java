@@ -333,6 +333,19 @@ public class VoiceAssistant {
             return;
         }
 
+        android.content.SharedPreferences timerAction=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE);
+        if(isConfirmation(question) && "SET_TIMER".equals(timerAction.getString("pending","NONE"))){
+            String timerText=timerAction.getString("pending_timer_text","");
+            timerAction.edit().remove("pending").remove("pending_timer_text").apply();
+            String result=MayaTimerScheduler.start(activity,timerText);
+            if(result!=null){ speak(result); return; }
+        }
+        if (question.equals("cancel timer") || question.equals("timer cancel") || question.equals("ටයිමර් එක cancel")) {
+            timerAction.edit().remove("pending").remove("pending_timer_text").apply();
+            speak("හරි. Pending timer එක cancel කළා.");
+            return;
+        }
+
         String action=MayaToolRouter.action(question);
         if (question.contains("live conversation") || question.contains("live mode") || question.contains("live on") ||
                 question.contains("live conversation on") || question.contains("workout live") ||
@@ -363,6 +376,14 @@ public class VoiceAssistant {
                         return;
                     }
                     ap.edit().putString("pending",action).putString("pending_alarm_text",question).apply();
+                    speak(preview+" Yes කියන්න.");
+                } else if ("SET_TIMER".equals(action)) {
+                    String preview=MayaTimerScheduler.preview(question);
+                    if(preview==null){
+                        speak("Timer එකට duration එක කියන්න. උදාහරණයක්: විනාඩි 20ක timer එකක් දාන්න.");
+                        return;
+                    }
+                    ap.edit().putString("pending",action).putString("pending_timer_text",question).apply();
                     speak(preview+" Yes කියන්න.");
                 } else {
                     ap.edit().putString("pending",action).apply();
