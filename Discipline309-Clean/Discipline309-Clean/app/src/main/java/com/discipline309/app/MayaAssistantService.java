@@ -167,7 +167,9 @@ private boolean fallbackListening=false;
         wakeWordDetected=true;
         realWakeWordActive=true;
         conversationMode=true;
-        if(wakeWordAdapter!=null) wakeWordAdapter.stop();
+        if(wakeWordAdapter!=null){ try{ wakeWordAdapter.stop(); }catch(Exception ignored){} }
+        // Give the wake-word engine a moment to release AudioRecord before SpeechRecognizer starts.
+        if(handler!=null) handler.removeCallbacks(listenRunnable);
         // The wake word can arrive before TextToSpeech finishes initializing.
         // Queue the response instead of silently dropping it.
         if(!ready){
@@ -188,7 +190,11 @@ private boolean fallbackListening=false;
         if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){speak("Microphone permission එක allow කරන්න.");return;}
         if(listening) return;
         try{
-        if(recognizer!=null) recognizer.destroy();
+        if(recognizer!=null){
+            try{ recognizer.cancel(); }catch(Exception ignored){}
+            try{ recognizer.destroy(); }catch(Exception ignored){}
+            recognizer=null;
+        }
         recognizer=SpeechRecognizer.createSpeechRecognizer(this);
         }catch(Exception e){
             listening=false;
@@ -223,6 +229,9 @@ private boolean fallbackListening=false;
                 // failures and recognizer-busy states are transient. Recreate the
                 // recognizer with bounded backoff instead of leaving Maya stuck.
                 long delay=Math.min(5000,700L*(1L<<Math.min(3,speechErrorCount-1)));
+                if(e==SpeechRecognizer.ERROR_RECOGNIZER_BUSY || e==SpeechRecognizer.ERROR_TOO_MANY_REQUESTS){
+                    delay=Math.max(delay,1400L);
+                }
                 if(speechErrorCount>=4){
                     speechErrorCount=0;
                     speak("Voice connection එකට පොඩි issue එකක්. Maya ආයෙත් try කරනවා. 🎙️");
@@ -260,7 +269,12 @@ private boolean fallbackListening=false;
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE,recognitionLocale);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,recognitionLocale);
         try{
-            recognizer.startListening(i);
+            handler.postDelayed(() -> {
+                if(!stopping && conversationMode && !listening && recognizer!=null){
+                    try{ recognizer.startListening(i); }
+                    catch(Exception ex){ listening=false; restart(1800); }
+                }
+            }, 350L);
         }catch(Exception e){
             listening=false;
             restart(1500);
