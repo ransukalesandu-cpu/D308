@@ -277,7 +277,6 @@ public class VoiceAssistant {
             return;
         }
 
-        String qLower=question==null?"":question.toLowerCase(Locale.ROOT);
         if(qLower.contains("start focus")||qLower.contains("focus session")||qLower.contains("focus mode")||qLower.contains("focus eka")){
             int minutes=45;
             java.util.regex.Matcher fm=java.util.regex.Pattern.compile("(\\d{1,3})\\s*(?:minute|minutes|min|mins|මිනිත්තු)").matcher(qLower);
