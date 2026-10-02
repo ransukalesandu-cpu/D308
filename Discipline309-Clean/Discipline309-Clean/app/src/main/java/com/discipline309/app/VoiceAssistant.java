@@ -319,17 +319,17 @@ public class VoiceAssistant {
         if(tts==null)return;
         try{
             int choice=Math.max(0,Math.min(2,activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getInt("maya_voice",0)));
-            java.util.ArrayList<TextToSpeech.Voice> female=new java.util.ArrayList<>();
-            java.util.ArrayList<TextToSpeech.Voice> all=new java.util.ArrayList<>();
-            java.util.Set<TextToSpeech.Voice> voices=tts.getVoices();
-            if(voices!=null)for(TextToSpeech.Voice voice:voices){
+            java.util.ArrayList<android.speech.tts.Voice> female=new java.util.ArrayList<>();
+            java.util.ArrayList<android.speech.tts.Voice> all=new java.util.ArrayList<>();
+            java.util.Set<android.speech.tts.Voice> voices=tts.getVoices();
+            if(voices!=null)for(android.speech.tts.Voice voice:voices){
                 if(voice==null||voice.getLocale()==null||!voice.getLocale().getLanguage().equals(target.getLanguage()))continue;
                 if(voice.isNetworkConnectionRequired())continue;
                 all.add(voice);
                 String n=voice.getName()==null?"":voice.getName().toLowerCase(Locale.ROOT);
                 if(n.contains("female")||n.contains("fem")||n.contains("woman")||n.contains("girl"))female.add(voice);
             }
-            java.util.ArrayList<TextToSpeech.Voice> pool=female.size()>=3?female:all;
+            java.util.ArrayList<android.speech.tts.Voice> pool=female.size()>=3?female:all;
             if(!pool.isEmpty()){
                 java.util.Collections.sort(pool,(a,b)->{
                     int q=Integer.compare(b.getQuality(),a.getQuality());
