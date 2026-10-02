@@ -227,14 +227,33 @@ public class VoiceAssistant {
             return;
         }
         // Maya can create planned tasks for today, tomorrow, or a requested date.
-        if (activity instanceof MainActivity) {
-            String[] create = parseCreateTask(question);
-            if (create != null) {
-                String created = ((MainActivity) activity).createPlanTaskFromMaya(create[0], Integer.parseInt(create[1]), create[2], create[3]);
-                if (created != null) {
-                    speak(created);
-                    return;
-                }
+        // Keep task creation behind a voice confirmation so recognition mistakes
+        // cannot silently change the user's plan.
+        android.content.SharedPreferences taskAction=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE);
+        if(isConfirmation(question) && "ADD_TASK".equals(taskAction.getString("pending","NONE"))){
+            String name=taskAction.getString("pending_task_name","");
+            int dayOffset=taskAction.getInt("pending_task_offset",0);
+            String date=taskAction.getString("pending_task_date","");
+            String time=taskAction.getString("pending_task_time","");
+            taskAction.edit().remove("pending").remove("pending_task_name")
+                    .remove("pending_task_offset").remove("pending_task_date").remove("pending_task_time").apply();
+            if(activity instanceof MainActivity){
+                String created=((MainActivity)activity).createPlanTaskFromMaya(name,dayOffset,date,time);
+                if(created!=null){ speak(created); return; }
+            }
+        }
+        if(activity instanceof MainActivity){
+            String[] create=parseCreateTask(question);
+            if(create!=null){
+                taskAction.edit().putString("pending","ADD_TASK")
+                        .putString("pending_task_name",create[0])
+                        .putInt("pending_task_offset",Integer.parseInt(create[1]))
+                        .putString("pending_task_date",create[2])
+                        .putString("pending_task_time",create[3]).apply();
+                String when=create[2].isEmpty()?(Integer.parseInt(create[1])==1?"tomorrow":"today"):create[2];
+                String time=create[3].isEmpty()?"":(" at "+create[3]);
+                speak("හරි 📝 "+create[0]+" — "+when+time+"ට task එක add කරන්නද? Yes කියන්න.");
+                return;
             }
         }
 
