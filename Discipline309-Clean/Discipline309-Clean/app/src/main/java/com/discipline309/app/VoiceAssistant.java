@@ -230,7 +230,7 @@ public class VoiceAssistant {
         if (activity instanceof MainActivity) {
             String[] create = parseCreateTask(question);
             if (create != null) {
-                String created = ((MainActivity) activity).createPlanTaskFromMaya(create[0], Integer.parseInt(create[1]), create[2]);
+                String created = ((MainActivity) activity).createPlanTaskFromMaya(create[0], Integer.parseInt(create[1]), create[2], create[3]);
                 if (created != null) {
                     speak(created);
                     return;
@@ -471,7 +471,15 @@ public class VoiceAssistant {
         }
         task=task.replaceAll("(?i)\\b(for|on)\\s+(today|tomorrow|හෙට|heta)\\b","").trim();
         if(task.isEmpty()) return null;
-        return new String[]{task,String.valueOf(offset),date==null?"":date};
+        String time="";
+        java.util.regex.Matcher tm=java.util.regex.Pattern.compile("(?i)\\b(?:at|@)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?\\b").matcher(task);
+        if(tm.find()){
+            int h=Integer.parseInt(tm.group(1)); int min=tm.group(2)==null?0:Integer.parseInt(tm.group(2));
+            String ap=tm.group(3); if(ap!=null){ if(ap.equalsIgnoreCase("pm")&&h<12)h+=12; if(ap.equalsIgnoreCase("am")&&h==12)h=0; }
+            time=String.format(Locale.US,"%02d:%02d",h,min);
+            task=(task.substring(0,tm.start())+" "+task.substring(tm.end())).trim();
+        }
+        return new String[]{task,String.valueOf(offset),date==null?"":date,time};
     }
 
     "i did ", "i have done ", "i completed ", "i finished ", "just did ",
