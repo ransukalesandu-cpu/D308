@@ -113,11 +113,23 @@ public class VoiceAssistant {
 
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "si-LK");
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "si-LK");
+
+        // The Maya button already starts the assistant, so speech recognition
+        // should listen directly for the user's question in the selected language.
+        String selectedLanguage=activity.getSharedPreferences("settings",Context.MODE_PRIVATE)
+                .getString("maya_language","auto");
+        String country=Locale.getDefault().getCountry();
+        boolean sinhala="si".equals(selectedLanguage)
+                || ("auto".equals(selectedLanguage) && "LK".equalsIgnoreCase(country));
+        String recognitionLocale=sinhala ? "si-LK" : "en-LK";
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, recognitionLocale);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, recognitionLocale);
+        intent.putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
-        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Maya, then your question");
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, sinhala
+                ? "ඔයාට Mayaගෙන් අහන්න ඕන දේ කියන්න"
+                : "Tell Maya what you need");
         try { recognizer.startListening(intent); }
         catch (Exception e) {
             listening = false;
