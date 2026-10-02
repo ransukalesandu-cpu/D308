@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.app.role.RoleManager;
 import android.speech.tts.TextToSpeech;
 import android.view.*;
 import android.text.InputType;
@@ -96,6 +97,39 @@ public class SettingsActivity extends Activity {
         Button clear=buttonStyle(new Button(this));clear.setText("🗑  Clear all Maya memory");clear.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Clear Maya memory?").setMessage("This removes all saved ordinary facts and preferences.").setNegativeButton("Cancel",null).setPositiveButton("Clear",(d,w)->{try{new MayaMemory(this).clear();Toast.makeText(this,"Maya memory cleared.",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"Could not clear memory.",Toast.LENGTH_SHORT).show();}}).show());mem.addView(clear);body.addView(mem);
 
                 showCategory("🤖  AI ASSISTANT","Maya AI, voice, web search and memory.",body);
+    }
+
+    private void setMayaAsPhoneAssistant(){
+        try{
+            if(Build.VERSION.SDK_INT>=29){
+                RoleManager rm=(RoleManager)getSystemService(RoleManager.class);
+                if(rm!=null && rm.isRoleAvailable(RoleManager.ROLE_ASSISTANT)){
+                    if(rm.isRoleHeld(RoleManager.ROLE_ASSISTANT)){
+                        Toast.makeText(this,"Maya is already your phone assistant ✨",Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    startActivityForResult(rm.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT),3091);
+                    return;
+                }
+            }
+            startActivity(new Intent("android.settings.VOICE_INPUT_SETTINGS"));
+        }catch(Exception e){
+            try{startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));}
+            catch(Exception ignored){Toast.makeText(this,"Android assistant settings could not be opened.",Toast.LENGTH_SHORT).show();}
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){
+        super.onActivityResult(requestCode,resultCode,data);
+        if(requestCode==3091 && Build.VERSION.SDK_INT>=29){
+            try{
+                RoleManager rm=(RoleManager)getSystemService(RoleManager.class);
+                if(rm!=null && rm.isRoleHeld(RoleManager.ROLE_ASSISTANT))
+                    Toast.makeText(this,"Maya is now your phone assistant ✨",Toast.LENGTH_LONG).show();
+                else
+                    Toast.makeText(this,"Maya was not selected as the phone assistant.",Toast.LENGTH_SHORT).show();
+            }catch(Exception ignored){}
+        }
     }
 
     private void showModeSettings(){
