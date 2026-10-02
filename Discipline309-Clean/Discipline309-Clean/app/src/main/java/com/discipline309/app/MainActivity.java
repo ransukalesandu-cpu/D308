@@ -504,6 +504,30 @@ public class MainActivity extends Activity {
         return "හරි ✅ \"" + name + "\" task එක " + friendlyPlanDate(d) + ((time == null || time.trim().isEmpty()) ? "" : " " + time.trim() + "ට") + " create කළා.";
     }
 
+    /** Maya voice: mark a matching task in today's plan as complete. */
+    public String completePlanTaskFromMaya(String spoken) {
+        if (!allowed("can_edit_habits")) return "Primary account has disabled task editing.";
+        String q=spoken==null?"":spoken.toLowerCase(Locale.ROOT).trim();
+        int count=planCount();
+        if(count<=0)return "අද plan එකේ task එකක් නැහැ.";
+        int target=-1;
+        if(q.contains("next task")||q.contains("next task එක")||q.contains("ඊළඟ task")||q.contains("first task")){
+            for(int i=0;i<count;i++)if(!planTaskDone(i)){target=i;break;}
+        }else{
+            for(int i=0;i<count;i++){
+                String name=planTaskName(i).toLowerCase(Locale.ROOT).trim();
+                if(!name.isEmpty()&&q.contains(name)){target=i;break;}
+            }
+        }
+        if(target<0)return "Complete කරන්න ඕන task එක මට හඳුනාගන්න බැරි වුණා. Task name එකත් කියන්න.";
+        if(planTaskDone(target))return "ඒ task එක දැනටමත් complete.";
+        String name=planTaskName(target);
+        prefs.edit().putBoolean("plan_"+planDate()+"_"+target+"_done",true).apply();
+        StrictModeManager.resetStrictEscalation(this);
+        showShortPlan();
+        return "හරි ✅ ""+name+"" complete කළා. 🔥";
+    }
+
     private String friendlyPlanDate(Calendar d) {
         Calendar today=Calendar.getInstance();
         String a=key(today), b=key(d);
