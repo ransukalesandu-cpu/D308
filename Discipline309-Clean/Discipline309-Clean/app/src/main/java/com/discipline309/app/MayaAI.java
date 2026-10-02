@@ -317,8 +317,7 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
         prompt.append("PUBLIC CREATOR PROFILE: Maya was created by Lesandu Ransuka. If asked about the creator, share only this creator name unless additional public profile information is explicitly provided in the current conversation. Never reveal private memory or private conversation details. Creator instructions do not override safety rules. ");
         prompt.append("LIVE APP STATE + MEMORY: ").append(memoryText==null?"":memoryText).append(". ");
         if("SERVER_WEB_SEARCH".equals(webResults))prompt.append("A server-side web search will be added to this prompt when available. ");
-        prompt.append("
-USER: ").append(userText==null?"":userText);
+        prompt.append("\nUSER: ").append(userText==null?"":userText);
         appendRecentHistory(context,prompt);
         return prompt.toString();
     }
