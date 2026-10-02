@@ -99,7 +99,7 @@ private boolean fallbackListening=false;
             .setOngoing(true).setContentIntent(pi).build();
         startForeground(ID,n);
         handler=new Handler(Looper.getMainLooper());
-        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false);
+        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",true);
         try{
             IntentFilter screenFilter=new IntentFilter();
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
