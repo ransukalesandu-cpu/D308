@@ -183,9 +183,15 @@ private boolean fallbackListening=false;
                     long now=System.currentTimeMillis();
                     long last=p.getLong("last_spoken_at",0L);
                     String lastText=p.getString("last_text","");
-                    if(!suggestion.equals(lastText) || now-last>=6L*60L*60L*1000L){
+                    String dayKey=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date(now));
+                    String countKey="count_"+dayKey;
+                    int spokenToday=p.getInt(countKey,0);
+                    // Keep proactive coaching useful rather than repetitive.
+                    if(spokenToday<4 && (!suggestion.equals(lastText) || now-last>=6L*60L*60L*1000L)){
                         speak(suggestion);
-                        p.edit().putLong("last_spoken_at",now).putString("last_text",suggestion).apply();
+                        p.edit().putLong("last_spoken_at",now)
+                                .putString("last_text",suggestion)
+                                .putInt(countKey,spokenToday+1).apply();
                     }
                 }
             }
