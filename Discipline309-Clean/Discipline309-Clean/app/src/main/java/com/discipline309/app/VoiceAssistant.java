@@ -296,6 +296,24 @@ public class VoiceAssistant {
             return;
         }
 
+        // Keep destructive/data-changing voice actions behind a local confirmation.
+        if (isConfirmation(question)) {
+            android.content.SharedPreferences ap=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE);
+            String pending=ap.getString("pending","NONE");
+            if ("ADD_ALARM".equals(pending)) {
+                String alarmText=ap.getString("pending_alarm_text","");
+                ap.edit().remove("pending").remove("pending_alarm_text").apply();
+                String result=MayaAlarmScheduler.scheduleFromVoice(activity,alarmText);
+                if(result!=null){ speak(result); return; }
+            }
+        }
+        if (question.equals("cancel") || question.equals("cancel alarm") || question.equals("නවත්වන්න") || question.equals("එපා")) {
+            activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).edit()
+                    .remove("pending").remove("pending_alarm_text").apply();
+            speak("හරි. Pending action එක cancel කළා.");
+            return;
+        }
+
         String action=MayaToolRouter.action(question);
         if (question.contains("live conversation") || question.contains("live mode") || question.contains("live on") ||
                 question.contains("live conversation on") || question.contains("workout live") ||
@@ -318,8 +336,19 @@ public class VoiceAssistant {
                     return;
                 }
             } else if (!"NONE".equals(action)) {
-                activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).edit().putString("pending",action).apply();
-                speak("හරි 😄 "+("START_WORKOUT".equals(action) ? "workout එක start කරන්නද?" : "task එක complete කරන්නද?")+" Yes කියන්න.");
+                android.content.SharedPreferences ap=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE);
+                if ("ADD_ALARM".equals(action)) {
+                    String preview=MayaAlarmScheduler.preview(activity,question);
+                    if(preview==null){
+                        speak("Alarm එකට වෙලාව කියන්න. උදාහරණයක්: හෙට උදේ 6ට alarm එකක් දාන්න.");
+                        return;
+                    }
+                    ap.edit().putString("pending",action).putString("pending_alarm_text",question).apply();
+                    speak(preview+" Yes කියන්න.");
+                } else {
+                    ap.edit().putString("pending",action).apply();
+                    speak("හරි 😄 "+("START_WORKOUT".equals(action) ? "workout එක start කරන්නද?" : "task එක complete කරන්නද?")+" Yes කියන්න.");
+                }
                 return;
             }
         }
