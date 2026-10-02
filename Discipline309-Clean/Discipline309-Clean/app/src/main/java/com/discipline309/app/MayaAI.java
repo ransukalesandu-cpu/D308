@@ -164,9 +164,7 @@ public class MayaAI {
         if(q.contains("what do you remember")||q.contains("what do you know about me")||q.contains("මොනවාද මතක")||q.contains("මාව මතකද")){
             String all=memoryStore.all();
             if(all.isEmpty()) return preferredLanguage(context).equals("Sinhala")?"දැනට save කරලා තියෙන memory එකක් නැහැ.":"I don't have any saved memories yet.";
-            return preferredLanguage(context).equals("Sinhala")?"මට මතක තියෙන්නේ මේවායි:
-"+all:"Here are the things I have saved:
-"+all;
+            return preferredLanguage(context).equals("Sinhala")?"මට මතක තියෙන්නේ මේවායි:\n"+all:"Here are the things I have saved:\n"+all;
         }
         String fact=null;
         String[] prefixes={"remember that ","remember this:","remember this ","මතක තියාගන්න ","මතක තියාගන්න:","මතක තියාගන්න කියන එක ","මාව මතක තියාගන්න "};
