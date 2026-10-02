@@ -71,6 +71,25 @@ public final class StrictModeManager {
             return "motivative";
         }
     }
+    public static int strictEscalationLevel(Context c,String userText){
+        if(!isEnabled(c)||userText==null)return 0;
+        String q=userText.toLowerCase(Locale.ROOT);
+        boolean skip=q.contains("skip")||q.contains("skipped")||q.contains("avoid")||q.contains("ignored")
+                ||q.contains("delay")||q.contains("refuse")||q.contains("excuse")
+                ||q.contains("skip කළ")||q.contains("නොකර")||q.contains("පස්සේ කර")
+                ||q.contains("අද නෑ")||q.contains("බැහැ");
+        if(!skip)return p(c).getInt("strict_skip_level",0);
+        String key=new SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date());
+        String countKey="strict_skip_"+key;
+        int count=Math.min(3,p(c).getInt(countKey,0)+1);
+        p(c).edit().putInt(countKey,count).putInt("strict_skip_level",count).apply();
+        return count;
+    }
+
+    public static void resetStrictEscalation(Context c){
+        p(c).edit().putInt("strict_skip_level",0).apply();
+    }
+
     public static int limitMinutes(Context c){return Math.max(1,p(c).getInt("limit_minutes",30));}
     public static Set<String> blocked(Context c){return new HashSet<>(p(c).getStringSet("blocked",new HashSet<>()));}
     public static void setBlocked(Context c,Set<String> apps){p(c).edit().putStringSet("blocked",new HashSet<>(apps)).apply();}
