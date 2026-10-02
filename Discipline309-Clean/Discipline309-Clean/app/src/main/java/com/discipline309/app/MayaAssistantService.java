@@ -8,6 +8,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.hardware.camera2.CameraManager;
 import android.media.AudioManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.view.KeyEvent;
 import android.view.KeyCharacterMap;
 import android.os.*;
@@ -33,9 +36,14 @@ public class MayaAssistantService extends Service {
 
     private static final int ID=3099;
     private SpeechRecognizer recognizer;
-    private SpeechRecognizer bargeInRecognizer;
-    private boolean bargeInListening=false;
+    // ChatGPT-style barge-in uses one lightweight AudioRecord VAD while TTS is speaking.
+    // It never creates a second SpeechRecognizer, avoiding the previous microphone-busy race.
+    private AudioRecord bargeInAudio;
+    private Thread bargeInThread;
+    private volatile boolean bargeInListening=false;
+    private volatile boolean bargeInStopRequested=false;
     private long ttsStartedAt=0L;
+    private long lastBargeInAt=0L;
     private TextToSpeech tts;
     private boolean ready=false, stopping=false;
     private Handler handler;
@@ -309,30 +317,85 @@ private boolean fallbackListening=false;
     }
 
     /**
-     * Keep a single SpeechRecognizer active at a time. Starting a second
-     * recognizer while TTS is speaking can make Android report microphone/
-     * recognizer-busy errors, so interruption is handled by the normal
-     * conversation turn after TTS finishes.
+     * Detects a real user voice while Maya is speaking, then hands the single
+     * microphone back to SpeechRecognizer. This gives natural interruption
+     * without running two SpeechRecognizers at the same time.
      */
     private void startBargeInListening(){
-        // Intentionally disabled: Android speech recognition services commonly
-        // cannot run a second recognizer concurrently with the conversation one.
+        if(stopping || !conversationMode || !ttsSpeaking || bargeInListening) return;
+        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) return;
+        stopBargeInListening();
+        final int sampleRate=16000;
+        final int min=AudioRecord.getMinBufferSize(sampleRate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
+        if(min<=0) return;
+        final int bufferSize=Math.max(min*2,2048);
+        try{
+            bargeInAudio=new AudioRecord(MediaRecorder.AudioSource.MIC,sampleRate,
+                AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT,bufferSize);
+            if(bargeInAudio.getState()!=AudioRecord.STATE_INITIALIZED){ stopBargeInListening(); return; }
+            bargeInStopRequested=false;
+            bargeInListening=true;
+            bargeInThread=new Thread(() -> {
+                short[] buffer=new short[bufferSize/2];
+                long speechStart=0L;
+                try{
+                    bargeInAudio.startRecording();
+                    while(!bargeInStopRequested && !stopping && conversationMode && ttsSpeaking){
+                        int n=bargeInAudio.read(buffer,0,buffer.length);
+                        if(n<=0) continue;
+                        double sum=0.0;
+                        for(int x=0;x<n;x++){ double v=buffer[x]/32768.0; sum+=v*v; }
+                        double rms=Math.sqrt(sum/n);
+                        long now=System.currentTimeMillis();
+                        // Require sustained voice energy to avoid triggering from a tiny noise.
+                        if(rms>0.055){
+                            if(speechStart==0L) speechStart=now;
+                            if(now-speechStart>=260L && now-lastBargeInAt>900L){
+                                lastBargeInAt=now;
+                                handler.post(this::interruptMayaSpeech);
+                                break;
+                            }
+                        }else{
+                            speechStart=0L;
+                        }
+                    }
+                }catch(Exception ignored){}
+                finally{
+                    try{ if(bargeInAudio!=null) bargeInAudio.stop(); }catch(Exception ignored){}
+                    try{ if(bargeInAudio!=null) bargeInAudio.release(); }catch(Exception ignored){}
+                    bargeInAudio=null;
+                    bargeInListening=false;
+                }
+            },"Maya-BargeIn-VAD");
+            bargeInThread.start();
+        }catch(Exception e){
+            stopBargeInListening();
+        }
     }
 
     private void interruptMayaSpeech(){
-        if(tts!=null && ttsSpeaking){
-            try{tts.stop();}catch(Exception ignored){}
-            ttsSpeaking=false;
+        if(!ttsSpeaking) return;
+        try{ if(tts!=null) tts.stop(); }catch(Exception ignored){}
+        ttsSpeaking=false;
+        stopBargeInListening();
+        // Give TTS/audio output a moment to release before the single SpeechRecognizer starts.
+        if(conversationMode && !stopping && handler!=null){
+            handler.removeCallbacks(listenRunnable);
+            handler.postDelayed(() -> {
+                if(conversationMode && !stopping && !listening) listen();
+            },220L);
         }
     }
 
     private void stopBargeInListening(){
+        bargeInStopRequested=true;
         bargeInListening=false;
-        if(bargeInRecognizer!=null){
-            try{bargeInRecognizer.cancel();}catch(Exception ignored){}
-            try{bargeInRecognizer.destroy();}catch(Exception ignored){}
-            bargeInRecognizer=null;
+        if(bargeInAudio!=null){
+            try{bargeInAudio.stop();}catch(Exception ignored){}
+            try{bargeInAudio.release();}catch(Exception ignored){}
+            bargeInAudio=null;
         }
+        bargeInThread=null;
     }
 
     private void endConversationMode(){
@@ -1047,6 +1110,7 @@ private boolean fallbackListening=false;
         try{unregisterReceiver(screenStateReceiver);}catch(Exception ignored){}
         try{if(handler!=null)handler.removeCallbacksAndMessages(null);}catch(Exception ignored){}
         try{if(recognizer!=null)recognizer.destroy();}catch(Exception ignored){}
+        try{stopBargeInListening();}catch(Exception ignored){}
         try{stopBargeInListening();}catch(Exception ignored){}
         try{if(wakeWordAdapter!=null)wakeWordAdapter.stop();}catch(Exception ignored){}
         try{if(tts!=null){tts.stop();tts.shutdown();}}catch(Exception ignored){}
