@@ -890,15 +890,30 @@ private boolean fallbackListening=false;
         String mode=StrictModeManager.strictMayaMode(this);
         if(mode==null) mode=p.getString("maya_mode","motivative");
         if("auto".equals(mode)){
-            Calendar c=Calendar.getInstance();
-            int h=c.get(Calendar.HOUR_OF_DAY);
-            mode=(h>=21||h<7)?"caring":"motivative";
+            mode=autoSpokenMode();
         }
         if("caring".equals(mode)) return sweet;
         if("romance".equals(mode)) return "හරි 💗 Maya මෙතන. කියන්න, අද discipline + fitness target එකට යමු.";
         if("angry".equals(mode)) return "ඔව්. 😤 කියන්න. දැන් excuses නැතුව target එකට යමු.";
         if("motivative".equals(mode)) return funny;
         return normal;
+    }
+
+    private String autoSpokenMode(){
+        try{
+            SharedPreferences p=getSharedPreferences("discipline",MODE_PRIVATE);
+            Calendar cal=Calendar.getInstance();
+            int hour=cal.get(Calendar.HOUR_OF_DAY);
+            String key=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(cal.getTime());
+            int planCount=p.getInt("plan_count_"+key,0);
+            int planDone=0;
+            for(int i=0;i<planCount;i++) if(p.getBoolean("plan_"+key+"_"+i+"_done",false)) planDone++;
+            boolean missionDone=p.getBoolean("mission_"+key+"_done",false);
+            if(planCount>0 && planDone<planCount) return hour>=18 ? "angry" : "motivative";
+            if(!missionDone) return hour>=18 ? "angry" : "motivative";
+            if(hour>=21 || hour<7) return "caring";
+            return "motivative";
+        }catch(Exception ignored){ return "motivative"; }
     }
 
     private void toggleFlash(){
