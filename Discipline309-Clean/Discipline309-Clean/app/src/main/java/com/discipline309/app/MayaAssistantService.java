@@ -112,6 +112,7 @@ private boolean fallbackListening=false;
                     ? new Locale("si","LK") : Locale.ENGLISH;
             int lang=tts.setLanguage(target);
             if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(Locale.ENGLISH); }
+            applyMayaVoice(target);
             tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
         if(!backgroundVoiceOnly){
             handler.postDelayed(wakeWordRunnable,1200);
@@ -1072,7 +1073,7 @@ private boolean fallbackListening=false;
         speak("Phone එක "+model+". Android "+Build.VERSION.RELEASE+". API "+Build.VERSION.SDK_INT+".");
     }
 
-    private void speak(String s){
+    private void applyMayaVoice(Locale target){\n        try{\n            if(Build.VERSION.SDK_INT<21||tts==null)return;\n            ArrayList<android.speech.tts.Voice> voices=new ArrayList<>();\n            for(android.speech.tts.Voice v:tts.getVoices()){\n                if(v==null||v.getLocale()==null)continue;\n                if(v.getLocale().getLanguage().equalsIgnoreCase(target.getLanguage())&&!v.isNetworkConnectionRequired())voices.add(v);\n            }\n            Collections.sort(voices,(a,b)->{int q=Integer.compare(b.getQuality(),a.getQuality());if(q!=0)return q;return a.getName().compareToIgnoreCase(b.getName());});\n            int index=Math.max(0,Math.min(2,getSharedPreferences("settings",MODE_PRIVATE).getInt("maya_voice",0)));\n            if(!voices.isEmpty())tts.setVoice(voices.get(Math.min(index,voices.size()-1)));\n        }catch(Exception ignored){}\n    }\n\n    private void speak(String s){
         try{
             if(s==null||s.trim().isEmpty()||tts==null||!ready)return;
             String normalized=s.trim().replaceAll("\\s+"," ");
