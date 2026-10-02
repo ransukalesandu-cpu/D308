@@ -685,7 +685,12 @@ private boolean fallbackListening=false;
                 if(result!=null){ speak(result); return; }
             }
         }
-        if(q.equals("cancel")||q.equals("cancel alarm")||q.equals("නවත්වන්න")||q.equals("එපා")){
+        if(q.equals("cancel alarm")||q.equals("cancel my alarm")||q.equals("alarm cancel")||q.equals("මගේ alarm එක cancel")||q.equals("ඇලම් එක cancel")){
+            speak(MayaAlarmScheduler.cancelLast(this));
+            return;
+        }
+        if(q.equals("cancel")||q.equals("නවත්වන්න")||q.equals("එපා")){
+
             getSharedPreferences("maya_action",MODE_PRIVATE).edit()
                     .remove("pending").remove("pending_alarm_text").apply();
             speak("හරි. Pending action එක cancel කළා.");
