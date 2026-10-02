@@ -19,7 +19,9 @@ public final class StrictModeManager {
     public static int limitMinutes(Context c){return Math.max(1,p(c).getInt("limit_minutes",30));}
     public static Set<String> blocked(Context c){return new HashSet<>(p(c).getStringSet("blocked",new HashSet<>()));}
     public static void setBlocked(Context c,Set<String> apps){p(c).edit().putStringSet("blocked",new HashSet<>(apps)).apply();}
-    public static boolean isSelected(Context c,String pkg){return blocked(c).contains(pkg);}
+    public static boolean isSelected(Context c,String pkg){return blocked(c).contains(pkg)&&!whitelisted(c).contains(pkg);}
+    public static Set<String> whitelisted(Context c){return new HashSet<>(p(c).getStringSet("whitelist",new HashSet<>()));}
+    public static void setWhitelist(Context c,Set<String> apps){p(c).edit().putStringSet("whitelist",new HashSet<>(apps)).apply();}
     public static String dayKey(){return new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(new Date());}
     public static int usedMinutes(Context c,String pkg){
         return p(c).getInt("used_"+dayKey()+"_"+pkg,0);
