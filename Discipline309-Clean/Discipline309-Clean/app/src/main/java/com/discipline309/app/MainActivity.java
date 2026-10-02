@@ -392,6 +392,62 @@ public class MainActivity extends Activity {
 
     private void animateScreenIntro(){ /* Instant rendering: no entry animation work. */ }
     private void addTaskRow(int i,String d){LinearLayout row=card();row.setPadding(dp(10),dp(8),dp(10),dp(8));CheckBox cb=new CheckBox(this);cb.setText(taskName(i));cb.setTextColor(TEXT);cb.setTextSize(15);cb.setChecked(checked(i,d));cb.setEnabled(allowed("can_edit_habits"));cb.setOnCheckedChangeListener((v,c)->{if(allowed("can_edit_habits")){if(c){haptic(v);sound(ToneGenerator.TONE_PROP_ACK);v.setTextColor(GOLD);v.animate().scaleX(1.03f).scaleY(1.03f).setDuration(100).withEndAction(()->v.animate().scaleX(1f).scaleY(1f).setDuration(140).start()).start();}else v.setTextColor(TEXT);setChecked(i,d,c);if(SupabaseAccountManager.loggedIn(this)&&"sub".equals(SupabaseAccountManager.role(this))){syncHandler.removeCallbacks(syncRunnable);syncHandler.postDelayed(syncRunnable,1500);}}else v.setChecked(!c);});row.addView(cb);content.addView(row);}
+    /** Called by Maya when the user clearly says a daily activity was completed. */
+    public String completeActivityFromMaya(String spoken) {
+        if (!allowed("can_edit_habits")) return "Primary account has disabled habit editing.";
+        String q = spoken == null ? "" : spoken.toLowerCase(Locale.ROOT).trim();
+        if (q.isEmpty()) return null;
+
+        int best = -1;
+        int bestScore = 0;
+        boolean tie = false;
+        for (int i = 0; i < totalTasks(); i++) {
+            if (checked(i, key())) continue;
+            String name = taskName(i).toLowerCase(Locale.ROOT);
+            int score = activityMatchScore(q, name, i);
+            if (score > bestScore) {
+                bestScore = score;
+                best = i;
+                tie = false;
+            } else if (score > 0 && score == bestScore) {
+                tie = true;
+            }
+        }
+        if (best < 0 || bestScore < 3 || tie) return null;
+
+        setChecked(best, key(), true);
+        if (SupabaseAccountManager.loggedIn(this) && "sub".equals(SupabaseAccountManager.role(this))) {
+            syncHandler.removeCallbacks(syncRunnable);
+            syncHandler.postDelayed(syncRunnable, 1200);
+        }
+        String name = taskName(best);
+        showHome();
+        return "හරි ✅ අද "" + name + "" task එක auto-complete කළා.";
+    }
+
+    private int activityMatchScore(String spoken, String task, int index) {
+        int score = 0;
+        if (spoken.contains(task) && task.length() >= 3) score += 8;
+
+        String[][] aliases = {
+            {"wake", "woke", "get up", "got up", "උදේ නැගිට්ට", "නැගිට්ට"},
+            {"study", "studied", "learning", "class", "school", "exam", "ඉගෙන", "පාඩම්", "විභාග"},
+            {"workout", "worked out", "gym", "training", "exercise", "ව්‍යායාම", "ජිම්"},
+            {"eat", "ate", "meal", "meals", "food", "කෑම"},
+            {"phone", "no-phone", "no phone", "screen", "mobile"},
+            {"night", "review", "tomorrow", "prepare", "reflection", "රෑ", "හෙට"}
+        };
+        if (index < aliases.length) {
+            for (String a : aliases[index]) if (spoken.contains(a)) score += 4;
+        }
+
+        String[] taskTokens = task.replaceAll("[^a-z0-9\\s-]", " ").split("\\s+");
+        for (String token : taskTokens) {
+            if (token.length() >= 4 && spoken.contains(token)) score += 2;
+        }
+        return score;
+    }
+
     public void editTodayMissionFromMaya(String requested){final EditText e=new EditText(this);e.setHint("e.g. Study for 30 minutes");e.setSingleLine(false);if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}String current=prefs.getString("mission_"+key(),"");if(requested!=null&&!requested.trim().isEmpty())e.setText(requested.trim());else if(!current.isEmpty())e.setText(current);new AlertDialog.Builder(this).setTitle("🎯 Edit Today's Mission").setMessage("Maya can change today's mission. The new mission will be saved for today.").setView(e).setPositiveButton("SAVE",(d,w)->{String s=e.getText().toString().trim();if(!s.isEmpty()){prefs.edit().putString("mission_"+key(),s).apply();toast("Today's mission updated by Maya 🎯");showHome();}}).setNegativeButton("CANCEL",null).show();}
     public void resetTodayMissionFromMaya(){if(!allowed("can_edit_mission")){toast("Primary account has disabled mission editing.");return;}String k="mission_"+key();prefs.edit().remove(k).remove(k+"_done").apply();toast("Today's mission reset 🎯");showHome();}
     private void showMilestoneCard(){int days=completedDays();String next=days<7?"7 days":days<30?"30 days":days<50?"50 days":days<100?"100 days":days<150?"150 days":days<200?"200 days":days<309?"309 days":"ALL 309 DAYS";LinearLayout m=card();m.addView(label("NEXT MILESTONE",11,MUTED));m.addView(label("🏆 "+next,20,TEXT));content.addView(m);}
