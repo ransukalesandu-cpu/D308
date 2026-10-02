@@ -51,7 +51,7 @@ public final class MayaAlarmScheduler {
         Parsed p=parse(spoken);
         if(p==null)return null;
         return "හරි 🔔 "+new SimpleDateFormat("MMM d, h:mm a",Locale.ENGLISH).format(p.time.getTime())
-                +"ට ""+p.label+"" alarm එක දාන්නද?";
+                +"ට \""+p.label+"\" alarm එක දාන්නද?";
     }
 
     private static Parsed parse(String spoken){
