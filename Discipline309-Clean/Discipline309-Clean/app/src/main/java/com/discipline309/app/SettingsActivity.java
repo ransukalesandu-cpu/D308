@@ -152,8 +152,49 @@ public class SettingsActivity extends Activity {
         LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
         LinearLayout theme=card();theme.addView(label("🎨 THEME",11,MUTED));theme.addView(label("Choose the app appearance.",12,MUTED));
         RadioButton rb=new RadioButton(this);rb.setText("🌌 Deep Navy — 309 Day");rb.setTextColor(TEXT);rb.setTextSize(15);rb.setChecked(true);theme.addView(rb);body.addView(theme);
+        LinearLayout language=card();
+        language.addView(label("🌐 APP LANGUAGE",11,MUTED));
+        language.addView(label("English is the default app language. Maya voice/conversation remains Sinhala.",12,MUTED));
+        Button chooseLanguage=buttonStyle(new Button(this));
+        chooseLanguage.setText("🌐  Change app language");
+        chooseLanguage.setOnClickListener(v->showLanguagePicker());
+        language.addView(chooseLanguage);
+        body.addView(language);
+
         LinearLayout app=card();app.addView(label("🔔 NOTIFICATIONS",11,MUTED));Switch n=new Switch(this);n.setText("Notifications");n.setTextColor(TEXT);n.setTextSize(15);n.setChecked(prefs.getBoolean("notifications",true));n.setOnCheckedChangeListener((v,c)->prefs.edit().putBoolean("notifications",c).apply());app.addView(n);body.addView(app);
         showCategory("🎨  DISPLAY","Theme and notification preferences.",body);
+    }
+
+    private void showLanguagePicker(){
+        final String[] labels={"English","සිංහල"};
+        final String[] tags={"en","si"};
+        String current="en";
+        if(Build.VERSION.SDK_INT>=33){
+            try{
+                android.app.LocaleManager lm=(android.app.LocaleManager)getSystemService(LocaleManager.class);
+                if(lm!=null && !lm.getApplicationLocales().isEmpty()) current=lm.getApplicationLocales().get(0).getLanguage();
+            }catch(Exception ignored){}
+        }
+        int checked=current.equals("si")?1:0;
+        new AlertDialog.Builder(this)
+            .setTitle("App language")
+            .setSingleChoiceItems(labels,checked,(dialog,which)->{
+                String lang=tags[which];
+                prefs.getSharedPreferences("ui_settings",MODE_PRIVATE).edit().putBoolean("language_selected",true).apply();
+                if(Build.VERSION.SDK_INT>=33){
+                    try{
+                        android.app.LocaleManager lm=(android.app.LocaleManager)getSystemService(LocaleManager.class);
+                        if(lm!=null) lm.setApplicationLocales(android.os.LocaleList.forLanguageTags(lang));
+                        dialog.dismiss();
+                        Toast.makeText(this,lang.equals("si")?"App language changed to Sinhala.":"App language changed to English.",Toast.LENGTH_SHORT).show();
+                    }catch(Exception e){
+                        Toast.makeText(this,"Could not change app language.",Toast.LENGTH_SHORT).show();
+                    }
+                }else{
+                    dialog.dismiss();
+                    Toast.makeText(this,"App language selection is supported on Android 13+.",Toast.LENGTH_LONG).show();
+                }
+            }).setNegativeButton("Cancel",null).show();
     }
 
     private void showSecuritySettings(){
