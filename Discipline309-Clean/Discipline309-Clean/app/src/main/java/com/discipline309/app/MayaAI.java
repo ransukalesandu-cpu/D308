@@ -277,7 +277,7 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
 
     public static boolean shouldWebSearchForTool(String q){
         String s=q==null?"":q.toLowerCase(java.util.Locale.ROOT);
-        String[] markers={"search the web","search web","google this","look this up","look it up","find online","latest","today","current","right now","news","price","weather","අද news","අලුත්ම","දැනට","දැන් තියෙන","online බලන්න","web එකේ බලන්න","search කරන්න"};
+        String[] markers={"search the web","search web","google this","look this up","look it up","find online","latest","today","current","right now","news","price","weather","who is the current","current president","current prime minister","exchange rate","stock price","live score","breaking news","අද news","අලුත්ම","දැනට","දැන් තියෙන","දැනට කවුද","වත්මන් ජනාධිපති","වත්මන් අගමැති","මිල අද","online බලන්න","web එකේ බලන්න","search කරන්න"};
         for(String m:markers)if(s.contains(m))return true;
         return false;
     }
