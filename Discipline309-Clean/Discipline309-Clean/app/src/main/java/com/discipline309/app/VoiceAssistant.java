@@ -277,6 +277,26 @@ public class VoiceAssistant {
             return;
         }
 
+        String qLower=question==null?"":question.toLowerCase(Locale.ROOT);
+        if(qLower.contains("start focus")||qLower.contains("focus session")||qLower.contains("focus mode")||qLower.contains("focus eka")){
+            int minutes=45;
+            java.util.regex.Matcher fm=java.util.regex.Pattern.compile("(\\d{1,3})\\s*(?:minute|minutes|min|mins|මිනිත්තු)").matcher(qLower);
+            if(fm.find())try{minutes=Integer.parseInt(fm.group(1));}catch(Exception ignored){}
+            StrictModeManager.startFocus(activity,minutes);
+            speak("හරි 🎯 Focus Session එක "+minutes+" minutes වලට start කළා. Distractions අඩු කරමු.");
+            return;
+        }
+        if(qLower.contains("stop focus")||qLower.contains("focus off")||qLower.contains("focus eka off")){
+            StrictModeManager.stopFocus(activity);
+            speak("හරි. Focus Session එක stop කළා.");
+            return;
+        }
+        if(qLower.contains("strict schedule off")||qLower.contains("remove strict schedule")){
+            StrictModeManager.clearSchedule(activity);
+            speak("හරි. Scheduled Strict Mode එක remove කළා.");
+            return;
+        }
+
         String action=MayaToolRouter.action(question);
         if (question.contains("live conversation") || question.contains("live mode") || question.contains("live on") ||
                 question.contains("live conversation on") || question.contains("workout live") ||
