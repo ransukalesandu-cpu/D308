@@ -25,6 +25,9 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private LinearLayout content;
     private VoiceAssistant voiceAssistant;
+    private Button mayaFab;
+    private boolean mayaWaveActive=false;
+    private int mayaWaveToken=0;
     private ToneGenerator tone;
     private final Handler syncHandler=new Handler(Looper.getMainLooper());
     private boolean screenIntroDone=true;
@@ -42,7 +45,28 @@ public class MainActivity extends Activity {
     private GradientDrawable glassShape(int accent){GradientDrawable g=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{0xC8171D32,0xA80A0E1A});g.setCornerRadius(dp(20));g.setStroke(dp(1),accent==0?0x558A2BE2:0x668A2BE2);return g;}
     private void haptic(View v){try{v.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);}catch(Exception ignored){}}
     private void pulse(View v){v.setScaleX(.94f);v.setScaleY(.94f);v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();}
-    private void breathe(View v){v.animate().scaleX(1.07f).scaleY(1.07f).alpha(.86f).setDuration(950).withEndAction(()->v.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(950).withEndAction(()->{if(v.getParent()!=null)breathe(v);}).start()).start();}
+    private void startMayaWave(){
+        mayaWaveActive=true;
+        final int token=++mayaWaveToken;
+        if(mayaFab==null)return;
+        mayaFab.animate().cancel();
+        mayaFab.setScaleX(1f);mayaFab.setScaleY(1f);mayaFab.setAlpha(1f);
+        mayaFab.animate().scaleX(1.14f).scaleY(1.14f).alpha(.82f).setDuration(520)
+            .withEndAction(()->{
+                if(mayaWaveActive && token==mayaWaveToken && mayaFab!=null)
+                    mayaFab.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(520)
+                    .withEndAction(()->{if(mayaWaveActive && token==mayaWaveToken)startMayaWave();}).start();
+            }).start();
+    }
+    private void stopMayaWave(boolean playSound){
+        mayaWaveActive=false;
+        ++mayaWaveToken;
+        if(mayaFab!=null){
+            mayaFab.animate().cancel();
+            mayaFab.setScaleX(1f);mayaFab.setScaleY(1f);mayaFab.setAlpha(1f);
+        }
+        if(playSound)sound(ToneGenerator.TONE_PROP_ACK);
+    }
     private LinearLayout card(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);l.setPadding(dp(16),dp(14),dp(16),dp(14));l.setBackground(glassShape(ACCENT));l.setElevation(dp(2));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.setMargins(0,dp(6),0,dp(6));l.setLayoutParams(p);return l;}
     private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextColor(TEXT);b.setTextSize(14);b.setAllCaps(false);b.setMinHeight(dp(48));b.setBackground(shape(0xFF211B45,16));b.setPadding(dp(10),0,dp(10),0);b.setOnTouchListener((v,e)->{if(e.getAction()==MotionEvent.ACTION_DOWN){haptic(v);v.animate().scaleX(.97f).scaleY(.97f).setDuration(70).start();}else if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){sound(ToneGenerator.TONE_PROP_ACK);v.animate().scaleX(1f).scaleY(1f).setDuration(100).start();}return false;});return b;}
     private String key(){return key(Calendar.getInstance());}
@@ -131,8 +155,8 @@ public class MainActivity extends Activity {
     FrameLayout.LayoutParams np=new FrameLayout.LayoutParams(-1,dp(68),Gravity.BOTTOM);
     np.setMargins(dp(8),0,dp(8),dp(8));
     root.addView(nav,np);
-    Button fab=button("🎙");fab.setTextSize(28);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFF8A2BE2,100));fab.setElevation(dp(14));fab.setContentDescription("Talk to Maya");fab.setOnClickListener(v->{haptic(v);pulse(v);if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();});
-    FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(68),dp(68),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);breathe(fab);
+    mayaFab=button("🎙");Button fab=mayaFab;fab.setTextSize(28);fab.setTextColor(Color.WHITE);fab.setGravity(Gravity.CENTER);fab.setPadding(0,0,0,0);fab.setBackground(shape(0xFF8A2BE2,100));fab.setElevation(dp(14));fab.setContentDescription("Talk to Maya");fab.setOnClickListener(v->{haptic(v);if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(mayaWaveActive){if(voiceAssistant!=null)voiceAssistant.stopListening();stopMayaWave(true);fab.setContentDescription("Talk to Maya");}else{if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();startMayaWave();fab.setContentDescription("Stop Maya live talk");}});
+    FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(68),dp(68),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
     setContentView(root);
 }
     private void header(String title,String sub){content.removeAllViews();
@@ -865,5 +889,5 @@ public class MainActivity extends Activity {
             syncHandler.postDelayed(syncRunnable,3000);
         }
     }catch(Throwable e){android.util.Log.e("309DayDiscipline","Resume error",e);}}
-    @Override protected void onDestroy(){destroyed=true;syncHandler.removeCallbacksAndMessages(null);try{if(voiceAssistant!=null)voiceAssistant.destroy();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Voice cleanup error",e);}try{if(tone!=null)tone.release();}catch(Throwable ignored){}super.onDestroy();}
+    @Override protected void onDestroy(){destroyed=true;stopMayaWave(false);syncHandler.removeCallbacksAndMessages(null);try{if(voiceAssistant!=null)voiceAssistant.destroy();}catch(Throwable e){android.util.Log.e("309DayDiscipline","Voice cleanup error",e);}try{if(tone!=null)tone.release();}catch(Throwable ignored){}super.onDestroy();}
 }
