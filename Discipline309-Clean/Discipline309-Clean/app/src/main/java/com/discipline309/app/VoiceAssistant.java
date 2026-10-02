@@ -27,6 +27,7 @@ public class VoiceAssistant {
     public boolean isListening() { return listening; }
     private boolean ttsReady = false;
     private String pendingSpeech = "";
+    private String pendingAction = "NONE";
     private int recognitionRetryCount = 0;
     private final Handler voiceHandler = new Handler(Looper.getMainLooper());
     private Runnable voiceStateListener;
@@ -216,6 +217,25 @@ public class VoiceAssistant {
                 .replace("මයා", "")
                 .trim();
         String reply;
+        String action=MayaToolRouter.action(question);
+        if (MayaToolRouter.requiresConfirmation(action)) {
+            if (isConfirmation(question)) {
+                String pending=activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).getString("pending","NONE");
+                if (!"NONE".equals(pending)) {
+                    activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).edit().remove("pending").apply();
+                    if ("START_WORKOUT".equals(pending)) {
+                        speak("හරි 🔥 workout එක start කරන්න ready. Home screen එකෙන් workout routine එක open කරලා පටන් ගමු.");
+                    } else if ("COMPLETE_TASK".equals(pending)) {
+                        speak("හරි ✅ task එක complete කරන්න ready. අද task list එකෙන් complete කරන්න.");
+                    }
+                    return;
+                }
+            } else if (!"NONE".equals(action)) {
+                activity.getSharedPreferences("maya_action",Context.MODE_PRIVATE).edit().putString("pending",action).apply();
+                speak("හරි 😄 "+("START_WORKOUT".equals(action) ? "workout එක start කරන්නද?" : "task එක complete කරන්නද?")+" Yes කියන්න.");
+                return;
+            }
+        }
         String mode=activity.getSharedPreferences("settings",Context.MODE_PRIVATE).getString("maya_mode","motivative");
         if("auto".equals(mode)) mode=resolveAutoMode(question);
         boolean romance="romance".equals(mode);
@@ -283,6 +303,14 @@ public class VoiceAssistant {
             return;
         }
         speak(reply);
+    }
+
+    private boolean isConfirmation(String q){
+        if(q==null)return false;
+        String s=q.toLowerCase(Locale.ROOT).trim();
+        return s.equals("yes") || s.equals("yeah") || s.equals("ok") || s.equals("okay")
+                || s.equals("confirm") || s.equals("do it") || s.equals("හරි") || s.equals("ඔව්")
+                || s.equals("ඔව් කරන්න") || s.equals("කරන්න");
     }
 
     private String resolveAutoMode(String question){
