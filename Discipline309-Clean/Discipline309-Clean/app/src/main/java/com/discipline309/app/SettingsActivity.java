@@ -93,12 +93,59 @@ public class SettingsActivity extends Activity {
 
     private void showModeSettings(){
         LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout modes=card();modes.addView(label("🎭 MAYA PERSONALITY MODES",11,MUTED));
-        String[][] data={{"😂 Funny mode","mode_funny", "true"},{"🌸 Cute mode","mode_cute","false"},{"💛 Sweet / caring mode","mode_sweet","false"},{"🧠 Auto mood","mode_auto","true"}};
-        for(String[] x:data){Switch s=new Switch(this);s.setText(x[0]);s.setTextColor(TEXT);s.setTextSize(15);s.setChecked(prefs.getBoolean(x[1],Boolean.parseBoolean(x[2])));s.setOnCheckedChangeListener((v,on)->prefs.edit().putBoolean(x[1],on).apply());modes.addView(s);}
+        LinearLayout modes=card();
+        modes.addView(label("🎭 MAYA MODE",11,MUTED));
+        modes.addView(label("Maya is focused by default on discipline + fitness training. Select one mode only.",12,MUTED));
+
+        final String[] modeKeys={"romance","caring","angry","motivative","auto"};
+        final String[] modeLabels={"💗 Romance","💛 Caring","😤 Angry / Tough","🔥 Motivative","🤖 Auto"};
+        RadioGroup group=new RadioGroup(this);
+        group.setOrientation(RadioGroup.VERTICAL);
+        String current=prefs.getString("maya_mode","motivative");
+        int checkedId=-1;
+        for(int i=0;i<modeKeys.length;i++){
+            RadioButton rb=new RadioButton(this);
+            rb.setId(View.generateViewId());
+            rb.setText(modeLabels[i]);
+            rb.setTextColor(TEXT);rb.setTextSize(15);
+            rb.setPadding(0,dp(5),0,dp(5));
+            rb.setTag(modeKeys[i]);
+            rb.setChecked(modeKeys[i].equals(current));
+            if(rb.isChecked()) checkedId=rb.getId();
+            group.addView(rb);
+        }
+        if(checkedId!=-1) group.check(checkedId);
+        group.setOnCheckedChangeListener((g,id)->{
+            View selected=g.findViewById(id);
+            if(selected!=null && selected.getTag()!=null){
+                prefs.edit().putString("maya_mode",String.valueOf(selected.getTag())).apply();
+            }
+        });
+        modes.addView(group);
+        modes.addView(label("Auto chooses the tone from the situation while keeping discipline and fitness as Maya's main target.",12,MUTED));
         body.addView(modes);
-        LinearLayout coach=card();coach.addView(label("🔥 BACKGROUND COACH",11,MUTED));Switch bg=new Switch(this);bg.setText("Funny Sinhala motivation in background");bg.setTextColor(TEXT);bg.setTextSize(15);bg.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));bg.setOnCheckedChangeListener((v,on)->{getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();Intent i=new Intent(this,MotivationService.class);if(on){try{if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();}catch(Exception e){getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",false).apply();v.setChecked(false);}}else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}});coach.addView(bg);body.addView(coach);
-        showCategory("🎭  MODES","Maya personality and motivation modes.",body);
+
+        LinearLayout coach=card();
+        coach.addView(label("🔥 BACKGROUND COACH",11,MUTED));
+        Switch bg=new Switch(this);
+        bg.setText("Background discipline + fitness motivation");
+        bg.setTextColor(TEXT);bg.setTextSize(15);
+        bg.setChecked(getSharedPreferences("discipline",MODE_PRIVATE).getBoolean("coach_enabled",false));
+        bg.setOnCheckedChangeListener((v,on)->{
+            getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",on).apply();
+            Intent i=new Intent(this,MotivationService.class);
+            if(on){
+                try{
+                    if(Build.VERSION.SDK_INT>=26)startForegroundService(i);else startService(i);
+                    Toast.makeText(this,"Background coach ON 🔥",Toast.LENGTH_SHORT).show();
+                }catch(Exception e){
+                    getSharedPreferences("discipline",MODE_PRIVATE).edit().putBoolean("coach_enabled",false).apply();
+                    v.setChecked(false);
+                }
+            }else{stopService(i);Toast.makeText(this,"Background coach OFF",Toast.LENGTH_SHORT).show();}
+        });
+        coach.addView(bg);body.addView(coach);
+        showCategory("🎭  MODES","Maya personality and discipline/fitness training modes.",body);
     }
 
     private void showDisplaySettings(){
