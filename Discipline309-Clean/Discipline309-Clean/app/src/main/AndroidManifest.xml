@@ -50,6 +50,8 @@
         <receiver android:name=".AlarmReceiver" android:exported="false" />
         <receiver android:name=".TaskReminderReceiver" android:exported="false" />
         <receiver android:name=".StrictDndReceiver" android:exported="false" />
+        <receiver android:name=".StrictFocusReceiver" android:exported="false" />
+        <receiver android:name=".StrictScheduleReceiver" android:exported="false" />
         <receiver android:name=".MoodDayReceiver" android:exported="false" />
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
