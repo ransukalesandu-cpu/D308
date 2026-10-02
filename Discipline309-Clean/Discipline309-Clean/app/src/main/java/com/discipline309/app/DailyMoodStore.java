@@ -9,10 +9,17 @@ public final class DailyMoodStore {
  private DailyMoodStore(){}
  public static void record(Context c,String tone,String text){
   if(tone==null||tone.isEmpty())tone="neutral";
-  try{SharedPreferences p=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);JSONObject all=new JSONObject(p.getString(DATA,"{}"));String day=dayKey(Calendar.getInstance());JSONObject d=all.optJSONObject(day);if(d==null)d=new JSONObject();d.put(tone,d.optInt(tone,0)+1);d.put("last_text",safe(text,180));d.put("updated",System.currentTimeMillis());all.put(day,d);p.edit().putString(DATA,all.toString()).apply();}catch(Exception ignored){}
+  try{SharedPreferences p=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);JSONObject all=new JSONObject(p.getString(DATA,"{}"));String day=dayKey(Calendar.getInstance());JSONObject d=all.optJSONObject(day);if(d==null)d=new JSONObject();d.put(tone,d.optInt(tone,0)+1);d.put("last_text",safe(text,180));d.put("updated",System.currentTimeMillis());all.put(day,d); pruneOld(all); p.edit().putString(DATA,all.toString()).apply();}catch(Exception ignored){}
  }
  public static void finalizeDay(Context c,Calendar date){
-  try{String day=dayKey(date);SharedPreferences p=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);JSONObject all=new JSONObject(p.getString(DATA,"{}"));JSONObject d=all.optJSONObject(day);if(d==null)d=new JSONObject();if(d.optBoolean("finalized",false))return;String mood=dominant(d);d.put("mood",mood);d.put("summary",summary(mood,d));d.put("finalized",true);d.put("finalized_at",System.currentTimeMillis());all.put(day,d);p.edit().putString(DATA,all.toString()).apply();}catch(Exception ignored){}
+  try{String day=dayKey(date);SharedPreferences p=c.getSharedPreferences(PREF,Context.MODE_PRIVATE);JSONObject all=new JSONObject(p.getString(DATA,"{}"));JSONObject d=all.optJSONObject(day);if(d==null)d=new JSONObject();if(d.optBoolean("finalized",false))return;String mood=dominant(d);d.put("mood",mood);d.put("summary",summary(mood,d));d.put("finalized",true);d.put("finalized_at",System.currentTimeMillis());all.put(day,d); pruneOld(all); p.edit().putString(DATA,all.toString()).apply();}catch(Exception ignored){}
+ }
+ private static void pruneOld(JSONObject all){
+  Calendar cutoff=Calendar.getInstance();
+  cutoff.add(Calendar.DAY_OF_YEAR,-30);
+  String key=dayKey(cutoff);
+  java.util.Iterator<String> it=all.keys();
+  while(it.hasNext()){String k=it.next();if(k.compareTo(key)<0)it.remove();}
  }
  public static JSONObject get(Context c,Calendar date){try{return new JSONObject(c.getSharedPreferences(PREF,Context.MODE_PRIVATE).getString(DATA,"{}")).optJSONObject(dayKey(date));}catch(Exception e){return null;}}
  public static String dayKey(Calendar c){return new SimpleDateFormat("yyyy-MM-dd",Locale.US).format(c.getTime());}
