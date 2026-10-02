@@ -479,6 +479,20 @@ public class MainActivity extends Activity {
         String date = key(d);
         int count = Math.max(0, Math.min(50, prefs.getInt("plan_count_"+date,0)));
         if (count >= 50) return "That day's plan is full.";
+        if (time != null && !time.trim().isEmpty()) {
+            try {
+                java.text.SimpleDateFormat tf = new java.text.SimpleDateFormat("HH:mm", Locale.US);
+                Calendar alarm = (Calendar)d.clone();
+                alarm.setTime(tf.parse(time.trim()));
+                alarm.set(Calendar.YEAR,d.get(Calendar.YEAR)); alarm.set(Calendar.MONTH,d.get(Calendar.MONTH)); alarm.set(Calendar.DAY_OF_MONTH,d.get(Calendar.DAY_OF_MONTH));
+                Intent ri = new Intent(this, TaskReminderReceiver.class).setAction(TaskReminderReceiver.ACTION).putExtra("task",name);
+                int request = Math.abs((date+"_"+count).hashCode());
+                PendingIntent pi = PendingIntent.getBroadcast(this,request,ri,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
+                AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);
+                if(am!=null) { if(Build.VERSION.SDK_INT>=23) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,alarm.getTimeInMillis(),pi); else am.setExact(AlarmManager.RTC_WAKEUP,alarm.getTimeInMillis(),pi); }
+            } catch(Exception ignored) {}
+        }
+
         prefs.edit()
                 .putString("plan_"+date+"_"+count+"_name", name)
                 .putString("plan_"+date+"_"+count+"_time", (time == null || time.trim().isEmpty()) ? "Anytime" : time.trim())
