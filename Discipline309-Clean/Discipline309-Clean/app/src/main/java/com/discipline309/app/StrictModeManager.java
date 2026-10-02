@@ -34,8 +34,14 @@ public final class StrictModeManager {
     }
     public static String strictMayaMode(Context c){
         if(!isEnabled(c)) return null;
-        long slot=System.currentTimeMillis()/120000L;
-        return (slot%2L==0L) ? "angry" : "motivative";
+        String today=dayKey();
+        SharedPreferences sp=p(c);
+        String savedDay=sp.getString("maya_turn_day","");
+        int turn=sp.getInt("maya_turn",0);
+        if(!today.equals(savedDay)) turn=0;
+        String mode=(turn%2==0) ? "angry" : "motivative";
+        sp.edit().putString("maya_turn_day",today).putInt("maya_turn",turn+1).apply();
+        return mode;
     }
     public static int limitMinutes(Context c){return Math.max(1,p(c).getInt("limit_minutes",30));}
     public static Set<String> blocked(Context c){return new HashSet<>(p(c).getStringSet("blocked",new HashSet<>()));}
