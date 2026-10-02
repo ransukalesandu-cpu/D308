@@ -616,9 +616,9 @@ public class VoiceAssistant {
         String s=question.trim(), l=s.toLowerCase(Locale.ROOT);
         if(!(l.contains("reschedule")||l.contains("move task")||l.contains("change task time")||
                 l.contains("edit task time")||l.contains("task එක reschedule")||l.contains("task eka reschedule")))return null;
-        java.util.regex.Matcher tm=java.util.regex.Pattern.compile("(?i)(?:to|at|@)\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)").matcher(s);
+        java.util.regex.Matcher tm=java.util.regex.Pattern.compile("(?i)(?:to|at|@)\\s*(\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)").matcher(s);
         if(!tm.find())return null;
-        String raw=tm.group(1).trim().toUpperCase(Locale.ROOT).replaceAll("\s+","");
+        String raw=tm.group(1).trim().toUpperCase(Locale.ROOT).replaceAll("\\s+","");
         String time;
         try{
             java.text.SimpleDateFormat in=(raw.contains("AM")||raw.contains("PM"))?new java.text.SimpleDateFormat("h:mma",Locale.US):new java.text.SimpleDateFormat("H:mm",Locale.US);
