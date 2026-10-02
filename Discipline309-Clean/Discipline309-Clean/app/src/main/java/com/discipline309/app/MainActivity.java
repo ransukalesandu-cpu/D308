@@ -142,7 +142,8 @@ public class MainActivity extends Activity {
         navButtons[i]=nb;
         nav.addView(nb,new LinearLayout.LayoutParams(0,dp(58),1));
     }
-    Button mood=button("📅\nMood");mood.setTextSize(12);mood.setTextColor(MUTED);mood.setGravity(Gravity.CENTER);mood.setContentDescription("Mood Calendar");mood.setOnClickListener(v->openMoodCalendar());LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(68),dp(58));mp.setMargins(dp(6),0,0,0);nav.addView(mood,mp);\n    Button settings=button("⚙\nSettings");
+    Button mood=button("📅\nMood");mood.setTextSize(12);mood.setTextColor(MUTED);mood.setGravity(Gravity.CENTER);mood.setContentDescription("Mood Calendar");mood.setOnClickListener(v->openMoodCalendar());LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(dp(68),dp(58));mp.setMargins(dp(6),0,0,0);nav.addView(mood,mp);
+    Button settings=button("⚙\nSettings");
     settings.setTextSize(13);
     settings.setTextColor(MUTED);
     settings.setGravity(Gravity.CENTER);
