@@ -142,7 +142,8 @@ public class MainActivity extends Activity {
         navButtons[i]=nb;
         nav.addView(nb,new LinearLayout.LayoutParams(0,dp(58),1));
     }
-    Button settings=button("⚙\nSettings");
+    Button settings=button("⚙
+Settings");
     settings.setTextSize(13);
     settings.setTextColor(MUTED);
     settings.setGravity(Gravity.CENTER);
@@ -176,7 +177,8 @@ public class MainActivity extends Activity {
              fab.setContentDescription("Talk to Maya");
              return;
          }
-         pauseMayaBackgroundMic();\n         if(voiceAssistant==null){
+         pauseMayaBackgroundMic();
+         if(voiceAssistant==null){
              voiceAssistant=new VoiceAssistant(this);
              voiceAssistant.setVoiceStateListener(()->runOnUiThread(()->{
                  if(mayaWaveActive){
@@ -206,9 +208,16 @@ public class MainActivity extends Activity {
 }
     private TextView title(String s){TextView t=label(s,19,TEXT);t.setTypeface(null,1);t.setPadding(dp(4),dp(14),dp(4),dp(5));return t;}
     private void addBar(LinearLayout box,int value,int max){ProgressBar p=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);p.setMax(Math.max(1,max));p.setProgress(Math.max(0,Math.min(max,value)));p.setProgressDrawable(getDrawable(android.R.drawable.progress_horizontal));box.addView(p,new LinearLayout.LayoutParams(-1,dp(10)));}
-    private void pauseMayaBackgroundMic(){\n        try{ Intent i=new Intent(this,MayaAssistantService.class); i.setAction(MayaAssistantService.ACTION_PAUSE_LIVE_MIC); if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i); }catch(Exception ignored){}\n    }\n    private void resumeMayaBackgroundMic(){\n        try{ Intent i=new Intent(this,MayaAssistantService.class); i.setAction(MayaAssistantService.ACTION_RESUME_LIVE_MIC); if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i); }catch(Exception ignored){}\n    }\n    private void showMayaToolsMenu(){if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}String[] items={"🖼️  Photo","📷  Camera","📄  Document","📝  Journal","⏰  Reminders"};new AlertDialog.Builder(this).setTitle("Maya Tools").setItems(items,(d,w)->{if(w==0)openMayaGallery();else if(w==1)openMayaCamera();else if(w==2)openMayaDocument();else if(w==3)journalDialog();else showReminders();}).show();}
+    private void pauseMayaBackgroundMic(){
+        try{ Intent i=new Intent(this,MayaAssistantService.class); i.setAction(MayaAssistantService.ACTION_PAUSE_LIVE_MIC); if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i); }catch(Exception ignored){}
+    }
+    private void resumeMayaBackgroundMic(){
+        try{ Intent i=new Intent(this,MayaAssistantService.class); i.setAction(MayaAssistantService.ACTION_RESUME_LIVE_MIC); if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i); }catch(Exception ignored){}
+    }
+    private void showMayaToolsMenu(){if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}String[] items={"🖼️  Photo","📷  Camera","📄  Document","📝  Journal","⏰  Reminders"};new AlertDialog.Builder(this).setTitle("Maya Tools").setItems(items,(d,w)->{if(w==0)openMayaGallery();else if(w==1)openMayaCamera();else if(w==2)openMayaDocument();else if(w==3)journalDialog();else showReminders();}).show();}
     private void openMayaDocument(){try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("*/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,PICK_MAYA_DOCUMENT);}catch(Exception e){toast("Document picker එක open කරන්න බැරි වුණා.");}}
-    private void analyzeMayaDocument(Uri uri){if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(uri==null)return;String type=getContentResolver().getType(uri);if(type!=null&&type.equals("application/pdf")){new Thread(()->{try{android.os.ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(uri,"r");if(fd==null)throw new Exception("fd");android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd);if(renderer.getPageCount()==0)throw new Exception("empty");android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0);int width=Math.min(Math.max(1,page.getWidth()*2),2400),height=Math.min(Math.max(1,page.getHeight()*2),2400);Bitmap bitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);page.close();renderer.close();fd.close();runOnUiThread(()->analyzeMayaBitmapWithQuestion(bitmap,"Read and summarize this document page. Extract visible important text and explain it."));}catch(Exception e){runOnUiThread(()->toast("PDF එක read කරන්න බැරි වුණා."));}}).start();}else{String text=MayaVision.documentText(this,uri);if(text.isEmpty()){toast("මේ document type එක තවම support වෙන්නේ නැහැ. Text file හෝ PDF එකක් තෝරන්න.");return;}String clipped=text.length()>12000?text.substring(0,12000):text;MayaAI.ask(this,"Analyze this document and summarize the important points:\n"+clipped,"Document provided by user","document analyst",reply->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;try{new AlertDialog.Builder(this).setTitle("Maya 📄").setMessage(reply==null?"No response received.":reply).setPositiveButton("OK",null).show();}catch(Exception ignored){}}));}}
+    private void analyzeMayaDocument(Uri uri){if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(uri==null)return;String type=getContentResolver().getType(uri);if(type!=null&&type.equals("application/pdf")){new Thread(()->{try{android.os.ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(uri,"r");if(fd==null)throw new Exception("fd");android.graphics.pdf.PdfRenderer renderer=new android.graphics.pdf.PdfRenderer(fd);if(renderer.getPageCount()==0)throw new Exception("empty");android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0);int width=Math.min(Math.max(1,page.getWidth()*2),2400),height=Math.min(Math.max(1,page.getHeight()*2),2400);Bitmap bitmap=Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);page.render(bitmap,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);page.close();renderer.close();fd.close();runOnUiThread(()->analyzeMayaBitmapWithQuestion(bitmap,"Read and summarize this document page. Extract visible important text and explain it."));}catch(Exception e){runOnUiThread(()->toast("PDF එක read කරන්න බැරි වුණා."));}}).start();}else{String text=MayaVision.documentText(this,uri);if(text.isEmpty()){toast("මේ document type එක තවම support වෙන්නේ නැහැ. Text file හෝ PDF එකක් තෝරන්න.");return;}String clipped=text.length()>12000?text.substring(0,12000):text;MayaAI.ask(this,"Analyze this document and summarize the important points:
+"+clipped,"Document provided by user","document analyst",reply->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;try{new AlertDialog.Builder(this).setTitle("Maya 📄").setMessage(reply==null?"No response received.":reply).setPositiveButton("OK",null).show();}catch(Exception ignored){}}));}}
     private void analyzeMayaBitmapWithQuestion(Bitmap bitmap,String question){try{java.io.File file=new java.io.File(getCacheDir(),"maya_doc_page.jpg");java.io.FileOutputStream out=new java.io.FileOutputStream(file);bitmap.compress(Bitmap.CompressFormat.JPEG,85,out);out.close();MayaVision.analyze(this,Uri.fromFile(file),question,reply->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;try{new AlertDialog.Builder(this).setTitle("Maya 📄").setMessage(reply==null?"No response received.":reply).setPositiveButton("OK",null).show();}catch(Exception ignored){}}));}catch(Exception e){toast("Document page process කරන්න බැරි වුණා.");}}
     private void openMayaGallery(){try{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.setType("image/*");i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,PICK_MAYA_IMAGE);}catch(Exception e){toast("Gallery picker එක open කරන්න බැරි වුණා.");}}
     private void openMayaCamera(){if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.CAMERA},33);return;}try{Intent i=new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);startActivityForResult(i,CAPTURE_MAYA_IMAGE);}catch(Exception e){toast("Camera open කරන්න බැරි වුණා.");}}
@@ -264,7 +273,11 @@ public class MainActivity extends Activity {
         content.addView(sectionTitle("QUICK ACTIONS"));
         LinearLayout row=new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        String[] names={"📋\\nPlan","✓\\nHabits","📝\\nNotes","◫\\nStats"};
+        String[] names={"📋\
+Plan","✓\
+Habits","📝\
+Notes","◫\
+Stats"};
         for(int i=0;i<names.length;i++){
             final int n=i;
             Button b=button(names[i]);
@@ -415,7 +428,9 @@ public class MainActivity extends Activity {
 
         if(count==0){
             LinearLayout empty=card();
-            TextView e=label("📅\\n\\nNO PLAN FOR TODAY",19,TEXT);
+            TextView e=label("📅\
+\
+NO PLAN FOR TODAY",19,TEXT);
             e.setGravity(Gravity.CENTER);
             empty.addView(e);
             empty.addView(label("Add a few important tasks and keep the plan short.",13,MUTED));
@@ -651,7 +666,11 @@ public class MainActivity extends Activity {
             Collections.sort(ids,(x,y)->{if(notePinned(x)!=notePinned(y))return notePinned(x)?-1:1;return Long.compare(noteTime(y),noteTime(x));});
             if(ids.isEmpty()){
                 LinearLayout empty=card();
-                empty.addView(label(q.isEmpty()?"📝\\n\\nNO NOTES YET":"🔎\\n\\nNO MATCHING NOTES",19,TEXT));
+                empty.addView(label(q.isEmpty()?"📝\
+\
+NO NOTES YET":"🔎\
+\
+NO MATCHING NOTES",19,TEXT));
                 empty.addView(label("Tap NEW NOTE to create one.",12,MUTED));
                 list.addView(empty);return;
             }
@@ -665,7 +684,8 @@ public class MainActivity extends Activity {
                 nc.addView(row);
                 nc.addView(label("🏷 "+noteCategory(id),11,ACCENT));
                 String body=noteBody(id).trim();
-                if(!body.isEmpty()){String preview=body.replace("\n"," ");if(preview.length()>180)preview=preview.substring(0,180)+"...";nc.addView(label(preview,14,TEXT));}
+                if(!body.isEmpty()){String preview=body.replace("
+"," ");if(preview.length()>180)preview=preview.substring(0,180)+"...";nc.addView(label(preview,14,TEXT));}
                 if(noteTime(id)>0)nc.addView(label(new SimpleDateFormat("dd MMM yyyy • HH:mm",Locale.US).format(new Date(noteTime(id))),11,MUTED));
                 nc.setOnClickListener(v->{haptic(v);noteEditor(id);});
                 list.addView(nc);
@@ -708,15 +728,21 @@ public class MainActivity extends Activity {
 
     private void startNoteVoice(EditText target){
         if(Build.VERSION.SDK_INT>=23&&checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO},44);toast("Microphone permission allow කරන්න.");return;}
-        try{if(!SpeechRecognizer.isRecognitionAvailable(this)){toast("Voice recognition available නැහැ.");return;}SpeechRecognizer sr=SpeechRecognizer.createSpeechRecognizer(this);sr.setRecognitionListener(new RecognitionListener(){public void onReadyForSpeech(Bundle b){toast("කියන්න… 🎙️");}public void onBeginningOfSpeech(){}public void onRmsChanged(float r){}public void onBufferReceived(byte[] b){}public void onEndOfSpeech(){}public void onPartialResults(Bundle b){}public void onEvent(int t,Bundle b){}public void onError(int e){try{sr.destroy();}catch(Exception ignored){}toast("Voice input එක try කරන්න.");}public void onResults(Bundle b){ArrayList<String> a=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);if(a!=null&&!a.isEmpty()){String old=target.getText().toString().trim();target.setText(old.isEmpty()?a.get(0):old+"\n"+a.get(0));target.setSelection(target.length());}try{sr.destroy();}catch(Exception ignored){}}});Intent in=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);in.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);in.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"si-LK");in.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"si-LK");sr.startListening(in);}catch(Exception e){toast("Voice input start කරන්න බැරි වුණා.");}
+        try{if(!SpeechRecognizer.isRecognitionAvailable(this)){toast("Voice recognition available නැහැ.");return;}SpeechRecognizer sr=SpeechRecognizer.createSpeechRecognizer(this);sr.setRecognitionListener(new RecognitionListener(){public void onReadyForSpeech(Bundle b){toast("කියන්න… 🎙️");}public void onBeginningOfSpeech(){}public void onRmsChanged(float r){}public void onBufferReceived(byte[] b){}public void onEndOfSpeech(){}public void onPartialResults(Bundle b){}public void onEvent(int t,Bundle b){}public void onError(int e){try{sr.destroy();}catch(Exception ignored){}toast("Voice input එක try කරන්න.");}public void onResults(Bundle b){ArrayList<String> a=b.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);if(a!=null&&!a.isEmpty()){String old=target.getText().toString().trim();target.setText(old.isEmpty()?a.get(0):old+"
+"+a.get(0));target.setSelection(target.length());}try{sr.destroy();}catch(Exception ignored){}}});Intent in=new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);in.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);in.putExtra(RecognizerIntent.EXTRA_LANGUAGE,"si-LK");in.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,"si-LK");sr.startListening(in);}catch(Exception e){toast("Voice input start කරන්න බැරි වුණා.");}
     }
 
     private void summarizeText(String text){if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}
-        String q=text==null?"":text.trim();if(q.isEmpty()){toast("Summarize කරන්න text එකක් දාන්න.");return;}String clipped=q.length()>12000?q.substring(0,12000):q;toast("Maya summary එක හදනවා… 🧠");MayaAI.ask(this,"Summarize this note into 3-5 short bullet points. Keep only the key ideas.\n\n"+clipped,"User note","clear concise note assistant",reply->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;new AlertDialog.Builder(this).setTitle("🧠 Maya Summary").setMessage(reply==null?"No summary received.":reply).setPositiveButton("OK",null).show();}));
+        String q=text==null?"":text.trim();if(q.isEmpty()){toast("Summarize කරන්න text එකක් දාන්න.");return;}String clipped=q.length()>12000?q.substring(0,12000):q;toast("Maya summary එක හදනවා… 🧠");MayaAI.ask(this,"Summarize this note into 3-5 short bullet points. Keep only the key ideas.
+
+"+clipped,"User note","clear concise note assistant",reply->runOnUiThread(()->{if(isFinishing()||isDestroyed())return;new AlertDialog.Builder(this).setTitle("🧠 Maya Summary").setMessage(reply==null?"No summary received.":reply).setPositiveButton("OK",null).show();}));
     }
 
     private void convertNoteToTask(int id){if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}
-        String body=noteBody(id).trim();if(body.isEmpty()){toast("Task එක හදන්න note body එකක් ඕන.");return;}String clipped=body.length()>8000?body.substring(0,8000):body;toast("Maya actionable task එක හොයනවා… 🧠");MayaAI.ask(this,"From this note, identify ONE actionable task. Reply with only the task text, no bullets, no explanation. If there is no actionable task, reply with NONE.\n\n"+clipped,"User note","task extractor",reply->runOnUiThread(()->{String task=reply==null?"":reply.trim().replace("\n"," ");if(task.isEmpty()||task.equalsIgnoreCase("NONE")){toast("Actionable task එකක් හමු වුණේ නැහැ.");return;}new AlertDialog.Builder(this).setTitle("➕ Add to Daily Planner").setMessage(task).setNegativeButton("CANCEL",null).setPositiveButton("ADD TASK",(d,w)->addPlannerTaskFromNote(task)).show();}));
+        String body=noteBody(id).trim();if(body.isEmpty()){toast("Task එක හදන්න note body එකක් ඕන.");return;}String clipped=body.length()>8000?body.substring(0,8000):body;toast("Maya actionable task එක හොයනවා… 🧠");MayaAI.ask(this,"From this note, identify ONE actionable task. Reply with only the task text, no bullets, no explanation. If there is no actionable task, reply with NONE.
+
+"+clipped,"User note","task extractor",reply->runOnUiThread(()->{String task=reply==null?"":reply.trim().replace("
+"," ");if(task.isEmpty()||task.equalsIgnoreCase("NONE")){toast("Actionable task එකක් හමු වුණේ නැහැ.");return;}new AlertDialog.Builder(this).setTitle("➕ Add to Daily Planner").setMessage(task).setNegativeButton("CANCEL",null).setPositiveButton("ADD TASK",(d,w)->addPlannerTaskFromNote(task)).show();}));
     }
 
     private void addPlannerTaskFromNote(String task){int n=planCount();if(n>=50){toast("Daily Planner task limit reached.");return;}prefs.edit().putInt("plan_count_"+planDate(),n+1).putString("plan_"+planDate()+"_"+n+"_name",task).putString("plan_"+planDate()+"_"+n+"_time","Anytime").putString("plan_"+planDate()+"_"+n+"_priority","High").apply();toast("Task added to today's planner. ✅");showShortPlan();}
@@ -728,7 +754,9 @@ public class MainActivity extends Activity {
 
     private void noteMenu(int id){
         String[] a={"Edit","📌 "+(notePinned(id)?"Unpin":"Pin"),"🧠 Summarize","➕ Convert to Daily Task","Share","Delete"};
-        new AlertDialog.Builder(this).setTitle(noteTitle(id)).setItems(a,(d,w)->{if(w==0)noteEditor(id);else if(w==1){prefs.edit().putBoolean("note_"+id+"_pinned",!notePinned(id)).apply();showNotes();}else if(w==2)summarizeText(noteBody(id));else if(w==3)convertNoteToTask(id);else if(w==4){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"\n\n"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}else new AlertDialog.Builder(this).setTitle("Delete note?").setMessage("This note will be removed from this device and synced storage.").setPositiveButton("DELETE",(dd,ww)->deleteNote(id)).setNegativeButton("CANCEL",null).show();}).show();
+        new AlertDialog.Builder(this).setTitle(noteTitle(id)).setItems(a,(d,w)->{if(w==0)noteEditor(id);else if(w==1){prefs.edit().putBoolean("note_"+id+"_pinned",!notePinned(id)).apply();showNotes();}else if(w==2)summarizeText(noteBody(id));else if(w==3)convertNoteToTask(id);else if(w==4){Intent i=new Intent(Intent.ACTION_SEND);i.setType("text/plain");i.putExtra(Intent.EXTRA_SUBJECT,noteTitle(id));i.putExtra(Intent.EXTRA_TEXT,noteTitle(id)+"
+
+"+noteBody(id));try{startActivity(Intent.createChooser(i,"Share note"));}catch(Exception ignored){}}else new AlertDialog.Builder(this).setTitle("Delete note?").setMessage("This note will be removed from this device and synced storage.").setPositiveButton("DELETE",(dd,ww)->deleteNote(id)).setNegativeButton("CANCEL",null).show();}).show();
     }
 
     private void deleteNote(int id){
@@ -900,7 +928,9 @@ public class MainActivity extends Activity {
         }
         if(!found){
             LinearLayout empty=card();
-            empty.addView(label("🔔\\n\\nNO REMINDERS YET",19,TEXT));
+            empty.addView(label("🔔\
+\
+NO REMINDERS YET",19,TEXT));
             empty.addView(label("Add a daily reminder for your discipline routine.",12,MUTED));
             content.addView(empty);
         }
