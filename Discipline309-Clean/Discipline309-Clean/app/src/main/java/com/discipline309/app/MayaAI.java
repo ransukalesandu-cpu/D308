@@ -167,7 +167,9 @@ public class MayaAI {
         return null;
     }
 
-    private static String emotionalTone(String text){ return classifyEmotionalTone(text); }\n\n    private static String executeSafeAction(Context context,String action){
+    private static String emotionalTone(String text){ return classifyEmotionalTone(text); }
+
+    private static String executeSafeAction(Context context,String action){
         try{
             if("OPEN_SETTINGS".equals(action)){
                 Intent i=new Intent(context,SettingsActivity.class); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); context.startActivity(i);
