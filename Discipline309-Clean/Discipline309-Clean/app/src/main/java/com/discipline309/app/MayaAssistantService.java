@@ -176,7 +176,7 @@ private boolean fallbackListening=false;
             boolean enabled=settings.getBoolean("maya_background_voice",false);
             if(enabled && mayaAllowed() && ready && settings.getBoolean("auto_speak",true)
                     && !listening && !ttsSpeaking && !StrictModeManager.focusActive(MayaAssistantService.this)
-                    && !isPowerSavingMode()){
+                    && !isPowerSavingMode() && !isPhoneCallActive() && !isMediaPlaying()){
                 String suggestion=MayaPredictiveActions.nextSuggestion(MayaAssistantService.this);
                 if(suggestion!=null&&!suggestion.trim().isEmpty()){
                     SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
@@ -193,6 +193,23 @@ private boolean fallbackListening=false;
                 handler.postDelayed(this,proactiveDelayMs());
         }
     };
+
+    private boolean isPhoneCallActive(){
+        try{
+            AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
+            if(am==null)return false;
+            int mode=am.getMode();
+            return mode==AudioManager.MODE_IN_CALL || mode==AudioManager.MODE_IN_COMMUNICATION
+                    || mode==AudioManager.MODE_CALL_SCREENING;
+        }catch(Exception ignored){ return false; }
+    }
+
+    private boolean isMediaPlaying(){
+        try{
+            AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
+            return am!=null && am.isMusicActive();
+        }catch(Exception ignored){ return false; }
+    }
 
     private boolean isPowerSavingMode(){
         try{
