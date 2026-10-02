@@ -64,7 +64,7 @@ public class MayaAI {
                     effectivePersonality=resolveAutoPersonality(context,userText,emotionalTone);
 
                 JSONObject payload=new JSONObject();
-                payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,effectivePersonality,selectedTool,webResults));
+                payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,effectivePersonality,selectedTool,webResults,strictEscalation));
                 payload.put("model",MODEL);
                 payload.put("intelligence_mode",classifyIntelligence(userText));
                 payload.put("language",preferredLanguageCode(context));
@@ -282,7 +282,7 @@ public class MayaAI {
         return "LK".equalsIgnoreCase(country)?"Sinhala":"English";
     }
 
-    private static String buildPrompt(Context context,String userText,String memoryText,String relevantMemory,String personality,MayaToolRouter.Tool selectedTool,String webResults){
+    private static String buildPrompt(Context context,String userText,String memoryText,String relevantMemory,String personality,MayaToolRouter.Tool selectedTool,String webResults,int strictEscalation){
         StringBuilder prompt=new StringBuilder();
         prompt.append("You are Maya, the user's personal voice-first AI assistant inside 309 Day Discipline. ");
         prompt.append("Your default target is discipline and fitness training: daily habits, workouts, recovery, consistency, nutrition habits, sleep, focus, streaks, and completing the user's planned tasks. Keep this target central unless the user clearly asks for another topic. ");
