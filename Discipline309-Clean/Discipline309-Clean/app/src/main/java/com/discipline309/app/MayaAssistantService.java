@@ -174,7 +174,9 @@ private boolean fallbackListening=false;
             if(stopping || handler==null) return;
             SharedPreferences settings=getSharedPreferences("settings",MODE_PRIVATE);
             boolean enabled=settings.getBoolean("maya_background_voice",false);
-            if(enabled && mayaAllowed() && ready && settings.getBoolean("auto_speak",true) && !listening && !ttsSpeaking){
+            if(enabled && mayaAllowed() && ready && settings.getBoolean("auto_speak",true)
+                    && !listening && !ttsSpeaking && !StrictModeManager.focusActive(MayaAssistantService.this)
+                    && !isPowerSavingMode()){
                 String suggestion=MayaPredictiveActions.nextSuggestion(MayaAssistantService.this);
                 if(suggestion!=null&&!suggestion.trim().isEmpty()){
                     SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
@@ -191,6 +193,16 @@ private boolean fallbackListening=false;
                 handler.postDelayed(this,proactiveDelayMs());
         }
     };
+
+    private boolean isPowerSavingMode(){
+        try{
+            if(Build.VERSION.SDK_INT>=21){
+                android.os.PowerManager pm=(android.os.PowerManager)getSystemService(POWER_SERVICE);
+                return pm!=null && pm.isPowerSaveMode();
+            }
+        }catch(Exception ignored){}
+        return false;
+    }
 
     private long proactiveDelayMs(){
         try{
