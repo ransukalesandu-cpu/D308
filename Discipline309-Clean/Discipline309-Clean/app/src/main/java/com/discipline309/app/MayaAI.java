@@ -44,6 +44,7 @@ public class MayaAI {
                 JSONObject payload=new JSONObject();
                 payload.put("prompt",buildPrompt(context,userText,memoryText,relevantMemory,personality,selectedTool,webResults));
                 payload.put("model",MODEL);
+                payload.put("intelligence_mode",classifyIntelligence(userText));
                 payload.put("web_search",selectedTool==MayaToolRouter.Tool.WEB_SEARCH);
                 if(selectedTool==MayaToolRouter.Tool.WEB_SEARCH)payload.put("search_query",userText==null?"":userText);
 
@@ -137,7 +138,7 @@ public class MayaAI {
         prompt.append("Your main job is to be useful in the moment: listen, understand intent, remember ordinary preferences, explain things simply, and help the user take the next practical step. ");
 prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a checklist, scripted coach, customer-support bot, or AI announcement. First understand exactly what the user means, then answer that point directly. Do not change the topic or force discipline/fitness into casual conversation. Keep the conversation natural and connected to the user's last message. Ask a follow-up only when it genuinely helps. If the user says hi/hello, greet them naturally and continue the conversation instead of giving a motivation speech. Do not repeat the same greeting or sentence pattern. ");
         prompt.append("VOICE QUALITY: Replies must sound natural when spoken aloud. Prefer simple, everyday wording. Avoid awkward literal translations, unnatural Sinhala word order, excessive English mixing, fake enthusiasm, repeated emojis, and phrases like 'I am here to motivate you' unless the user actually asks for motivation. Do not add information the user did not ask for. ");
-        prompt.append("REPLY LENGTH: For ordinary conversation, answer in 1-3 short sentences. For a simple question, give the direct answer first. For a complex question, explain only as much as needed. Never pad the reply just to make it longer. ");
+        prompt.append("REPLY LENGTH: For ordinary conversation, answer in 1-3 short sentences. For a simple question, give the direct answer first. For a complex question, think carefully before answering and explain the reasoning clearly but concisely. Never pad the reply just to make it longer. ");
         prompt.append("Understand Sinhala, Singlish (Sinhala typed in English letters), and English. If the user speaks Sinhala, answer in natural spoken Sinhala; Singlish input does not mean you must reply in Singlish. Use English terms only where they are commonly used or clearer. If the user speaks English, answer in natural English. ");
         prompt.append("MAYA LANGUAGE: Reply in ").append(preferredLanguage(context)).append(" by default. This language setting is for Maya only and does not change the app UI. If the user explicitly asks to change Maya's language, the app Settings control is the source of truth. ");
         prompt.append("When Maya language is Sinhala, use natural Sinhala/Singlish that sounds good when spoken aloud. When it is English, reply naturally in English. ");
@@ -169,7 +170,7 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
             String saved=history.getString("recent","[]");
             if(saved==null||saved.length()>4000)return;
             JSONArray recent=new JSONArray(saved);
-            int start=Math.max(0,recent.length()-4);
+            int start=Math.max(0,recent.length()-12);
             prompt.append("\nRECENT CONVERSATION:\n");
             for(int i=start;i<recent.length();i++){
                 JSONObject item=recent.optJSONObject(i);
@@ -194,13 +195,19 @@ prompt.append("CONVERSATION STYLE: Talk like a normal human friend, not like a c
             }
             JSONObject hu=new JSONObject();hu.put("role","user");hu.put("content",userText==null?"":userText.substring(0,Math.min(1000,userText.length())));updated.put(hu);
             JSONObject ha=new JSONObject();ha.put("role","assistant");ha.put("content",finalReply);updated.put(ha);
-            while(updated.length()>4){
+            while(updated.length()>12){
                 JSONArray trimmed=new JSONArray();
                 for(int i=1;i<updated.length();i++)trimmed.put(updated.getJSONObject(i));
                 updated=trimmed;
             }
             history.edit().putString("history_day",todayKey).putString("recent",updated.toString()).apply();
         }catch(Exception ignored){}
+    }
+
+    private static String classifyIntelligence(String text){
+        String q=text==null?"":text.toLowerCase(Locale.ROOT).trim();
+        if(q.length()>180 || q.contains("why") || q.contains("how") || q.contains("explain") || q.contains("compare") || q.contains("difference") || q.contains("analyze") || q.contains("calculate") || q.contains("solve") || q.contains("code") || q.contains("debug") || q.contains("plan") || q.contains("step by step") || q.contains("reason") || q.contains("explain කරන්න") || q.contains("ඇයි") || q.contains("කොහොමද") || q.contains("වෙනස") || q.contains("විස්තර") || q.contains("ගණනය")) return "deep";
+        return "fast";
     }
 
     public static boolean shouldWebSearchForTool(String q){
