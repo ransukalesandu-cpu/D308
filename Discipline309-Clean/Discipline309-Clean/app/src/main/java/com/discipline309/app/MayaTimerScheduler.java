@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 /** Schedules simple one-shot timers from Maya voice commands. */
 public final class MayaTimerScheduler {
+    private static final String PREF="maya_scheduled_timer";
     private MayaTimerScheduler(){}
 
     public static String preview(String spoken){
@@ -42,10 +43,27 @@ public final class MayaTimerScheduler {
                 catch(SecurityException e){exact=false;}
             }
             if(!exact)am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,when,pi);
+            context.getSharedPreferences(PREF,Context.MODE_PRIVATE).edit()
+                    .putInt("request_code",requestCode).putLong("when",when).putString("label",format(ms)).apply();
             return "හරි ⏱️ "+format(ms)+" timer එක start කළා. "+format(ms)+"කින් Maya remind කරනවා.";
         }catch(Exception e){
             return "Timer එක start කරන්න බැරි වුණා. Phone alarm permission එක check කරන්න.";
         }
+    }
+
+    public static String cancelLast(Context context){
+        android.content.SharedPreferences p=context.getSharedPreferences(PREF,Context.MODE_PRIVATE);
+        if(!p.contains("request_code")) return "Cancel කරන්න active Maya timer එකක් නැහැ.";
+        try{
+            AlarmManager am=(AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+            Intent i=new Intent(context,AlarmReceiver.class);
+            PendingIntent pi=PendingIntent.getBroadcast(context,p.getInt("request_code"),i,
+                    PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_NO_CREATE);
+            if(am!=null&&pi!=null) am.cancel(pi);
+            String label=p.getString("label","timer");
+            p.edit().clear().apply();
+            return "හරි ❌ "+label+" Maya timer එක cancel කළා.";
+        }catch(Exception e){ return "Timer එක cancel කරන්න බැරි වුණා."; }
     }
 
     private static long parseMillis(String spoken){
