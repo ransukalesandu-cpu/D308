@@ -14,7 +14,8 @@ public final class StrictModeManager {
     public static void setEnabled(Context c,boolean on){
         p(c).edit().putBoolean("enabled",on).apply();
         if(on && p(c).getBoolean("auto_dnd",false)) setDnd(c,true);
-        if(!on) setDnd(c,false);
+        if(on) StrictAlarmManager.rescheduleAll(c);
+        if(!on) { setDnd(c,false); StrictAlarmManager.rescheduleAll(c); }
     }
     public static int limitMinutes(Context c){return Math.max(1,p(c).getInt("limit_minutes",30));}
     public static Set<String> blocked(Context c){return new HashSet<>(p(c).getStringSet("blocked",new HashSet<>()));}
