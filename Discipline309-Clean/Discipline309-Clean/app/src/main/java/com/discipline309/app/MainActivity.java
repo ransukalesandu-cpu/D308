@@ -184,15 +184,22 @@ public class MainActivity extends Activity {
                      stopMayaWave(false);
                      fab.setContentDescription("Talk to Maya");
                  }
+                 resumeMayaBackgroundMic();
              }));
          }
-         if(voiceAssistant.start()){
-             startMayaWave();
-             fab.setContentDescription("Stop Maya live talk");
-         }else{
-             stopMayaWave(false);
-             fab.setContentDescription("Talk to Maya");
-         }
+         // Give Maya's background wake-word engine enough time to release AudioRecord
+         // before Android creates the foreground SpeechRecognizer for Live Talk.
+         new Handler(Looper.getMainLooper()).postDelayed(()->{
+             if(isFinishing() || isDestroyed()) return;
+             if(voiceAssistant!=null && voiceAssistant.start()){
+                 startMayaWave();
+                 fab.setContentDescription("Stop Maya live talk");
+             }else{
+                 stopMayaWave(false);
+                 fab.setContentDescription("Talk to Maya");
+                 resumeMayaBackgroundMic();
+             }
+         },1200L);
      });
     FrameLayout.LayoutParams fp=new FrameLayout.LayoutParams(dp(68),dp(68),Gravity.RIGHT|Gravity.BOTTOM);fp.setMargins(0,0,dp(22),dp(88));root.addView(fab,fp);
     setContentView(root);
