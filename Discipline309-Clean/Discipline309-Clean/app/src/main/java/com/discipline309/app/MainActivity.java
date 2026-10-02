@@ -236,11 +236,11 @@ public class MainActivity extends Activity {
         info.addView(label("Voice Coach",19,TEXT));
         info.addView(label("Discipline • Fitness • Focus",12,MUTED));
         row.addView(info,new LinearLayout.LayoutParams(0,-2,1));
-        Button talk=button("🎙 TALK");
+        LinearLayout wave=new LinearLayout(this);\n        wave.setGravity(Gravity.CENTER_VERTICAL);\n        wave.setPadding(0,0,dp(8),0);\n        for(int i=0;i<5;i++){ TextView bar=label("▮",10,0xFFB388FF); bar.setGravity(Gravity.CENTER); bar.setAlpha(.45f+(i*.1f)); wave.addView(bar,new LinearLayout.LayoutParams(dp(5),dp(18+i*5))); }\n        info.addView(wave,new LinearLayout.LayoutParams(-2,dp(28)));\n        Button talk=button("🎙 TALK");
         talk.setTextSize(12);
         talk.setTextColor(Color.WHITE);
         talk.setBackground(shape(0xFF8A2BE2,18));
-        talk.setOnClickListener(v->{haptic(v);pulse(v);if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();});
+        talk.setOnTouchListener((v,e)->{ if(e.getAction()==MotionEvent.ACTION_DOWN){haptic(v);v.animate().scaleX(.94f).scaleY(.94f).setDuration(90).start();} else if(e.getAction()==MotionEvent.ACTION_UP||e.getAction()==MotionEvent.ACTION_CANCEL){v.animate().scaleX(1f).scaleY(1f).setDuration(160).start();} return false; });\n        talk.setOnClickListener(v->{if(!allowed("can_use_maya")){toast("Primary account has disabled Maya.");return;}if(voiceAssistant==null)voiceAssistant=new VoiceAssistant(this);voiceAssistant.start();});
         row.addView(talk,new LinearLayout.LayoutParams(dp(92),dp(48)));
         mayaCard.addView(row);
         content.addView(mayaCard);
