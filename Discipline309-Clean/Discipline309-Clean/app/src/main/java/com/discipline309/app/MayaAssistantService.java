@@ -30,7 +30,7 @@ public class MayaAssistantService extends Service {
     // This service currently uses Android SpeechRecognizer for command capture.
     // A provider-independent WakeWordEngine hook lets us add Porcupine/openWakeWord
     // later without changing the command-routing code.
-    private boolean wakeWordEnabled = true;
+    private boolean wakeWordEnabled = true;\n    // Background auto-talk is spoken check-ins only; it must not start an always-listening microphone.\n    private boolean backgroundVoiceOnly = false;
     private boolean wakeWordDetected = false;
     private boolean realWakeWordActive = false;
     private boolean conversationMode = false;
@@ -91,11 +91,11 @@ private boolean fallbackListening=false;
         PendingIntent pi=PendingIntent.getActivity(this,0,open,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         Notification n=new Notification.Builder(this,"maya_assistant")
             .setContentTitle("Maya is active")
-            .setContentText("Waiting for the Maya wake word • tap to manage")
+            .setContentText(backgroundVoiceOnly ? "Background spoken check-ins are active • tap to manage" : "Waiting for the Maya wake word • tap to manage")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true).setContentIntent(pi).build();
         startForeground(ID,n);
-        handler=new Handler(Looper.getMainLooper());
+        handler=new Handler(Looper.getMainLooper());\n        backgroundVoiceOnly=getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false);
         try{
             IntentFilter screenFilter=new IntentFilter();
             screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -109,7 +109,7 @@ private boolean fallbackListening=false;
             int lang=tts.setLanguage(target);
             if(lang==TextToSpeech.LANG_MISSING_DATA || lang==TextToSpeech.LANG_NOT_SUPPORTED){ tts.setLanguage(Locale.ENGLISH); }
             tts.setSpeechRate(.94f); tts.setPitch(1.02f); ready=true; if(pendingWakeWordResponse && !stopping){ pendingWakeWordResponse=false; handler.post(this::respondToWakeWord); } if(pendingAssistantInvocation && !stopping){ pendingAssistantInvocation=false; handler.post(this::handleAssistantInvocation); }}});
-        handler.postDelayed(wakeWordRunnable,1200);\n        // Background Maya auto-talk is opt-in through Settings and uses sparse check-ins.\n        scheduleProactiveCheckIn();
+        if(!backgroundVoiceOnly){\n            handler.postDelayed(wakeWordRunnable,1200);\n        }\n        // Background Maya auto-talk is opt-in through Settings and uses sparse check-ins.\n        scheduleProactiveCheckIn();
         // Battery saving: do not start proactive background speech. Maya waits for the wake word.
         }catch(Exception e){
             ready=false;
@@ -1109,7 +1109,7 @@ private boolean fallbackListening=false;
     private void createChannel(){
         if(Build.VERSION.SDK_INT>=26){
             NotificationChannel ch=new NotificationChannel("maya_assistant","Maya Assistant",NotificationManager.IMPORTANCE_LOW);
-            ch.setDescription("Visible notification for Maya background microphone service");
+            ch.setDescription("Visible notification for Maya voice service; background auto-talk does not record audio");
             NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(nm!=null)nm.createNotificationChannel(ch);
         }
     }
