@@ -70,6 +70,8 @@ public class MoodCalendarActivity extends Activity {
   card.addView(tv(d.optString("summary",""),15,0xFFD8D6EA));
   card.addView(tv("🧩 Why / context",17,Color.WHITE));
   card.addView(tv(DailyMoodStore.getReason(d),14,0xFFA9A8C5));
+  card.addView(tv("💡 Daily Insight",17,Color.WHITE));
+  card.addView(tv(DailyMoodStore.getInsight(d),14,0xFFD8D6EA));
 
  }
  private String moodEmoji(String m){if("positive".equals(m))return "😊";if("sad".equals(m))return "😔";if("stressed".equals(m))return "😰";if("frustrated".equals(m))return "😤";if("tired".equals(m))return "😴";return "😐";}
