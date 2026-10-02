@@ -504,6 +504,49 @@ public class MainActivity extends Activity {
         return "හරි ✅ \"" + name + "\" task එක " + friendlyPlanDate(d) + ((time == null || time.trim().isEmpty()) ? "" : " " + time.trim() + "ට") + " create කළා.";
     }
 
+    /** Maya voice: change the reminder time of a matching task in today's plan. */
+    public String reschedulePlanTaskFromMaya(String spoken,String newTime){
+        if(!allowed("can_edit_mission")) return "Primary account has disabled task editing.";
+        if(newTime==null||newTime.trim().isEmpty()) return "අලුත් වෙලාව කියන්න.";
+        String q=spoken==null?"":spoken.toLowerCase(Locale.ROOT).trim();
+        String targetPhrase=q.replaceAll("(?i).*?(?:reschedule|move|change|edit)","").trim();
+        int count=planCount(); if(count<=0)return "අද plan එකේ task එකක් නැහැ.";
+        int target=-1;
+        if(q.contains("next task")||q.contains("ඊළඟ task")||q.contains("first task")){
+            for(int i=0;i<count;i++)if(!planTaskDone(i)){target=i;break;}
+        }else{
+            for(int i=0;i<count;i++){
+                String n=planTaskName(i).toLowerCase(Locale.ROOT);
+                if(!n.isEmpty()&&q.contains(n)){target=i;break;}
+            }
+        }
+        if(target<0)return "Reschedule කරන්න ඕන task එක හඳුනාගන්න බැරි වුණා.";
+        try{
+            java.text.SimpleDateFormat tf=new java.text.SimpleDateFormat("HH:mm",Locale.US); tf.setLenient(false);
+            java.util.Date parsed=tf.parse(newTime.trim());
+            Calendar alarm=Calendar.getInstance();
+            alarm.set(Calendar.SECOND,0);alarm.set(Calendar.MILLISECOND,0);
+            Calendar now=Calendar.getInstance();
+            alarm.set(Calendar.HOUR_OF_DAY,Integer.parseInt(newTime.substring(0,2)));
+            alarm.set(Calendar.MINUTE,Integer.parseInt(newTime.substring(3,5)));
+            if(alarm.getTimeInMillis()<=now.getTimeInMillis())return "අලුත් වෙලාව අදට future time එකක් වෙන්න ඕන.";
+            String date=planDate();
+            int request=Math.abs((date+"_"+target).hashCode());
+            AlarmManager am=(AlarmManager)getSystemService(ALARM_SERVICE);
+            Intent ri=new Intent(this,TaskReminderReceiver.class).setAction(TaskReminderReceiver.ACTION).putExtra("task",planTaskName(target));
+            PendingIntent pi=PendingIntent.getBroadcast(this,request,ri,PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
+            if(am!=null){
+                boolean exact=false;
+                if(Build.VERSION.SDK_INT>=31){try{exact=am.canScheduleExactAlarms();}catch(Exception ignored){}}else exact=true;
+                if(exact){try{am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,alarm.getTimeInMillis(),pi);}catch(SecurityException ignored){exact=false;}}
+                if(!exact)am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,alarm.getTimeInMillis(),pi);
+            }
+            String name=planTaskName(target);
+            prefs.edit().putString("plan_"+date+"_"+target+"_time",newTime.trim()).apply();
+            return "හරි 🔄 ""+name+"" task එක "+newTime.trim()+"ට reschedule කළා. 🔔";
+        }catch(Exception e){return "Time format එක හරි නැහැ. උදාහරණය 7:30 PM.";}
+    }
+
     /** Maya voice: mark a matching task in today's plan as complete. */
     public String completePlanTaskFromMaya(String spoken) {
         if (!allowed("can_edit_habits")) return "Primary account has disabled task editing.";
