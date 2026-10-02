@@ -543,7 +543,7 @@ public class MainActivity extends Activity {
             }
             String name=planTaskName(target);
             prefs.edit().putString("plan_"+date+"_"+target+"_time",newTime.trim()).apply();
-            return "හරි 🔄 ""+name+"" task එක "+newTime.trim()+"ට reschedule කළා. 🔔";
+            return "හරි 🔄 \""+name+"\" task එක "+newTime.trim()+"ට reschedule කළා. 🔔";
         }catch(Exception e){return "Time format එක හරි නැහැ. උදාහරණය 7:30 PM.";}
     }
 
@@ -568,7 +568,7 @@ public class MainActivity extends Activity {
         prefs.edit().putBoolean("plan_"+planDate()+"_"+target+"_done",true).apply();
         StrictModeManager.resetStrictEscalation(this);
         showShortPlan();
-        return "හරි ✅ ""+name+"" complete කළා. 🔥";
+        return "හරි ✅ \""+name+"\" complete කළා. 🔥";
     }
 
     private String friendlyPlanDate(Calendar d) {
