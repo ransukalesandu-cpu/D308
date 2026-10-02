@@ -54,7 +54,7 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
 
     private void listen() {
         if (!running || recognizer == null) return;
-        IntentFactory.start(recognizer);
+        IntentFactory.start(recognizer, context);
     }
 
     private void restart(Context context, Listener listener) {
@@ -84,10 +84,9 @@ public class AndroidSpeechWakeWordEngine implements WakeWordEngine {
     }
 
     private static final class IntentFactory {
-        static void start(SpeechRecognizer recognizer) {
+        static void start(SpeechRecognizer recognizer, Context context) {
             android.content.Intent i = new android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
             i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            android.content.Context context = recognizer.getContext();
             android.content.SharedPreferences p = context.getSharedPreferences("settings", android.content.Context.MODE_PRIVATE);
             String selected = p.getString("maya_language", "auto");
             String country = java.util.Locale.getDefault().getCountry();
