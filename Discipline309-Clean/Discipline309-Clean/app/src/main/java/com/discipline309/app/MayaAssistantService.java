@@ -169,14 +169,14 @@ private boolean fallbackListening=false;
     private static final long PROACTIVE_INTERVAL_MS=2L*60L*60L*1000L;
     private final Object PROACTIVE_TOKEN=new Object();
 
-    private void scheduleProactiveCheckIn(){
-        if(stopping || handler==null) return;
-        handler.removeCallbacksAndMessages(PROACTIVE_TOKEN);
-        handler.postDelayed(() -> {
-            if(!stopping && mayaAllowed() && ready && getSharedPreferences("settings",MODE_PRIVATE).getBoolean("auto_speak",true)){
-                if(!listening && !ttsSpeaking){
-                    String suggestion=MayaPredictiveActions.nextSuggestion(this);
-                    if(suggestion==null||suggestion.trim().isEmpty()){scheduleProactiveCheckIn();return;}
+    private final Runnable proactiveRunnable=new Runnable(){
+        @Override public void run(){
+            if(stopping || handler==null) return;
+            SharedPreferences settings=getSharedPreferences("settings",MODE_PRIVATE);
+            boolean enabled=settings.getBoolean("maya_background_voice",false);
+            if(enabled && mayaAllowed() && ready && settings.getBoolean("auto_speak",true) && !listening && !ttsSpeaking){
+                String suggestion=MayaPredictiveActions.nextSuggestion(MayaAssistantService.this);
+                if(suggestion!=null&&!suggestion.trim().isEmpty()){
                     SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
                     long now=System.currentTimeMillis();
                     long last=p.getLong("last_spoken_at",0L);
@@ -187,8 +187,15 @@ private boolean fallbackListening=false;
                     }
                 }
             }
-            scheduleProactiveCheckIn();
-        }, PROACTIVE_INTERVAL_MS);
+            if(!stopping && settings.getBoolean("maya_background_voice",false)) handler.postDelayed(this,PROACTIVE_INTERVAL_MS);
+        }
+    };
+
+    private void scheduleProactiveCheckIn(){
+        if(stopping || handler==null) return;
+        handler.removeCallbacks(proactiveRunnable);
+        if(getSharedPreferences("settings",MODE_PRIVATE).getBoolean("maya_background_voice",false))
+            handler.postDelayed(proactiveRunnable,PROACTIVE_INTERVAL_MS);
     }
 
     private void startWakeWord(){
