@@ -493,11 +493,23 @@ public class VoiceAssistant {
         tts=null;
         ttsReady=false;
         pendingSpeech="";
-    }    private boolean isCompletedActivityStatement(String q) {
+    } 
+
+    private boolean isCompletedActivityStatement(String q) {
         if (q == null || q.trim().isEmpty()) return false;
         String s = q.toLowerCase(Locale.ROOT).trim();
         String[] markers = {
-                private String[] parseCreateTask(String q) {
+                "i did ", "i have done ", "i completed ", "i finished ", "just did ",
+                "done ", "finished ", "completed ", "did my ",
+                "මම කළා", "මම කලා", "මම කරලා ඉවරයි", "කරලා ඉවරයි",
+                "කළා", "කලා", "ඉවරයි", "complete කළා", "complete කලා",
+                "finish කළා", "finish කලා"
+        };
+        for (String marker : markers) if (s.contains(marker)) return true;
+        return s.endsWith(" done") || s.endsWith(" finished") || s.endsWith(" completed");
+    }
+
+    private String[] parseCreateTask(String q) {
         if (q == null) return null;
         String s=q.toLowerCase(Locale.ROOT).trim();
         boolean command=s.contains("create a task")||s.contains("create task")||s.contains("add a task")||
@@ -531,16 +543,4 @@ public class VoiceAssistant {
         }
         return new String[]{task,String.valueOf(offset),date==null?"":date,time};
     }
-
-    "i did ", "i have done ", "i completed ", "i finished ", "just did ",
-                "done ", "finished ", "completed ", "did my ",
-                "මම කළා", "මම කලා", "මම කරලා ඉවරයි", "කරලා ඉවරයි",
-                "කළා", "කලා", "ඉවරයි", "complete කළා", "complete කලා",
-                "finish කළා", "finish කලා"
-        };
-        for (String marker : markers) if (s.contains(marker)) return true;
-        return s.endsWith(" done") || s.endsWith(" finished") || s.endsWith(" completed");
-    }
-
-
 }
