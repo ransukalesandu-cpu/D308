@@ -27,6 +27,7 @@
         android:label="Maya"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".MoodCalendarActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".ChangePasswordActivity" android:exported="false" />
         <activity android:name=".AccountsActivity" android:exported="false" />
@@ -46,6 +47,7 @@
             </intent-filter>
         </activity>
         <receiver android:name=".AlarmReceiver" android:exported="false" />
+        <receiver android:name=".MoodDayReceiver" android:exported="false" />
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
