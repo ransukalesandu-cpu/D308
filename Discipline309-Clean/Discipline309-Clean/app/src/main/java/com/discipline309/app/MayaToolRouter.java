@@ -1,11 +1,12 @@
 package com.discipline309.app;
 
-import android.content.Context;
 import java.util.Locale;
 
 /**
- * Small intent router for Maya. It decides which app capability should handle
- * a request before the real AI is called.
+ * Intent and action router for Maya's Android assistant.
+ *
+ * Keep this class deterministic: it only identifies an intended capability.
+ * A matching action name is not proof that the action has been executed.
  */
 public final class MayaToolRouter {
     public enum Tool { WEB_SEARCH, APP_STATE, NOTE, PHONE_CONTROL, CHAT }
@@ -13,42 +14,74 @@ public final class MayaToolRouter {
     private MayaToolRouter() {}
 
     public static Tool route(String text) {
-        String q = text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
+        String q = normalize(text);
         if (MayaAI.shouldWebSearchForTool(q)) return Tool.WEB_SEARCH;
 
-        if (containsAny(q, "note", "notes", "note එක", "නෝට්", "මතක සටහන", "mission", "xp", "streak", "progress", "level", "day", "task",
-                "achievement", "journal", "309", "mission එක", "මගේ xp", "මගේ streak",
+        if (containsAny(q,
+                "note", "notes", "note එක", "නෝට්", "මතක සටහන", "journal",
+                "mission", "xp", "streak", "progress", "level", "day", "task",
+                "achievement", "309", "මගේ xp", "මගේ streak",
                 "plan", "short plan", "focus goal", "focus", "daily plan", "today plan",
                 "මගේ plan", "ප්ලෑන්", "කාර්ය", "වැඩ ලිස්ට්", "අද වැඩ", "දවසේ වැඩ")) {
-            return containsAny(q, "note", "notes", "note එක", "නෝට්", "මතක සටහන") ? Tool.NOTE : Tool.APP_STATE;
+            return containsAny(q, "note", "notes", "note එක", "නෝට්", "මතක සටහන", "journal")
+                    ? Tool.NOTE : Tool.APP_STATE;
         }
 
-        if (containsAny(q, "torch", "flashlight", "flash", "ටෝච්", "volume", "sound", "ශබ්ද",
-                "music", "play music", "pause music", "සින්දු", "call ", "call my", "කෝල්",
-                "dnd", "do not disturb", "notification", "whatsapp", "wifi", "wi-fi", "වයිෆයි",
-                "bluetooth", "බ්ලූටූත්", "brightness", "screen light", "alarm", "timer", "ටൈമർ",
-                "settings", "open settings", "සെറ്റിംഗ്സ്")) {
+        if (containsAny(q,
+                "torch", "flashlight", "flash", "ටෝච්",
+                "volume", "sound", "ශබ්ද", "music", "play music", "pause music", "සින්දු",
+                "call ", "call my", "කෝල්", "dnd", "do not disturb", "notification",
+                "whatsapp", "wifi", "wi-fi", "වයිෆයි", "bluetooth", "බ්ලූටූත්",
+                "brightness", "screen light", "alarm", "එලාම්", "ඇලම්",
+                "timer", "ටයිමර්", "settings", "open settings", "සෙටින්ග්ස්",
+                "open app", "launch app", "battery", "බැටරි",
+                "screenshot", "screen shot", "lock screen", "device info")) {
             return Tool.PHONE_CONTROL;
         }
         return Tool.CHAT;
     }
 
-
-    /** Returns a stable action name for safe, app-exposed commands. */
+    /** Stable action identifiers consumed by Maya's action handling layer. */
     public static String action(String text) {
-        String q = text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
-        if (containsAny(q, "alarm", "alarm එක", "alarm ekak", "alarm eka", "reminder", "ඇලම්", "එලාම්")) return "ADD_ALARM";
-        if (containsAny(q, "timer", "timer එක", "timer ekak", "ටයිමර්", "ටයිමර් එක")) return "SET_TIMER";
-        if (containsAny(q, "start workout", "workout start", "ව්‍යායාම පටන්", "workout එක පටන්")) return "START_WORKOUT";
-        if (containsAny(q, "complete task", "mark task done", "task done", "වැඩේ ඉවරයි", "task එක complete")) return "COMPLETE_TASK";
-        if (containsAny(q, "show progress", "my progress", "progress එක", "මගේ progress")) return "SHOW_PROGRESS";
-        if (containsAny(q, "show notes", "list notes", "මගේ notes", "notes ටික")) return "LIST_NOTES";
-        if (containsAny(q, "open settings", "settings open", "සෙටින්ග්ස් අරින්න")) return "OPEN_SETTINGS";
+        String q = normalize(text);
+
+        if (containsAny(q, "alarm", "set alarm", "add alarm", "alarm එක",
+                "alarm ekak", "alarm eka", "set an alarm", "remind me at",
+                "reminder", "එලාම්", "ඇලම්", "alarm ekak danna", "alarm ekak hadanna"))
+            return "ADD_ALARM";
+
+        if (containsAny(q, "timer", "set timer", "start timer", "timer එක",
+                "timer ekak", "ටයිමර්", "timer ekak danna", "timer ekak hadanna"))
+            return "SET_TIMER";
+
+        if (containsAny(q, "start workout", "workout start", "ව්‍යායාම පටන්",
+                "workout එක පටන්", "workout eka patan"))
+            return "START_WORKOUT";
+
+        if (containsAny(q, "complete task", "mark task done", "task done",
+                "වැඩේ ඉවරයි", "task එක complete", "task eka iwara", "task eka complete"))
+            return "COMPLETE_TASK";
+
+        if (containsAny(q, "show progress", "my progress", "progress එක",
+                "මගේ progress", "mage progress"))
+            return "SHOW_PROGRESS";
+
+        if (containsAny(q, "show notes", "list notes", "මගේ notes",
+                "notes ටික", "mage notes", "notes pennanna"))
+            return "LIST_NOTES";
+
+        if (containsAny(q, "open settings", "settings open", "සෙටින්ග්ස් අරින්න",
+                "settings arinna", "settings open karanna"))
+            return "OPEN_SETTINGS";
+
         return "NONE";
     }
 
     public static boolean requiresConfirmation(String action) {
-        return "ADD_ALARM".equals(action) || "SET_TIMER".equals(action) || "COMPLETE_TASK".equals(action) || "START_WORKOUT".equals(action);
+        return "ADD_ALARM".equals(action)
+                || "SET_TIMER".equals(action)
+                || "COMPLETE_TASK".equals(action)
+                || "START_WORKOUT".equals(action);
     }
 
     public static String describe(Tool tool) {
@@ -61,8 +94,14 @@ public final class MayaToolRouter {
         }
     }
 
+    private static String normalize(String text) {
+        return text == null ? "" : text.toLowerCase(Locale.ROOT).trim();
+    }
+
     private static boolean containsAny(String q, String... values) {
-        for (String value : values) if (q.contains(value)) return true;
+        for (String value : values) {
+            if (q.contains(value)) return true;
+        }
         return false;
     }
 }
