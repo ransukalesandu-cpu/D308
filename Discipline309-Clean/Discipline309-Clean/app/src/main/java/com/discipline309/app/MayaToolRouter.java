@@ -34,8 +34,8 @@ public final class MayaToolRouter {
                 "whatsapp", "wifi", "wi-fi", "වයිෆයි", "bluetooth", "බ්ලූටූත්",
                 "brightness", "screen light", "alarm", "එලාම්", "ඇලම්",
                 "timer", "ටයිමර්", "settings", "open settings", "සෙටින්ග්ස්",
-                "open app", "launch app", "battery", "බැටරි",
-                "screenshot", "screen shot", "lock screen", "device info", "open camera", "camera", "open browser", "browser", "internet", "open youtube", "youtube", "open maps", "maps", "location")) {
+                "open app", "launch app", "battery", "බැටරි", "battery status", "battery level", "battery eka kiyada", "battery eka balanna", "phone battery",
+                "screenshot", "screen shot", "lock screen", "device info", "phone info", "mage phone eke details", "phone eke details", "open camera", "camera", "camera eka arinna", "open browser", "browser", "internet", "browser eka arinna", "open youtube", "youtube", "youtube eka arinna", "open maps", "maps", "maps eka arinna", "location", "app eka arinna", "app eka open karanna", "whatsapp eka arinna", "settings arinna")) {
             return Tool.PHONE_CONTROL;
         }
         return Tool.CHAT;
