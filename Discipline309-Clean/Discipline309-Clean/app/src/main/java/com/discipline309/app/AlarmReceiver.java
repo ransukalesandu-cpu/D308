@@ -105,8 +105,53 @@ public class AlarmReceiver extends BroadcastReceiver {
                     int languageStatus = engine.setLanguage(target);
                     if (languageStatus == TextToSpeech.LANG_MISSING_DATA
                             || languageStatus == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        engine.setLanguage(Locale.ENGLISH);
+                        target = Locale.ENGLISH;
+                        engine.setLanguage(target);
                     }
+                    // Match alarm voice to Maya's selected local voice where available.
+                    if (Build.VERSION.SDK_INT >= 21) {
+                        try {
+                            int choice = Math.max(0, Math.min(2,
+                                    settings.getInt("maya_voice", 0)));
+                            java.util.ArrayList<android.speech.tts.Voice> localVoices =
+                                    new java.util.ArrayList<>();
+                            java.util.ArrayList<android.speech.tts.Voice> femaleVoices =
+                                    new java.util.ArrayList<>();
+                            java.util.Set<android.speech.tts.Voice> available = engine.getVoices();
+                            if (available != null) {
+                                for (android.speech.tts.Voice voice : available) {
+                                    if (voice == null || voice.getLocale() == null
+                                            || !target.getLanguage().equals(
+                                                    voice.getLocale().getLanguage())
+                                            || voice.isNetworkConnectionRequired()) continue;
+                                    localVoices.add(voice);
+                                    String name = voice.getName() == null ? ""
+                                            : voice.getName().toLowerCase(Locale.ROOT);
+                                    if (name.contains("female") || name.contains("fem")
+                                            || name.contains("woman") || name.contains("girl")) {
+                                        femaleVoices.add(voice);
+                                    }
+                                }
+                            }
+                            java.util.ArrayList<android.speech.tts.Voice> pool =
+                                    femaleVoices.size() >= 3 ? femaleVoices : localVoices;
+                            if (!pool.isEmpty()) {
+                                java.util.Collections.sort(pool, (a, b) -> {
+                                    int quality = Integer.compare(b.getQuality(), a.getQuality());
+                                    return quality != 0 ? quality
+                                            : a.getName().compareToIgnoreCase(b.getName());
+                                });
+                                int index = pool.size() >= 3
+                                        ? (choice == 0 ? 0
+                                        : choice == 1 ? pool.size() / 2 : pool.size() - 1)
+                                        : Math.min(choice, pool.size() - 1);
+                                engine.setVoice(pool.get(index));
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    int voiceChoice = Math.max(0, Math.min(2, settings.getInt("maya_voice", 0)));
+                    float[] pitches = {1.08f, 1.02f, 0.98f};
+                    engine.setPitch(pitches[voiceChoice]);
                     engine.setSpeechRate(0.95f);
                     if (Build.VERSION.SDK_INT >= 15) {
                         engine.setOnUtteranceProgressListener(
