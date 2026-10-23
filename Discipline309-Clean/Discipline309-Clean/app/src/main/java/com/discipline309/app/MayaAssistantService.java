@@ -1240,6 +1240,7 @@ private boolean fallbackListening=false;
         try{
             Intent launch=getPackageManager().getLaunchIntentForPackage(pkg);
             if(launch==null){speak(name+" phone එකේ install කරලා නැහැ.");return;}
+            if(launch.resolveActivity(getPackageManager())==null){speak(name+" open කරන්න Android එකෙන් app activity එකක් හඳුනාගන්න බැරි වුණා.");return;}
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(launch);
             speak(name+" open කළා. 📱");
@@ -1353,10 +1354,11 @@ private boolean fallbackListening=false;
     private void openSystemSettings(String action,String label){
         try{
             Intent i=new Intent(action);
+            if(i.resolveActivity(getPackageManager())==null){speak(label+" සඳහා Settings screen එක මේ phone එකේ available නැහැ.");return;}
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(i);
             speak(label+" open කළා. ⚙️");
-        }catch(Exception e){speak(label+" open කරන්න බැරි වුණා.");}
+        }catch(Exception e){speak(label+" open කරන්න බැරි වුණා. Permission හෝ Android restriction එකක් තිබිය හැකියි.");}
     }
 
     private void batteryStatus(){
