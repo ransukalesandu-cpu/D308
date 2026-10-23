@@ -83,17 +83,51 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     private void speak(Context context, final String message) {
         try {
+            android.content.SharedPreferences settings =
+                    context.getSharedPreferences("settings", Context.MODE_PRIVATE);
+            if (!settings.getBoolean("auto_speak", true)) return;
+
             final TextToSpeech[] holder = new TextToSpeech[1];
             holder[0] = new TextToSpeech(context.getApplicationContext(), status -> {
+                TextToSpeech engine = holder[0];
+                if (engine == null) return;
                 try {
-                    TextToSpeech tts = holder[0];
-                    if (tts == null) return;
-                    if (status == TextToSpeech.SUCCESS) {
-                        tts.setLanguage(new Locale("si", "LK"));
-                        tts.setSpeechRate(0.95f);
-                        tts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "discipline");
+                    if (status != TextToSpeech.SUCCESS) {
+                        engine.shutdown();
+                        return;
+                    }
+
+                    String selected = settings.getString("maya_language", "auto");
+                    Locale target = ("si".equals(selected)
+                            || ("auto".equals(selected)
+                            && "LK".equalsIgnoreCase(Locale.getDefault().getCountry())))
+                            ? new Locale("si", "LK") : Locale.ENGLISH;
+                    int languageStatus = engine.setLanguage(target);
+                    if (languageStatus == TextToSpeech.LANG_MISSING_DATA
+                            || languageStatus == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        engine.setLanguage(Locale.ENGLISH);
+                    }
+                    engine.setSpeechRate(0.95f);
+                    if (Build.VERSION.SDK_INT >= 15) {
+                        engine.setOnUtteranceProgressListener(
+                                new android.speech.tts.UtteranceProgressListener() {
+                            @Override public void onStart(String utteranceId) {}
+                            @Override public void onDone(String utteranceId) {
+                                try { engine.shutdown(); } catch (Exception ignored) {}
+                            }
+                            @Override public void onError(String utteranceId) {
+                                try { engine.shutdown(); } catch (Exception ignored) {}
+                            }
+                        });
+                    }
+                    if (Build.VERSION.SDK_INT >= 21) {
+                        engine.speak(message, TextToSpeech.QUEUE_FLUSH, null,
+                                "discipline_" + System.currentTimeMillis());
+                    } else {
+                        engine.speak(message, TextToSpeech.QUEUE_FLUSH, null);
                     }
                 } catch (Exception ignored) {
+                    try { engine.shutdown(); } catch (Exception ignoredAgain) {}
                 }
             });
         } catch (Exception ignored) {
