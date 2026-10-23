@@ -52,6 +52,13 @@ public class AuthActivity extends Activity {
     @Override protected void onCreate(Bundle b){
         super.onCreate(b);
         getWindow().setStatusBarColor(BG); getWindow().setNavigationBarColor(BG);
+        // TEMPORARY TESTING ONLY: bypass sign-in in debug builds.
+        // Release builds retain the normal Supabase authentication flow.
+        if (BuildConfig.DEBUG && getSharedPreferences("settings", MODE_PRIVATE)
+                .getBoolean("testing_skip_login", true)) {
+            openMainAfterPermissions();
+            return;
+        }
         if(SupabaseAccountManager.loggedIn(this)){routeAfterAuth();return;}
         show(false);
     }
