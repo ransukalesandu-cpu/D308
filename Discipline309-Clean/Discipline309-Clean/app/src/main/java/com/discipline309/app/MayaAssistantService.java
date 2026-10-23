@@ -1404,11 +1404,24 @@ private boolean fallbackListening=false;
     private void openTimer(String q){
         try{
             java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d+)").matcher(q);
+            boolean hasDuration=m.find();
             Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
-            if(m.find()) i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,Integer.parseInt(m.group(1))*60)));
+            if(hasDuration){
+                int amount=Integer.parseInt(m.group(1));
+                String normalized=q.toLowerCase(java.util.Locale.ROOT);
+                int seconds;
+                if(normalized.contains("second")||normalized.contains("seconds")||normalized.contains("තත්පර")){
+                    seconds=amount;
+                }else if(normalized.contains("hour")||normalized.contains("hours")||normalized.contains("පැය")){
+                    seconds=amount*3600;
+                }else{
+                    seconds=amount*60;
+                }
+                i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,seconds)));
+            }
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(i);
-            speak(m.find()?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
+            speak(hasDuration?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
         }catch(Exception e){speak("Timer app එක open කරන්න බැරි වුණා.");}
     }
 
