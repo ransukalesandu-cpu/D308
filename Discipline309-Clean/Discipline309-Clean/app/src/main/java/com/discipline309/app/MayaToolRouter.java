@@ -18,10 +18,10 @@ public final class MayaToolRouter {
         if (MayaAI.shouldWebSearchForTool(q)) return Tool.WEB_SEARCH;
 
         if (containsAny(q,
-                "note", "notes", "note එක", "නෝට්", "මතක සටහන", "journal",
+                "note", "notes", "note එක", "නෝට්", "මතක සටහන", "journal", "take a note", "save this", "remember this", "note ekak", "note ekak danna", "mathaka thiyaganna",
                 "mission", "xp", "streak", "progress", "level", "day", "task",
                 "achievement", "309", "මගේ xp", "මගේ streak",
-                "plan", "short plan", "focus goal", "focus", "daily plan", "today plan",
+                "plan", "short plan", "focus goal", "focus", "daily plan", "today plan", "what should i do next", "next task", "mage wada monawada", "ada plan eka",
                 "මගේ plan", "ප්ලෑන්", "කාර්ය", "වැඩ ලිස්ට්", "අද වැඩ", "දවසේ වැඩ")) {
             return containsAny(q, "note", "notes", "note එක", "නෝට්", "මතක සටහන", "journal")
                     ? Tool.NOTE : Tool.APP_STATE;
@@ -35,7 +35,7 @@ public final class MayaToolRouter {
                 "brightness", "screen light", "alarm", "එලාම්", "ඇලම්",
                 "timer", "ටයිමර්", "settings", "open settings", "සෙටින්ග්ස්",
                 "open app", "launch app", "battery", "බැටරි",
-                "screenshot", "screen shot", "lock screen", "device info")) {
+                "screenshot", "screen shot", "lock screen", "device info", "open camera", "camera", "open browser", "browser", "internet", "open youtube", "youtube", "open maps", "maps", "location")) {
             return Tool.PHONE_CONTROL;
         }
         return Tool.CHAT;
@@ -47,15 +47,15 @@ public final class MayaToolRouter {
 
         if (containsAny(q, "alarm", "set alarm", "add alarm", "alarm එක",
                 "alarm ekak", "alarm eka", "set an alarm", "remind me at",
-                "reminder", "එලාම්", "ඇලම්", "alarm ekak danna", "alarm ekak hadanna"))
+                "reminder", "එලාම්", "ඇලම්", "alarm ekak danna", "alarm ekak hadanna", "alarm ekak set karanna", "hawasata alarm", "udeta alarm", "alarm eka danna"))
             return "ADD_ALARM";
 
         if (containsAny(q, "timer", "set timer", "start timer", "timer එක",
-                "timer ekak", "ටයිමර්", "timer ekak danna", "timer ekak hadanna"))
+                "timer ekak", "ටයිමර්", "timer ekak danna", "timer ekak hadanna", "timer eka danna", "minutes walin timer", "thathpara timer"))
             return "SET_TIMER";
 
         if (containsAny(q, "start workout", "workout start", "ව්‍යායාම පටන්",
-                "workout එක පටන්", "workout eka patan"))
+                "workout එක පටන්", "workout eka patan", "workout eka start karanna", "exercise patan ganna"))
             return "START_WORKOUT";
 
         if (containsAny(q, "complete task", "mark task done", "task done",
@@ -63,15 +63,15 @@ public final class MayaToolRouter {
             return "COMPLETE_TASK";
 
         if (containsAny(q, "show progress", "my progress", "progress එක",
-                "මගේ progress", "mage progress"))
+                "මගේ progress", "mage progress", "mage progress eka", "mage streak eka", "xp kiyada", "ada progress"))
             return "SHOW_PROGRESS";
 
         if (containsAny(q, "show notes", "list notes", "මගේ notes",
-                "notes ටික", "mage notes", "notes pennanna"))
+                "notes ටික", "mage notes", "notes pennanna", "mage note tika", "saved notes", "notes balanna"))
             return "LIST_NOTES";
 
         if (containsAny(q, "open settings", "settings open", "සෙටින්ග්ස් අරින්න",
-                "settings arinna", "settings open karanna"))
+                "settings arinna", "settings open karanna", "settings eka arinna", "phone settings open karanna"))
             return "OPEN_SETTINGS";
 
         return "NONE";
