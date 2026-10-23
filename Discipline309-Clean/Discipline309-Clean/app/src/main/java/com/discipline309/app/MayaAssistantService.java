@@ -176,7 +176,7 @@ private boolean fallbackListening=false;
             boolean enabled=settings.getBoolean("maya_background_voice",false);
             if(enabled && mayaAllowed() && ready && settings.getBoolean("auto_speak",true)
                     && !listening && !ttsSpeaking && !StrictModeManager.focusActive(MayaAssistantService.this)
-                    && !isPowerSavingMode() && !isPhoneCallActive() && !isMediaPlaying()){
+                    && !isQuietHoursNow(settings) && !isPowerSavingMode() && !isPhoneCallActive() && !isMediaPlaying()){
                 String suggestion=MayaPredictiveActions.nextSuggestion(MayaAssistantService.this);
                 if(suggestion!=null&&!suggestion.trim().isEmpty()){
                     SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
@@ -186,8 +186,10 @@ private boolean fallbackListening=false;
                     String dayKey=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date(now));
                     String countKey="count_"+dayKey;
                     int spokenToday=p.getInt(countKey,0);
-                    // Keep proactive coaching useful rather than repetitive.
-                    if(spokenToday<4 && (!suggestion.equals(lastText) || now-last>=6L*60L*60L*1000L)){
+                    int maxPerDay=Math.max(0,Math.min(8,settings.getInt("maya_proactive_max_daily",4)));
+                    long cooldownHours=Math.max(1L,Math.min(24L,settings.getInt("maya_proactive_repeat_cooldown_hours",6)));
+                    // Keep proactive coaching useful, user-controlled, and non-repetitive.
+                    if(spokenToday<maxPerDay && (!suggestion.equals(lastText) || now-last>=cooldownHours*60L*60L*1000L)){
                         speak(suggestion);
                         p.edit().putLong("last_spoken_at",now)
                                 .putString("last_text",suggestion)
@@ -225,6 +227,16 @@ private boolean fallbackListening=false;
             }
         }catch(Exception ignored){}
         return false;
+    }
+
+    private boolean isQuietHoursNow(SharedPreferences settings){
+        try{
+            Calendar now=Calendar.getInstance();
+            int hour=now.get(Calendar.HOUR_OF_DAY);
+            int start=Math.max(0,Math.min(23,settings.getInt("maya_quiet_start",22)));
+            int end=Math.max(0,Math.min(23,settings.getInt("maya_quiet_end",7)));
+            return start>end ? (hour>=start || hour<end) : start<end && hour>=start && hour<end;
+        }catch(Exception ignored){ return false; }
     }
 
     private long proactiveDelayMs(){
@@ -732,7 +744,7 @@ private boolean fallbackListening=false;
             handleNoteCommand(q);
         }else if(isMemoryCommand(q)){
             handleMemory(q);
-        }else if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")){
+        }else if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")||q.contains("app eka arinna")||q.contains("app eka open karanna")||q.contains("youtube eka arinna")||q.contains("whatsapp eka arinna")||q.contains("camera eka arinna")||q.contains("browser eka arinna")||q.contains("maps eka arinna")||q.contains("settings arinna")){
             openApp(q);
         }else if(q.contains("call")||q.contains("කෝල්")){
             String target=q.replace("call","").replace("කෝල්","").trim();
@@ -781,7 +793,7 @@ private boolean fallbackListening=false;
             calendarEvent(q);
         }else if(q.contains("remind")||q.contains("reminder")||q.contains("මතක් කරන්න")){
             reminder(q);
-        }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")){
+        }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")||q.contains("phone eke details")||q.contains("mage phone eke details")||q.contains("phone details")){
             deviceInfo();
         }else if(q.contains("plan")||q.contains("short plan")||q.contains("daily plan")||q.contains("මගේ plan")||q.contains("අද plan")||q.contains("අද වැඩ")){
             speak("📝 "+MayaOfflineNLP.answer(this,"plan"));
@@ -1228,6 +1240,7 @@ private boolean fallbackListening=false;
         try{
             Intent launch=getPackageManager().getLaunchIntentForPackage(pkg);
             if(launch==null){speak(name+" phone එකේ install කරලා නැහැ.");return;}
+            if(launch.resolveActivity(getPackageManager())==null){speak(name+" open කරන්න Android එකෙන් app activity එකක් හඳුනාගන්න බැරි වුණා.");return;}
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(launch);
             speak(name+" open කළා. 📱");
@@ -1341,10 +1354,11 @@ private boolean fallbackListening=false;
     private void openSystemSettings(String action,String label){
         try{
             Intent i=new Intent(action);
+            if(i.resolveActivity(getPackageManager())==null){speak(label+" සඳහා Settings screen එක මේ phone එකේ available නැහැ.");return;}
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(i);
             speak(label+" open කළා. ⚙️");
-        }catch(Exception e){speak(label+" open කරන්න බැරි වුණා.");}
+        }catch(Exception e){speak(label+" open කරන්න බැරි වුණා. Permission හෝ Android restriction එකක් තිබිය හැකියි.");}
     }
 
     private void batteryStatus(){
@@ -1404,11 +1418,24 @@ private boolean fallbackListening=false;
     private void openTimer(String q){
         try{
             java.util.regex.Matcher m=java.util.regex.Pattern.compile("(\\d+)").matcher(q);
+            boolean hasDuration=m.find();
             Intent i=new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
-            if(m.find()) i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,Integer.parseInt(m.group(1))*60)));
+            if(hasDuration){
+                int amount=Integer.parseInt(m.group(1));
+                String normalized=q.toLowerCase(java.util.Locale.ROOT);
+                int seconds;
+                if(normalized.contains("second")||normalized.contains("seconds")||normalized.contains("තත්පර")){
+                    seconds=amount;
+                }else if(normalized.contains("hour")||normalized.contains("hours")||normalized.contains("පැය")){
+                    seconds=amount*3600;
+                }else{
+                    seconds=amount*60;
+                }
+                i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH,Math.max(1,Math.min(86400,seconds)));
+            }
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(i);
-            speak(m.find()?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
+            speak(hasDuration?"Timer screen එක open කළා. ⏱️":"Timer screen එක open කළා. ⏱️");
         }catch(Exception e){speak("Timer app එක open කරන්න බැරි වුණා.");}
     }
 

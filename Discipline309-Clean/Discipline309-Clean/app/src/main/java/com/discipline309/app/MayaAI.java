@@ -157,17 +157,17 @@ public class MayaAI {
     private static String handleMemoryCommand(Context context,String userText,MayaMemory memoryStore){
         String raw=userText==null?"":userText.trim();
         String q=raw.toLowerCase(Locale.ROOT);
-        if(q.equals("forget everything")||q.equals("forget all")||q.equals("clear memory")||q.contains("මතක ඔක්කොම අමතක")||q.contains("මතක ඔක්කොම මකන්න")){
+        if(q.equals("forget everything")||q.equals("forget all")||q.equals("clear memory")||q.equals("memory clear")||q.equals("maya memory clear")||q.equals("mage memory eka clear karanna")||q.equals("mathaka okkoma amathaka karanna")||q.contains("මතක ඔක්කොම අමතක")||q.contains("මතක ඔක්කොම මකන්න")){
             memoryStore.clear();
             return preferredLanguage(context).equals("Sinhala")?"හරි. Mayaගේ saved memory එක clear කළා. 🧠":"Okay. I cleared Maya's saved memory. 🧠";
         }
-        if(q.contains("what do you remember")||q.contains("what do you know about me")||q.contains("මොනවාද මතක")||q.contains("මාව මතකද")){
+        if(q.contains("what do you remember")||q.contains("what do you know about me")||q.equals("show memory")||q.equals("show my memory")||q.equals("mage memory eka pennanna")||q.equals("maya mokakda mathaka")||q.contains("මොනවාද මතක")||q.contains("මාව මතකද")){
             String all=memoryStore.all();
             if(all.isEmpty()) return preferredLanguage(context).equals("Sinhala")?"දැනට save කරලා තියෙන memory එකක් නැහැ.":"I don't have any saved memories yet.";
             return preferredLanguage(context).equals("Sinhala")?"මට මතක තියෙන්නේ මේවායි:\n"+all:"Here are the things I have saved:\n"+all;
         }
         String fact=null;
-        String[] prefixes={"remember that ","remember this:","remember this ","මතක තියාගන්න ","මතක තියාගන්න:","මතක තියාගන්න කියන එක ","මාව මතක තියාගන්න "};
+        String[] prefixes={"remember that ","remember this:","remember this ","please remember ","remember:","mathaka thiyaganna ","mathaka thiyaganna:","mathaka thiyaganna kiyala ","mathaka thiyaganna ","මතක තියාගන්න ","මතක තියාගන්න:","මතක තියාගන්න කියන එක ","මාව මතක තියාගන්න "};
         for(String prefix:prefixes){
             if(q.startsWith(prefix)){
                 int start=prefix.length();

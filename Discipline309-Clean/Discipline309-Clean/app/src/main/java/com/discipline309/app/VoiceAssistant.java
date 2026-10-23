@@ -44,11 +44,15 @@ public class VoiceAssistant {
         recognizer = null;
         recognitionRetryCount = 0;
         notifyVoiceEnded();
-        Toast.makeText(activity, "Maya conversation එක 5s silence නිසා නතර කළා. 🎙️", Toast.LENGTH_SHORT).show();
+        showSilenceTimeoutToast();
     };
     private Runnable voiceStateListener;
     public void setVoiceStateListener(Runnable listener) { voiceStateListener = listener; }
     private void notifyVoiceEnded() { try { if (voiceStateListener != null) voiceStateListener.run(); } catch (Exception ignored) {} }
+
+    private void showSilenceTimeoutToast() {
+        try { Toast.makeText(activity, "Maya conversation එක 5s silence නිසා නතර කළා. 🎙️", Toast.LENGTH_SHORT).show(); } catch (Exception ignored) {}
+    }
 
     public VoiceAssistant(Activity activity) {
         this.activity = activity;

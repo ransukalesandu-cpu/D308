@@ -7,6 +7,10 @@ on:
   push:
     branches:
       - main
+      - maya-jarvis-upgrade
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
