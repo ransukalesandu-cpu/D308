@@ -176,7 +176,7 @@ private boolean fallbackListening=false;
             boolean enabled=settings.getBoolean("maya_background_voice",false);
             if(enabled && mayaAllowed() && ready && settings.getBoolean("auto_speak",true)
                     && !listening && !ttsSpeaking && !StrictModeManager.focusActive(MayaAssistantService.this)
-                    && !isPowerSavingMode() && !isPhoneCallActive() && !isMediaPlaying()){
+                    && !isQuietHoursNow(settings) && !isPowerSavingMode() && !isPhoneCallActive() && !isMediaPlaying()){
                 String suggestion=MayaPredictiveActions.nextSuggestion(MayaAssistantService.this);
                 if(suggestion!=null&&!suggestion.trim().isEmpty()){
                     SharedPreferences p=getSharedPreferences("maya_proactive",MODE_PRIVATE);
@@ -227,6 +227,16 @@ private boolean fallbackListening=false;
             }
         }catch(Exception ignored){}
         return false;
+    }
+
+    private boolean isQuietHoursNow(SharedPreferences settings){
+        try{
+            Calendar now=Calendar.getInstance();
+            int hour=now.get(Calendar.HOUR_OF_DAY);
+            int start=Math.max(0,Math.min(23,settings.getInt("maya_quiet_start",22)));
+            int end=Math.max(0,Math.min(23,settings.getInt("maya_quiet_end",7)));
+            return start>end ? (hour>=start || hour<end) : start<end && hour>=start && hour<end;
+        }catch(Exception ignored){ return false; }
     }
 
     private long proactiveDelayMs(){
