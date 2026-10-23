@@ -54,7 +54,8 @@ public class AuthActivity extends Activity {
         getWindow().setStatusBarColor(BG); getWindow().setNavigationBarColor(BG);
         // TEMPORARY TESTING ONLY: bypass sign-in in debug builds.
         // Release builds retain the normal Supabase authentication flow.
-        if (BuildConfig.DEBUG && getSharedPreferences("settings", MODE_PRIVATE)
+        if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                && getSharedPreferences("settings", MODE_PRIVATE)
                 .getBoolean("testing_skip_login", true)) {
             openMainAfterPermissions();
             return;
