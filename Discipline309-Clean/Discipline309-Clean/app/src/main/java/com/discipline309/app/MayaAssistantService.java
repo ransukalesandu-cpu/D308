@@ -793,7 +793,7 @@ private boolean fallbackListening=false;
             calendarEvent(q);
         }else if(q.contains("remind")||q.contains("reminder")||q.contains("මතක් කරන්න")){
             reminder(q);
-        }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")){
+        }else if(q.contains("device info")||q.contains("phone info")||q.contains("about phone")||q.contains("phone eke details")||q.contains("mage phone eke details")||q.contains("phone details")){
             deviceInfo();
         }else if(q.contains("plan")||q.contains("short plan")||q.contains("daily plan")||q.contains("මගේ plan")||q.contains("අද plan")||q.contains("අද වැඩ")){
             speak("📝 "+MayaOfflineNLP.answer(this,"plan"));
