@@ -186,8 +186,10 @@ private boolean fallbackListening=false;
                     String dayKey=new java.text.SimpleDateFormat("yyyyMMdd",Locale.ROOT).format(new Date(now));
                     String countKey="count_"+dayKey;
                     int spokenToday=p.getInt(countKey,0);
-                    // Keep proactive coaching useful rather than repetitive.
-                    if(spokenToday<4 && (!suggestion.equals(lastText) || now-last>=6L*60L*60L*1000L)){
+                    int maxPerDay=Math.max(0,Math.min(8,settings.getInt("maya_proactive_max_daily",4)));
+                    long cooldownHours=Math.max(1L,Math.min(24L,settings.getInt("maya_proactive_repeat_cooldown_hours",6)));
+                    // Keep proactive coaching useful, user-controlled, and non-repetitive.
+                    if(spokenToday<maxPerDay && (!suggestion.equals(lastText) || now-last>=cooldownHours*60L*60L*1000L)){
                         speak(suggestion);
                         p.edit().putLong("last_spoken_at",now)
                                 .putString("last_text",suggestion)
