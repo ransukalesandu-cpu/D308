@@ -744,7 +744,7 @@ private boolean fallbackListening=false;
             handleNoteCommand(q);
         }else if(isMemoryCommand(q)){
             handleMemory(q);
-        }else if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")){
+        }else if(q.contains("open ")||q.startsWith("open")||q.contains("launch ")||q.contains("start ")||q.contains("open app")||q.contains("ඇප් එක open")||q.contains("ඇප් එක අරින්න")||q.contains("app eka arinna")||q.contains("app eka open karanna")||q.contains("youtube eka arinna")||q.contains("whatsapp eka arinna")||q.contains("camera eka arinna")||q.contains("browser eka arinna")||q.contains("maps eka arinna")||q.contains("settings arinna")){
             openApp(q);
         }else if(q.contains("call")||q.contains("කෝල්")){
             String target=q.replace("call","").replace("කෝල්","").trim();
