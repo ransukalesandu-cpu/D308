@@ -70,10 +70,22 @@ public final class MayaAlarmScheduler {
         Matcher dm=Pattern.compile("(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})").matcher(s);
         if(dm.find()){
             try{
-                target.set(Calendar.YEAR,Integer.parseInt(dm.group(1)));
-                target.set(Calendar.MONTH,Integer.parseInt(dm.group(2))-1);
-                target.set(Calendar.DAY_OF_MONTH,Integer.parseInt(dm.group(3)));
-            }catch(Exception ignored){}
+                int year=Integer.parseInt(dm.group(1));
+                int month=Integer.parseInt(dm.group(2));
+                int day=Integer.parseInt(dm.group(3));
+                Calendar requested=(Calendar)now.clone();
+                requested.setLenient(false);
+                requested.set(Calendar.YEAR,year);
+                requested.set(Calendar.MONTH,month-1);
+                requested.set(Calendar.DAY_OF_MONTH,day);
+                // Reject impossible dates instead of silently rolling into another month.
+                requested.getTimeInMillis();
+                target.set(Calendar.YEAR,year);
+                target.set(Calendar.MONTH,month-1);
+                target.set(Calendar.DAY_OF_MONTH,day);
+            }catch(Exception invalidDate){
+                return null;
+            }
         }
 
         Matcher tm=Pattern.compile("(?i)(?:at|@|\u0da7|\u0da7\u0db8|\u0dcf)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?").matcher(s);
